@@ -132,7 +132,7 @@ export default function App() {
             </div>
 
             <div className="form-group">
-              <textarea name="Message" id="comment" rows="4" />
+              <textarea name="Message" id="comment" rows="4"></textarea>
               <label htmlFor="comment" className="form-label">
                 Kommentar
               </label>

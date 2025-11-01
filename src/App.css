@@ -148,7 +148,6 @@ textarea {
 .form-group input:focus,
 .form-group textarea:focus,
 .form-group input:valid,
-.form-group textarea:valid,
 .form-group input.has-content,
 .form-group textarea.has-content {
   border-color: var(--accent);
@@ -158,7 +157,6 @@ textarea {
 .form-group input:valid + .form-label,
 .form-group input.has-content + .form-label,
 .form-group textarea:focus + .form-label,
-.form-group textarea:valid + .form-label,
 .form-group textarea.has-content + .form-label {
   top: 0;
   background: var(--panel);
