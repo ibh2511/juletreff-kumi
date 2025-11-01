@@ -32,9 +32,16 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 30px;
+  padding: 0; /* ENDRE FRA 30px TIL 0 */
   min-height: 100vh;
-  height: auto; /* viktig: la body vokse med innholdet */
+  height: auto;
+}
+
+/* Legg til desktop padding separat */
+@media (min-width: 769px) {
+  body {
+    padding: 30px;
+  }
 }
 
 .page {
@@ -374,7 +381,7 @@ textarea {
 
 @media (max-width: 768px) {
   body {
-    padding: 0 0 25px 0;
+    padding: 0 10px 25px 0;
   }
   .container {
     grid-template-columns: 1fr;
@@ -391,13 +398,14 @@ textarea {
 
   .booking-image {
     min-height: 300px;
+    border-bottom: 0;
   }
 
   .booking-img {
     border-radius: 10px 10px 0 0;
   }
   .map-container {
-    border-radius: 0 0 10px 10px;
+    border-radius: 0;
   }
   h2 {
     font-size: 26px;
@@ -413,7 +421,7 @@ textarea {
 
 @media (max-width: 450px) {
   .page {
-    padding: 0; /* fjern all padding fra .page */
+    padding: 0;
   }
   .booking-form {
     padding: 30px 20px;
