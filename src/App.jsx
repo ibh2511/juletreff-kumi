@@ -6,7 +6,7 @@ const GAS_URL =
   "https://script.google.com/macros/s/AKfycbzDH2lXegWdaV9LASi_7y7aTTYIHKhr7VBJrSAJeSAtbhrqQ6fT3lkqL-bQkreVp-7b/exec"
 
 // Bildene som skal veksle mellom
-const IMAGES = ["/images/kumi.jpeg", "/images/munch.jpg"]
+const IMAGES = ["images/kumi.jpeg", "images/munch.jpg"]
 
 export default function App() {
   const [status, setStatus] = useState(null) // null | "ok" | "waitlist" | "duplicate" | "error"
@@ -87,7 +87,7 @@ export default function App() {
                 <p>Du kan sette deg på venteliste ved å sende oss en e-post.</p>
                 <p>
                   <a
-                    href={`mailto:isabelle.haugan@gmail.com?subject=Venteliste%20juletreff%20KUMI%20🥂&body=Hei,%0A%0ASett%20meg%20på%20venteliste%20for%20juletreff%20på%20KUMI🌱%0A%0AHilsen%20❓`}
+                    href={`mailto:isabelle.haugan@gmail.com?subject=Venteliste%20juletreff%20KUMI%20🥂`}
                   >
                     Sett meg på venteliste 🥳
                   </a>
