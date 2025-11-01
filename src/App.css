@@ -382,6 +382,9 @@ textarea {
   .booking-img {
     border-radius: 10px 10px 0 0;
   }
+  .map-container {
+    border-radius: 0 0 0 0;
+  }
   h2 {
     font-size: 26px;
   }
