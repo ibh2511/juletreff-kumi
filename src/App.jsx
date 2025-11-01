@@ -169,7 +169,7 @@ export default function App() {
 
               <div className="faq-body">
                 <p>
-                  Oslo vegansamfunn arrangerer juletreff på KUMI i Oslobukta
+                  Oslo vegansamfunn arrangerer juletreff på KUMI i Oslobukta,{" "}
                   <b>fredag 19. desember kl 19.00,</b> hvor vi har lokalet for
                   oss selv.
                 </p>
@@ -212,7 +212,6 @@ export default function App() {
                   </a>
                 </p>
                 <hr />
-                <br />
                 <h3>Hovedretter</h3>
                 <p>
                   🌰 Nøttestek
@@ -229,8 +228,6 @@ export default function App() {
                 </p>
                 <br />
                 <hr />
-                <br />
-
                 <h3>Dessert</h3>
                 <p>🍫 Marinerte Appelsiner med Sjokolade- og Appelsinkrem</p>
                 <br />
@@ -276,7 +273,7 @@ export default function App() {
                 <hr />
                 <p>
                   Har du andre spørsmål om pris eller tilbud, kontakt KUMI på{" "}
-                  <a href="mailto:kumi@kumi.no">kumi@kumi.no</a> / eller{" "}
+                  <a href="mailto:kumi@kumi.no">kumi@kumi.no</a> eller{" "}
                   <a href="tel:+4797302866">973 02 866</a>
                 </p>
               </div>
