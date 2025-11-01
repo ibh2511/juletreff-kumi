@@ -383,8 +383,11 @@ textarea {
   }
 
   .container {
-    width: 100vw;
+    width: 100%;
+    max-width: 100%;
     margin: 0;
+    border-radius: 0;
+    overflow-x: hidden;
   }
 
   .faq-section summary {
