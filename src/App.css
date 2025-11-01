@@ -14,9 +14,9 @@
 html,
 body,
 #root {
-  height: 100%; /* ensure the root fills the viewport for proper centering */
+  height: 100%;
   min-height: 100vh;
-  min-height: 100%; /* behold minst høyde for root/html */
+  min-height: 100%;
 }
 body {
   margin: 0;
@@ -29,33 +29,29 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  /* center everything in viewport */
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 30px;
-  min-height: 100vh; /* sikrer vertikal sentrering */
+  min-height: 100vh;
   height: auto; /* viktig: la body vokse med innholdet */
 }
 
-/* center page both axes reliably */
 .page {
-  /* remove fixed 100vh so body flexing kan sentrere på tvers av layout */
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0; /* padding flyttet til body */
+  padding: 0;
   box-sizing: border-box;
 }
 
-/* make container shrink-to-fit and be centered inside .page */
 .container {
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: auto auto;
   max-width: 1200px;
-  width: min(100%, 1200px); /* sørg for at container ikke fyller hele bredden */
+  width: min(100%, 1200px);
   background: var(--panel);
   border-radius: 15px;
   overflow: visible;
@@ -71,7 +67,7 @@ body {
   border-bottom: 2px solid var(--muted);
   position: relative;
   overflow: hidden;
-  min-height: 400px; /* sett en minimum høyde for desktop */
+  min-height: 400px;
 }
 
 .booking-img {
@@ -156,7 +152,6 @@ form {
   transition: 0.3s ease;
 }
 
-/* place textarea label near the top by default (keeps input labels centered) */
 .form-group textarea + .form-label {
   top: 10px;
   left: 12px;
@@ -261,7 +256,6 @@ textarea {
   filter: grayscale(100%) contrast(100%);
 }
 
-/* FAQ (bruker <details> for enkelhet/mindre JS) */
 .faq-section {
   color: var(--muted);
   grid-column: 2 / 3;
@@ -293,16 +287,14 @@ textarea {
   display: none;
 }
 
-/* Remove border when open */
 .faq-section details[open] > summary {
   border-bottom: 0;
 }
 
-/* Body: always in layout, animate max-height + opacity (no display toggle) */
 .faq-section .faq-body {
   background: #444;
   color: #f4eadf;
-  padding: 0 15px; /* horizontal always, vertical added when open */
+  padding: 0 15px;
   font-size: 14px;
   line-height: 1.6;
   letter-spacing: 0.5px;
@@ -318,15 +310,13 @@ textarea {
     margin 320ms cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-/* Open state */
 .faq-section details[open] .faq-body {
-  max-height: 2000px; /* large enough for tallest FAQ */
+  max-height: 2000px;
   opacity: 1;
   padding: 15px;
   margin-bottom: 20px;
 }
 
-/* Icon: use CSS to change content (no JS needed) */
 .faq-section .icon {
   background: #444;
   color: var(--muted);
@@ -339,28 +329,25 @@ textarea {
   justify-content: center;
   line-height: 1;
   position: relative;
-  color: transparent; /* hide the original + text */
+  color: transparent;
 }
 
-/* Show symbol via ::before instead */
 .faq-section .icon::before {
   content: "+";
   position: absolute;
-  color: var(--muted); /* restore color for pseudo-element */
-  transition: content 0s; /* instant swap, no fade */
+  color: var(--muted);
+  transition: content 0s;
 }
 
-/* When open, change to minus */
 .faq-section details[open] .icon::before {
   content: "−";
 }
 
-/* Link styles */
 .faq-section .faq-body a {
   color: inherit;
   text-decoration: underline dotted #f4eadf;
   text-decoration-thickness: 0.75px;
-  text-underline-offset: 2px; /* lavere verdi = tettere (prøv 1px eller 0.5px) */
+  text-underline-offset: 2px;
 }
 .faq-section .faq-body a:hover {
   color: var(--accent);
@@ -370,7 +357,6 @@ textarea {
   font-weight: bold;
 }
 
-/* FAQ body h3 styling */
 .faq-section .faq-body h3 {
   font-size: 20px;
   margin: 20px 0;
@@ -388,8 +374,7 @@ textarea {
 
 @media (max-width: 768px) {
   body {
-    padding: 0 0 25px 0;
-  }
+    padding: 0 0 25px 0; 
   .container {
     grid-template-columns: 1fr;
     grid-template-rows: repeat(4, auto);
@@ -403,9 +388,8 @@ textarea {
     width: 100%;
   }
 
-  /* Gi bildet fast høyde på mobil */
   .booking-image {
-    min-height: 300px; /* juster etter behov */
+    min-height: 300px;
   }
 
   .booking-img {
@@ -428,14 +412,13 @@ textarea {
 
 @media (max-width: 450px) {
   .page {
-    padding: 10px 5px;
+    padding: 0; /* fjern all padding fra .page */
   }
   .booking-form {
     padding: 30px 20px;
   }
 }
 
-/* Fixed, centered footer with robot arm emoji */
 .robot-footer {
   position: relative;
   left: 0;
