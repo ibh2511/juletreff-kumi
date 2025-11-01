@@ -240,20 +240,6 @@ export default function App() {
                 </p>
               </div>
             </details>
-
-            <details>
-              <summary className="faq">
-                <span>How does booking work?</span>
-                <span className="icon">+</span>
-              </summary>
-
-              <div className="faq-body">
-                <p>
-                  Your detailed answer or markup goes here. You can include
-                  links, <a href="#">emphasis</a>, lists, etc.
-                </p>
-              </div>
-            </details>
           </div>
         </div>
       </div>
