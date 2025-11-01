@@ -14,17 +14,20 @@
 html,
 body,
 #root {
-  height: 100%;
+  min-height: 100vh; /* bruk hele viewport og la body vokse når innholdet utvides */
 }
 body {
   margin: 0;
   font-family: "Poppins", sans-serif;
   background: var(--bg);
   color: var(--ink);
+  transition: background 0.25s ease; /* myk overgang ved endring av bakgrunn */
+  background-repeat: no-repeat;
+  background-attachment: scroll; /* sørg for at bakgrunnen følger innholdets høyde */
 }
 
 .page {
-  min-height: 100%;
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -39,7 +42,7 @@ body {
   width: 100%;
   background: var(--panel);
   border-radius: 15px;
-  overflow: hidden;
+  overflow: visible; /* tillat nedtrekksmenyer å stikke utenfor slik at body vokser */
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
 }
 
@@ -232,7 +235,8 @@ textarea {
   font-weight: 700;
 }
 .faq-section details[open] {
-  background: #444;
+  position: relative;
+  z-index: 5;
 }
 
 /* Mobil */
