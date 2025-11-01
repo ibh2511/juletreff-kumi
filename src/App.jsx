@@ -162,74 +162,92 @@ export default function App() {
             <h3 style={{ textAlign: "center" }}>❓ FAQ</h3>
 
             <details>
-              <summary>Hvem arrangerer?</summary>
-              <p>
-                Oslo Vegansamfunn arrangerer juletreff på KUMI i Oslobukta
-                torsdag 19. desember kl 17.00–19.00.
-              </p>
-              <p>
-                Meld deg på innen <b>mandag 16. desember</b>, så får du
-                e-postbekreftelse. Ta gjerne med en venn 💚
-              </p>
-            </details>
-
-            <details>
-              <summary>Hva står på menyen?</summary>
-              <p>
-                Les mer om menyen{" "}
-                <a
-                  href="https://kumi.no/christmas-party/"
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  her
-                </a>
-                .
-              </p>
-              <hr />
-              <h4>Hovedretter</h4>
-              <p>
-                🌰 Nøttestek
-                <br />
-                🥬 Hjemmelaget Rødkål
-                <br />
-                🍊 Dampede Rosenkål med Appelsinsalat
-                <br />
-                🌱 Veganske Patties
-                <br />
-                🥔 Ovnsbakte Poteter med Urter
-                <br />
-                🍷 Rødvinssaus
-              </p>
-              <hr />
-              <h4>Dessert</h4>
-              <p>
-                🍫 Marinerte Appelsiner med Sjokolade- og Appelsinkrem
-                <br />☕ Lokal Kaffe
-              </p>
-              <hr />
-              <p>
-                Spørsmål om meny/pris:{" "}
-                <a href="mailto:kumi@kumi.no">kumi@kumi.no</a> /{" "}
-                <a href="tel:+4797302866">973 02 866</a>
-              </p>
-            </details>
-
-            <details>
-              <summary>Hva koster det?</summary>
-              <p>
-                Sharing-meny, seks retter: 590,- per person. Drikkepakke/drikke
-                kommer i tillegg 🍷🍾
-              </p>
-            </details>
-
-            <details>
-              <summary class="faq">
-                <span>How does booking work?</span>
-                <span class="icon">+</span>
+              <summary className="faq">
+                <span>Hvem arrangerer?</span>
+                <span className="icon">+</span>
               </summary>
 
-              <div class="faq-body">
+              <div className="faq-body">
+                <p>
+                  Oslo Vegansamfunn arrangerer juletreff på KUMI i Oslobukta
+                  torsdag 19. desember kl 17.00–19.00.
+                </p>
+                <p>
+                  Meld deg på innen <b>mandag 16. desember</b>, så får du
+                  e-postbekreftelse. Ta gjerne med en venn 💚
+                </p>
+              </div>
+            </details>
+
+            <details>
+              <summary className="faq">
+                <span>Hva står på menyen?</span>
+                <span className="icon">+</span>
+              </summary>
+
+              <div className="faq-body">
+                <p>
+                  Les mer om menyen{" "}
+                  <a
+                    href="https://kumi.no/christmas-party/"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    her
+                  </a>
+                  .
+                </p>
+                <hr />
+                <h4>Hovedretter</h4>
+                <p>
+                  🌰 Nøttestek
+                  <br />
+                  🥬 Hjemmelaget Rødkål
+                  <br />
+                  🍊 Dampede Rosenkål med Appelsinsalat
+                  <br />
+                  🌱 Veganske Patties
+                  <br />
+                  🥔 Ovnsbakte Poteter med Urter
+                  <br />
+                  🍷 Rødvinssaus
+                </p>
+                <hr />
+                <h4>Dessert</h4>
+                <p>
+                  🍫 Marinerte Appelsiner med Sjokolade- og Appelsinkrem
+                  <br />☕ Lokal Kaffe
+                </p>
+                <hr />
+                <p>
+                  Spørsmål om meny/pris:{" "}
+                  <a href="mailto:kumi@kumi.no">kumi@kumi.no</a> /{" "}
+                  <a href="tel:+4797302866">973 02 866</a>
+                </p>
+              </div>
+            </details>
+
+            <details>
+              <summary className="faq">
+                <span>Hva koster det?</span>
+                <span className="icon">+</span>
+              </summary>
+
+              <div className="faq-body">
+                <p>
+                  Sharing-meny, seks retter: 590,- per person.
+                  Drikkepakke/drikke kommer i tillegg 🍷🍾
+                </p>
+              </div>
+            </details>
+
+            <details>
+              <summary className="faq">
+                <span>How does booking work?</span>
+                <span className="icon">+</span>
+              </summary>
+
+              <div className="faq-body">
                 <p>
                   Your detailed answer or markup goes here. You can include
                   links, <a href="#">emphasis</a>, lists, etc.
