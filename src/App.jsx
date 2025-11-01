@@ -210,7 +210,6 @@ export default function App() {
                   >
                     her
                   </a>
-                  .
                 </p>
                 <hr />
                 <br />
