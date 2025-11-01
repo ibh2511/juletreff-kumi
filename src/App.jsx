@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import "./App.css"
 import "./labelFloat.js"
-import "./faqToggle.js"
 
 const GAS_URL =
   "https://script.google.com/macros/s/AKfycbzDH2lXegWdaV9LASi_7y7aTTYIHKhr7VBJrSAJeSAtbhrqQ6fT3lkqL-bQkreVp-7b/exec" // <-- bytt
