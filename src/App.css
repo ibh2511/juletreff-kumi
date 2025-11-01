@@ -287,12 +287,15 @@ textarea {
   border-bottom: 0;
 }
 
-/* ensure .faq-body is present in DOM and is hidden via transform when closed */
+/* Update .faq-body to work with JS padding control */
+
 .faq-section .faq-body {
   background: #444;
   color: #f4eadf;
   margin-bottom: 20px;
-  padding: 15px;
+  padding-left: 15px;
+  padding-right: 15px;
+  /* padding-top/bottom controlled by JS */
   font-size: 14px;
   line-height: 1.6;
   letter-spacing: 0.5px;
@@ -300,30 +303,34 @@ textarea {
   border-bottom-left-radius: 8px;
   border-bottom-right-radius: 8px;
 
-  /* JS will manage height/opacity/overflow dynamically */
+  /* Initial open state (JS overrides for closed) */
   height: auto;
   opacity: 1;
   overflow: visible;
 }
 
-/* Link styles inside FAQ body */
-.faq-section .faq-body a {
-  color: inherit;
-  text-decoration: none;
-  border-bottom: 0.75px dotted #f4eadf;
-  padding-bottom: 0.25px;
-}
-.faq-section .faq-body a:hover {
-  color: var(--accent);
-}
-.faq-section .faq-body b {
-  color: var(--accent);
-  font-weight: bold;
+/* Icon: no rotation needed since JS swaps text content */
+.faq-section .icon {
+  background: #444;
+  color: var(--muted);
+  border-radius: 50%;
+  width: 30px;
+  height: 30px;
+  font-size: 18px; /* slightly larger for clearer − symbol */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  transition: none; /* no rotation, content changes instantly */
+  padding: 0;
+  margin: 0;
+  line-height: 1;
+  flex: 0 0 30px;
 }
 
-/* Icon rotation when open */
+/* Remove old rotation rule if present */
 .faq-section details[open] .icon {
-  transform: rotate(45deg);
+  transform: none;
 }
 
 /* Mobile tweaks */
@@ -387,22 +394,4 @@ textarea {
   line-height: 1;
   user-select: none;
   -webkit-user-select: none;
-}
-
-.faq-section .icon {
-  background: #444; /* same as faq body */
-  color: var(--muted);
-  border-radius: 50%;
-  width: 30px;
-  height: 30px;
-  font-size: 16px;
-  display: inline-flex; /* use flex to center symbol */
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  transition: transform 180ms ease;
-  padding: 0;
-  margin: 0;
-  line-height: 1;
-  flex: 0 0 30px;
 }
