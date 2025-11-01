@@ -325,16 +325,18 @@ textarea {
   justify-content: center;
   line-height: 1;
   position: relative;
+  color: transparent; /* hide the original + text */
 }
 
-/* Hide the original + text and use ::before instead */
+/* Show symbol via ::before instead */
 .faq-section .icon::before {
   content: "+";
   position: absolute;
-  transition: opacity 120ms ease;
+  color: var(--muted); /* restore color for pseudo-element */
+  transition: content 0s; /* instant swap, no fade */
 }
 
-/* When open, fade out + and show − */
+/* When open, change to minus */
 .faq-section details[open] .icon::before {
   content: "−";
 }
