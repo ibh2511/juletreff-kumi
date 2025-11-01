@@ -300,7 +300,6 @@ textarea {
   background: #444; /* requested body color */
   color: #f4eadf;
   margin-bottom: 20px;
-  margin-top: -15px;
   padding: 15px;
   font-size: 14px;
   line-height: 1.6;
@@ -314,7 +313,6 @@ textarea {
   background: #444;
   color: #f4eadf;
   margin-bottom: 20px;
-  margin-top: -15px;
   padding: 15px;
   font-size: 14px;
   line-height: 1.6;
@@ -342,24 +340,27 @@ textarea {
 
 /* Icon rotation for toggles (if .icon exists inside summary) */
 .faq-section .icon {
-  background: transparent; /* keep inner area transparent so ring is visible */
-  color: var(--muted);
+  background: #444; /* icon background matches faq-body */
+  color: var(--muted); /* icon color */
   border-radius: 50%;
   width: 30px;
   height: 30px;
   font-size: 16px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: inline-flex; /* inline to keep flow, flex for perfect centering */
+  align-items: center; /* vertical center */
+  justify-content: center; /* horizontal center */
   box-sizing: border-box;
   transition: transform 0.18s ease;
   padding: 0;
   margin: 0;
-  border: 2px solid #444; /* ring color matches faq body (#444) */
+  border: none; /* no extra border since bg is same as body */
+  line-height: 1;
 }
-.faq-section details[open] .icon {
-  transform: rotate(45deg);
+/* optional: small contrast ring (uncomment if you want a subtle outline)
+.faq-section .icon {
+  box-shadow: 0 0 0 2px rgba(0,0,0,0.06) inset;
 }
+*/
 
 /* Ensure opened details stacks above others (so expanded content isn't clipped) */
 .faq-section details[open] {
