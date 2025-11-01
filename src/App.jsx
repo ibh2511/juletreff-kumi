@@ -170,8 +170,8 @@ export default function App() {
               <div className="faq-body">
                 <p>
                   Oslo vegansamfunn arrangerer juletreff på KUMI i Oslobukta
-                  fredag 19. desember kl 19.00, hvor vi har lokalet for oss
-                  selv.
+                  fredag 19. desember kl 19.00, hvor vi har{" "}
+                  <b>lokalet for oss selv.</b>
                 </p>
                 <p>
                   Etterpå går vi videre til{" "}
@@ -181,12 +181,12 @@ export default function App() {
                     rel="noreferrer"
                   >
                     Kranen cocktailbar
-                  </a>
-                  i 13. etasje på MUNCH, ca. 200 meter unna (23 års
-                  aldersgrense)
+                  </a>{" "}
+                  i 13. etasje på <b>MUNCH</b>, ca. 200 meter unna (
+                  <i>23 års aldersgrense</i>)
                 </p>
                 <p>
-                  Ønsker du å bli med? Meld deg på via skjemaet over innen
+                  Ønsker du å bli med? Meld deg på via skjemaet over innen{" "}
                   <b>tirsdag 16. desember</b>, og du vil motta en bekreftelse
                   per e-post.
                 </p>
@@ -238,7 +238,7 @@ export default function App() {
                 <hr />
                 <p>
                   Har du andre spørsmål om meny, kontakt KUMI på{" "}
-                  <a href="mailto:kumi@kumi.no">kumi@kumi.no</a> / eller
+                  <a href="mailto:kumi@kumi.no">kumi@kumi.no</a> eller{" "}
                   <a href="tel:+4797302866">973 02 866</a>
                 </p>
               </div>
@@ -261,8 +261,10 @@ export default function App() {
                 </p>
                 <p>
                   På Kranen, hvor det er det 23 års aldersgrense, må du være
-                  forberedt på å vise legitimasjon. Du kjøper det du ønsker,
-                  drikkemeny finner du{" "}
+                  forberedt på å vise legitimasjon.{" "}
+                </p>
+                <p>
+                  Du kjøper det du ønsker på Kranen, drikkemeny finner du{" "}
                   <a
                     href="https://drive.google.com/file/d/1ZhKilxdVjzNH5u9K0xigndzo7pTYUKle/view?usp=sharing"
                     target="_blank"
@@ -271,6 +273,7 @@ export default function App() {
                     her.
                   </a>
                 </p>
+                <br />
                 <hr />
                 <p>
                   Har du andre spørsmål om pris eller tilbud, kontakt KUMI på{" "}
