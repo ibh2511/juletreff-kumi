@@ -146,14 +146,21 @@ textarea {
 }
 
 .form-group input:focus,
-.form-group textarea:focus {
+.form-group textarea:focus,
+.form-group input:valid,
+.form-group textarea:valid,
+.form-group input.has-content,
+.form-group textarea.has-content {
   border-color: var(--accent);
 }
+
 .form-group input:focus + .form-label,
-.form-group input:not(:placeholder-shown) + .form-label,
+.form-group input:valid + .form-label,
+.form-group input.has-content + .form-label,
 .form-group textarea:focus + .form-label,
-.form-group textarea:not(:placeholder-shown) + .form-label {
-  top: 0px;
+.form-group textarea:valid + .form-label,
+.form-group textarea.has-content + .form-label {
+  top: 0;
   background: var(--panel);
   padding: 0 5px;
   color: var(--accent);
