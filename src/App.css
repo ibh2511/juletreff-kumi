@@ -27,15 +27,23 @@ body {
   background-attachment: scroll;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-}
 
-/* center page both axes reliably */
-.page {
-  height: 100vh; /* fill viewport so flex centering works predictably */
+  /* added: center everything in viewport */
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 30px;
+  min-height: 100vh; /* ensure vertical centering even on small screens */
+}
+
+/* center page both axes reliably */
+.page {
+  /* remove fixed 100vh so body flexing kan sentrere på tvers av layout */
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0; /* padding flyttet til body */
   box-sizing: border-box;
 }
 
@@ -45,13 +53,13 @@ body {
   grid-template-columns: 1fr 1fr;
   grid-template-rows: auto auto;
   max-width: 1200px;
-  width: 100%;
+  width: min(100%, 1200px); /* sørg for at container ikke fyller hele bredden */
   background: var(--panel);
   border-radius: 15px;
   overflow: visible;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-  margin: 0 auto; /* ensure horizontal centering if needed */
-  align-self: center; /* center vertically inside .page */
+  margin: 0 auto;
+  align-self: center;
 }
 
 /* Bilde */
