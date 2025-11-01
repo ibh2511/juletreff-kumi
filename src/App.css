@@ -11,60 +11,45 @@
 * {
   box-sizing: border-box;
 }
+
 html,
 body,
 #root {
   height: 100%; /* ensure the root fills the viewport for proper centering */
   min-height: 100vh;
-  min-height: 100%; /* behold minst høyde for root/html */
-}
-body {
   margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* General body styling */
+body {
   font-family: "Poppins", sans-serif;
   background: var(--bg);
   color: var(--ink);
-  transition: background 0.25s ease;
-  background-repeat: no-repeat;
-  background-attachment: scroll;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  /* center everything in viewport */
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.8;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 30px;
-  min-height: 100vh; /* sikrer vertikal sentrering */
-  height: auto; /* viktig: la body vokse med innholdet */
 }
 
-/* center page both axes reliably */
-.page {
-  /* remove fixed 100vh so body flexing kan sentrere på tvers av layout */
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0; /* padding flyttet til body */
-  box-sizing: border-box;
-}
-
-/* make container shrink-to-fit and be centered inside .page */
+/* Container (main card) */
 .container {
   display: grid;
   grid-template-columns: 1fr 1fr;
   grid-template-rows: auto auto;
   max-width: 1200px;
-  width: min(100%, 1200px); /* sørg for at container ikke fyller hele bredden */
+  width: 100%;
   background: var(--panel);
   border-radius: 15px;
-  overflow: visible;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-  margin: 0 auto;
-  align-self: center;
+  overflow: hidden;
+  box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
 }
 
-/* Bilde */
+/* Booking Image */
 .booking-image {
   grid-column: 1 / 2;
   grid-row: 1 / 2;
@@ -77,7 +62,7 @@ body {
   border-radius: 10px 0 0 0;
 }
 
-/* Skjema */
+/* Form Section */
 .booking-form {
   background: var(--panel);
   color: var(--ink);
@@ -100,10 +85,11 @@ h2 {
 .subheader {
   font-size: 16px;
   color: var(--muted);
-  margin-bottom: 30px;
+  margin-bottom: 50px;
   letter-spacing: 1.5px;
 }
 
+/* Form Styling */
 form {
   width: 100%;
 }
@@ -123,14 +109,24 @@ form {
   border-radius: 4px;
   outline: none;
   transition: 0.4s;
+  box-sizing: border-box;
 }
-.form-group-row {
-  display: flex;
-  gap: 15px;
+
+/* Align "Navn" and "Etternavn" fields side-by-side with natural spacing on desktop */
+@media (min-width: 768px) {
+  .form-group-row {
+    display: flex;
+    gap: 15px;
+  }
+  .form-group-row .form-group {
+    flex: 1;
+  }
+  #firstName,
+  #lastName {
+    width: 100%;
+  }
 }
-.form-group-row .form-group {
-  flex: 1;
-}
+
 .form-label {
   position: absolute;
   top: 50%;
@@ -142,114 +138,97 @@ form {
   transition: 0.3s ease;
 }
 
-/* place textarea label near the top by default (keeps input labels centered) */
-.form-group textarea + .form-label {
-  top: 10px;
-  left: 12px;
-  transform: none;
-  font-size: 16px;
+/* Spesifikk justering for Kommentar-feltets label */
+label[for="comment"] {
+  top: 20%;
 }
 
-textarea {
-  resize: vertical;
-}
-
-.form-group input:focus,
-.form-group textarea:focus,
-.form-group input:valid,
-.form-group input.has-content,
-.form-group textarea.has-content {
+/* Autofill handling */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  transition: all 5000s ease-in-out 0s;
   border-color: var(--accent);
 }
 
+/* Floating label / focus states */
+.form-group input:focus,
+.form-group input:valid,
+.form-group input.has-content,
+.form-group textarea:focus,
+.form-group textarea.has-content {
+  border-color: var(--accent);
+}
 .form-group input:focus + .form-label,
 .form-group input:valid + .form-label,
 .form-group input.has-content + .form-label,
 .form-group textarea:focus + .form-label,
 .form-group textarea.has-content + .form-label {
-  top: 0;
+  top: 0px;
   background: var(--panel);
   padding: 0 5px;
   color: var(--accent);
   font-size: 13px;
 }
 
+/* Submit */
 .form-submit button {
   width: 100%;
   padding: 12px 0;
-  background: var(--accent);
+  background-color: var(--accent);
   color: #111;
   font-size: 16px;
-  font-weight: 700;
+  font-weight: bold;
   border: none;
   border-radius: 5px;
   cursor: pointer;
   transition: background 0.3s;
 }
 .form-submit button:hover {
-  background: #e79e50;
-}
-.form-submit button[disabled] {
-  opacity: 0.7;
-  cursor: wait;
+  background-color: #e79e50;
 }
 
-.msg {
-  text-align: center;
-  padding: 20px;
-  border-radius: 10px;
-  background: #333;
-  color: var(--muted);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  animation: fadeIn 1.25s ease-in-out;
+/* Two-column name fields */
+.name-fields {
+  display: flex;
+  gap: 20px;
+  width: 100%;
 }
-.msg h3 {
-  margin: 10px 0;
-  color: #ffd9b0;
-}
-.msg.wait h3,
-.msg.error h3 {
-  color: #d9534f;
-}
-.msg a {
-  color: var(--muted);
-  text-decoration: none;
-  border-bottom: 0.75px dotted var(--muted);
-}
-.msg a:hover {
-  color: var(--accent);
+.name-fields .form-group {
+  flex: 1;
 }
 
-@keyframes fadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.98);
+/* Autofill appearance */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  transition: background-color 5000s;
+  -webkit-text-fill-color: #fff !important;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+  .booking-image {
+    border-bottom: 0px;
   }
-  to {
-    opacity: 1;
-    transform: scale(1);
+  h2 {
+    font-size: 26px;
+  }
+  .name-fields {
+    flex-direction: column;
+    gap: 0px;
+    width: 100%;
+  }
+  .container {
+    padding: 0px;
   }
 }
 
-/* Kart */
-.map-container {
-  grid-column: 1 / 2;
-  grid-row: 2 / 3;
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-  border-radius: 0 0 0 10px;
-}
-.map-container iframe {
-  width: 100%;
-  height: 100%;
-  border: none;
-  filter: grayscale(100%) contrast(100%);
-}
-
-/* FAQ Section - restore original styling */
+/* FAQ Section */
 .faq-section {
-  color: #f4eadf; /* Light text like original */
+  color: #f4eadf;
   grid-column: 2 / 3;
   grid-row: 2 / 3;
   padding: 40px;
@@ -259,26 +238,52 @@ textarea {
 }
 .faq-section h3 {
   font-size: 20px;
-  margin: 0 0 10px;
 }
 
-/* Question */
 .faq {
   cursor: pointer;
   padding: 15px;
-  background: #333; /* Slightly darker question background */
+  background: #333;
   color: #f4eadf;
-  font-weight: 700;
+  font-weight: bold;
+  font-size: 20px;
   border-radius: 5px;
   display: flex;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 10px;
-  font-size: 16px;
   letter-spacing: 1px;
 }
 
-/* Icon circle on the right */
+.faq-content {
+  display: none;
+  background: #444;
+  border-radius: 0 0 5px 5px;
+  color: #f4eadf;
+  margin-bottom: 20px;
+  margin-top: -15px;
+  padding: 15px;
+  font-size: 14px;
+  line-height: 1.6;
+  letter-spacing: 0.5px;
+  font-weight: bold;
+}
+
+.faq-content a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 0.75px dotted #f4eadf;
+  padding-bottom: 0.25px;
+}
+.faq-content a:hover {
+  color: #edb77d;
+}
+.faq-content b {
+  color: #edb77d;
+  font-weight: bold;
+}
+
+/* Icon */
 .icon {
   background: #555;
   color: #f4eadf;
@@ -295,103 +300,124 @@ textarea {
   margin: 0;
 }
 
-/* Answer area */
-.faq-content {
-  display: none;
-  background: #444; /* Slightly lighter than question bg */
-  border-radius: 0 0 5px 5px;
-  color: #f4eadf;
-  margin-bottom: 20px;
-  margin-top: -15px;
-  padding: 15px;
-  font-size: 14px;
-  line-height: 1.6;
-  letter-spacing: 0.5px;
-  font-weight: bold;
+/* Map Section */
+.map-container {
+  grid-column: 1 / 2;
+  grid-row: 2 / 3;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 0 0 0 10px;
+}
+.map-container iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  filter: grayscale(100%) contrast(100%);
 }
 
-/* Show answer when details open */
-.faq-section details[open] .faq-content {
-  display: block;
-}
-
-/* Links and emphasis inside FAQ content */
-.faq-content a {
-  color: inherit;
-  text-decoration: none;
-  border-bottom: 0.75px dotted #f4eadf;
-  padding-bottom: 0.25px;
-}
-.faq-content a:hover {
-  color: #edb77d;
-}
-.faq-content b {
-  color: #edb77d;
-  font-weight: bold;
-}
-
-/* Ensure open detail sits above other content so drop-down is visible */
-.faq-section details[open] {
-  position: relative;
-  z-index: 5;
-}
-
-/* Mobile tweak */
-@media (max-width: 768px) {
-  .faq-section {
-    padding: 20px;
-  }
-}
-
-/* Mobil */
+/* Mobile layout for grid -> stacked */
 @media (max-width: 768px) {
   .container {
     grid-template-columns: 1fr;
     grid-template-rows: repeat(4, auto);
+    gap: 15px;
   }
   .booking-image,
   .booking-form,
   .faq-section,
   .map-container {
+    width: 100%;
     grid-column: span 1;
     grid-row: auto;
-    width: 100%;
+  }
+  .map-container {
+    order: 4;
+    border-radius: 0 0 10px 10px;
   }
   .booking-img {
     border-radius: 10px 10px 0 0;
   }
-  h2 {
-    font-size: 26px;
-  }
-  .form-group-row {
-    flex-direction: column;
-    gap: 0;
-  }
-  .faq-section {
-    padding: 20px;
-  }
 }
 
+/* Small-screen tweaks */
 @media (max-width: 450px) {
-  .page {
+  body {
     padding: 10px 5px;
+  }
+  .faq-section {
+    padding: 10px 20px 20px 20px;
+  }
+  .container {
+    padding: 0px;
   }
   .booking-form {
     padding: 30px 20px;
   }
+  .thank-you-message h3 {
+    font-size: 1rem !important;
+  }
+  .thank-you-message p {
+    font-size: 0.9rem !important;
+  }
 }
 
-/* Fixed, centered footer with robot arm emoji */
-.robot-footer {
-  position: relative;
-  left: 0;
-  right: 0;
+/* Thank you message */
+.thank-you-message {
+  text-align: center;
+  color: #edb77d;
+  padding: 20px;
+  border-radius: 10px;
+  background-color: #333;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.2);
+  font-family: "Poppins", sans-serif;
+  animation: fadeIn 1.25s ease-in-out;
+}
+.thank-you-message h3 {
+  font-size: 1.5rem;
+  margin: 10px 0;
+  color: #ffd9b0;
+  letter-spacing: 1px;
+}
+.thank-you-message p {
+  font-size: 1rem;
+  margin: 5px 0;
+  color: #f4eadf;
+  letter-spacing: 1px;
+  font-weight: bold;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Footer (simple decorative bar) */
+.site-footer {
+  width: min(1200px, 100%);
+  margin: 18px auto 0;
+  background: #f0c08a; /* slightly darker than body bg */
+  color: #111;
+  border-radius: 10px;
+  padding: 6px 12px;
   display: flex;
   justify-content: center;
-  pointer-events: none;
-  z-index: 9999;
-  font-size: 20px;
+  align-items: center;
+  font-size: 18px;
   line-height: 1;
+  box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.08);
   user-select: none;
-  -webkit-user-select: none;
+  pointer-events: none;
+}
+
+/* legacy robot-footer (hidden) */
+.robot-footer {
+  display: none !important;
 }
