@@ -14,11 +14,11 @@ export default function App() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const iframeRef = useRef(null)
 
-  // Fade mellom bilder hvert 5. sekund
+  // Fade mellom bilder hvert 3.5 sekund
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentImageIndex((prev) => (prev + 1) % IMAGES.length)
-    }, 5000) // 5000ms = 5 sekunder
+    }, 3500) // 3500ms = 3.5 sekunder
 
     return () => clearInterval(interval)
   }, [])
