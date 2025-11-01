@@ -164,8 +164,8 @@ export default function App() {
             <details>
               <summary>Hvem arrangerer?</summary>
               <p>
-                Oslo Vegansamfunn arrangerer juletreff på KUMI i Oslobukta torsdag
-                19. desember kl 17.00–19.00.
+                Oslo Vegansamfunn arrangerer juletreff på KUMI i Oslobukta
+                torsdag 19. desember kl 17.00–19.00.
               </p>
               <p>
                 Meld deg på innen <b>mandag 16. desember</b>, så får du
@@ -221,6 +221,20 @@ export default function App() {
                 Sharing-meny, seks retter: 590,- per person. Drikkepakke/drikke
                 kommer i tillegg 🍷🍾
               </p>
+            </details>
+
+            <details>
+              <summary class="faq">
+                <span>How does booking work?</span>
+                <span class="icon">+</span>
+              </summary>
+
+              <div class="faq-body">
+                <p>
+                  Your detailed answer or markup goes here. You can include
+                  links, <a href="#">emphasis</a>, lists, etc.
+                </p>
+              </div>
             </details>
           </div>
         </div>
