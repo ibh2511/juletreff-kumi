@@ -54,7 +54,7 @@ export default function App() {
                   index === currentImageIndex ? "active" : ""
                 }`}
                 src={src}
-                alt={`Juletreff på KUMI ${index + 1}`}
+                alt={`Juletreff 2025`}
                 loading="lazy"
               />
             ))}
