@@ -287,57 +287,43 @@ textarea {
   border-bottom: 0;
 }
 
-/* restore CSS-only FAQ behaviour (no JS) */
 /* ensure .faq-body is present in DOM and is hidden via transform when closed */
 .faq-section .faq-body {
   background: #444;
   color: #f4eadf;
   margin-bottom: 20px;
-  margin-top: -15px;
   padding: 15px;
   font-size: 14px;
   line-height: 1.6;
   letter-spacing: 0.5px;
   font-weight: bold;
+  border-bottom-left-radius: 8px;
+  border-bottom-right-radius: 8px;
 
-  transform-origin: top;
-  transform: scaleY(1);
+  /* JS will manage height/opacity/overflow dynamically */
+  height: auto;
   opacity: 1;
-  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 180ms ease,
-    padding 180ms ease, margin 180ms ease;
-  will-change: transform, opacity;
+  overflow: visible;
 }
 
-/* closed state: collapse visually without removing from DOM */
-.faq-section details:not([open]) > .faq-body {
-  transform: scaleY(0);
-  opacity: 0;
-  padding: 0 16px;
-  margin-bottom: 0;
-  pointer-events: none;
+/* Link styles inside FAQ body */
+.faq-section .faq-body a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 0.75px dotted #f4eadf;
+  padding-bottom: 0.25px;
+}
+.faq-section .faq-body a:hover {
+  color: var(--accent);
+}
+.faq-section .faq-body b {
+  color: var(--accent);
+  font-weight: bold;
 }
 
-/* when open, remove bottom border from summary for clean join */
-.faq-section details[open] > summary {
-  border-bottom: 0;
-}
-
-/* ensure icon circle exists and centers content */
-.faq-section .icon {
-  background: #444;
-  color: var(--muted);
-  border-radius: 50%;
-  width: 30px;
-  height: 30px;
-  font-size: 16px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  transition: transform 180ms ease;
-  padding: 0;
-  margin: 0;
-  line-height: 1;
+/* Icon rotation when open */
+.faq-section details[open] .icon {
+  transform: rotate(45deg);
 }
 
 /* Mobile tweaks */
