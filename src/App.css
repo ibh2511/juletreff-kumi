@@ -379,7 +379,7 @@ textarea {
 @media (max-width: 768px) {
   body {
     display: block;
-    padding: 10px 0 25px 0;
+    padding: 10px 2px 25px 2px;
   }
 
   .container {
