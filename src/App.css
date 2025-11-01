@@ -287,63 +287,52 @@ textarea {
   border-bottom: 0;
 }
 
-/* FAQ body (.faq-body) is always in DOM but collapsed via max-height/opacity to avoid flicker */
+/* FAQ body: use transform + opacity for smooth collapse (no reflow) */
 .faq-section .faq-body {
-  background: #444; /* requested body color */
+  background: #444;
   color: #f4eadf;
-  margin-bottom: 0; /* controlled when open */
-  margin-top: 0;
-  padding: 0 16px; /* collapsed has no vertical padding */
+  margin: 0; /* controlled visually */
+  padding: 0 16px; /* collapsed => no vertical padding */
   font-size: 14px;
   line-height: 1.6;
   letter-spacing: 0.5px;
-  font-weight: 700;
-  border-top: none;
+  font-weight: bold;
 
-  /* collapse behaviour */
-  max-height: 0;
-  overflow: hidden;
+  /* animation via transform + opacity (no layout reflow) */
+  transform-origin: top;
+  transform: scaleY(0);
   opacity: 0;
-  transition: max-height 300ms cubic-bezier(0.2, 0.8, 0.2, 1),
-    opacity 180ms ease, padding 180ms ease, margin 180ms ease;
-  border-bottom-left-radius: 8px; /* keep bottom corners rounded when open */
+  max-height: none; /* remove max-height animation */
+  overflow: hidden;
+  transition: transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1), opacity 180ms ease,
+    padding 180ms ease, margin 180ms ease;
+  border-bottom-left-radius: 8px;
   border-bottom-right-radius: 8px;
 }
 
-/* When open expand smoothly */
+/* open state */
 .faq-section details[open] > .faq-body {
-  max-height: 1000px; /* large enough to contain content */
+  transform: scaleY(1);
   opacity: 1;
   padding: 15px 16px;
   margin-top: -15px;
   margin-bottom: 20px;
 }
 
-/* Icon centering/rotation */
-.faq-section .icon {
-  background: #444;
-  color: var(--muted);
-  border-radius: 50%;
-  width: 30px;
-  height: 30px;
-  font-size: 16px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-sizing: border-box;
-  transition: transform 180ms ease;
-  padding: 0;
-  margin: 0;
-  line-height: 1;
-}
-.faq-section details[open] .icon {
-  transform: rotate(45deg);
+/* ensure summary bottom border disappears when open */
+.faq-section details[open] > summary {
+  border-bottom: 0;
 }
 
-/* ensure expanded details sits above others */
-.faq-section details[open] {
-  position: relative;
-  z-index: 5;
+/* FAQ links: restore original visual */
+.faq-section .faq-body a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 0.75px dotted #f4eadf;
+  padding-bottom: 0.25px;
+}
+.faq-section .faq-body a:hover {
+  color: #edb77d;
 }
 
 /* Mobile tweaks */
