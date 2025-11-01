@@ -259,56 +259,91 @@ textarea {
 .faq-section details {
   margin: 10px 0;
   border-radius: 8px;
-  overflow: hidden; /* ensure rounded corners and no bleed */
-  background: transparent; /* summary/body will provide visible backgrounds */
+  overflow: hidden; /* keep rounded corners */
+  background: transparent; /* summary/body provide visible background */
 }
 
-/* Header / summary (question) */
+/* Summary (header) */
 .faq-section summary {
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 14px 16px;
-  background: #333; /* header color (dark) */
+  background: #333; /* header color */
   color: var(--muted);
   font-weight: 700;
-  border-radius: 8px;
-  list-style: none; /* hide default marker */
+  list-style: none; /* hide native marker */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04); /* subtle divider */
+  transition: background 0.18s ease, border-bottom 0.18s ease;
 }
 
-/* hide native marker to use custom icon if desired */
+/* Hide default marker */
 .faq-section summary::-webkit-details-marker {
   display: none;
 }
 
-/* Body (answer) — distinct color (#444) */
-.faq-section .faq-body {
-  display: none; /* hidden when details closed */
+/* When details is open, remove bottom border on summary so header
+   visually connects with the body */
+.faq-section details[open] > summary {
+  border-bottom: 0;
+}
+
+/* Hide all non-summary children when closed */
+.faq-section details:not([open]) > *:not(summary) {
+  display: none;
+}
+
+/* Body: all non-summary children get unified body styling when open */
+.faq-section details[open] > *:not(summary) {
+  display: block;
   background: #444; /* requested body color */
   color: var(--muted);
   padding: 15px 16px;
   font-size: 14px;
   line-height: 1.6;
-  border-top: 1px solid rgba(0, 0, 0, 0.08);
+  letter-spacing: 0.5px;
+  border-top: none;
 }
 
-/* Show body when details is open */
-.faq-section details[open] .faq-body {
-  display: block;
+/* Keep internal semantics (links / bold) styling consistent */
+.faq-section details[open] > *:not(summary) a {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 0.75px dotted var(--muted);
+}
+.faq-section details[open] > *:not(summary) a:hover {
+  color: var(--accent);
+}
+.faq-section details[open] > *:not(summary) b {
+  color: var(--accent);
+  font-weight: bold;
 }
 
-/* Optional: icon rotation when open (if you keep .icon element inside summary) */
+/* Icon rotation for toggles (if .icon exists inside summary) */
+.faq-section .icon {
+  transition: transform 0.18s ease;
+}
 .faq-section details[open] .icon {
-  transform: rotate(45deg); /* turns + into x if using + icon */
+  transform: rotate(45deg);
 }
 
-/* Ensure previous .faq-content rules don't conflict — if present, keep these as authoritative */
-.faq-section .faq-content {
-  display: none !important;
-} /* if old markup exists */
+/* Ensure opened details stacks above others (so expanded content isn't clipped) */
+.faq-section details[open] {
+  position: relative;
+  z-index: 5;
+}
 
-/* Mobil */
+/* Mobile tweaks to preserve spacing */
+@media (max-width: 768px) {
+  .faq-section summary {
+    padding: 12px 14px;
+  }
+  .faq-section details[open] > *:not(summary) {
+    padding: 12px 14px;
+  }
+}
+
 @media (max-width: 768px) {
   .container {
     grid-template-columns: 1fr;
