@@ -170,8 +170,8 @@ export default function App() {
               <div className="faq-body">
                 <p>
                   Oslo vegansamfunn arrangerer juletreff på KUMI i Oslobukta
-                  fredag 19. desember kl 19.00, hvor vi har{" "}
-                  <b>lokalet for oss selv.</b>
+                  <b>fredag 19. desember kl 19.00,</b> hvor vi har lokalet for
+                  oss selv.
                 </p>
                 <p>
                   Etterpå går vi videre til{" "}
@@ -180,9 +180,9 @@ export default function App() {
                     target="_blank"
                     rel="noreferrer"
                   >
-                    Kranen cocktailbar
+                    Kranen
                   </a>{" "}
-                  i 13. etasje på <b>MUNCH</b>, ca. 200 meter unna (
+                  cocktailbar i 13. etasje på <b>MUNCH,</b> ca. 200 meter unna (
                   <i>23 års aldersgrense</i>)
                 </p>
                 <p>
@@ -213,6 +213,7 @@ export default function App() {
                   .
                 </p>
                 <hr />
+                <br />
                 <h3>Hovedretter</h3>
                 <p>
                   🌰 Nøttestek
@@ -229,11 +230,10 @@ export default function App() {
                 </p>
                 <br />
                 <hr />
+                <br />
+
                 <h3>Dessert</h3>
-                <p>
-                  🍫 Marinerte Appelsiner med Sjokolade- og Appelsinkrem
-                  <br />☕ Lokal Kaffe
-                </p>
+                <p>🍫 Marinerte Appelsiner med Sjokolade- og Appelsinkrem</p>
                 <br />
                 <hr />
                 <p>
@@ -270,7 +270,7 @@ export default function App() {
                     target="_blank"
                     rel="noreferrer"
                   >
-                    her.
+                    her
                   </a>
                 </p>
                 <br />
