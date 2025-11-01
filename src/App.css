@@ -259,8 +259,9 @@ textarea {
 .faq-section details {
   margin: 10px 0;
   border-radius: 8px;
-  overflow: hidden; /* keep rounded corners */
-  background: transparent; /* summary/body provide visible background */
+  overflow: hidden; /* keep rounded corners and prevent bleed */
+  background: transparent;
+  transition: box-shadow 180ms ease;
 }
 
 /* Summary (header) */
@@ -270,110 +271,87 @@ textarea {
   align-items: center;
   justify-content: space-between;
   padding: 14px 16px;
-  background: #333; /* header color */
+  background: #333;
   color: var(--muted);
   font-weight: 700;
-  list-style: none; /* hide native marker */
-  border-bottom: 1px solid rgba(255, 255, 255, 0.04); /* subtle divider */
-  transition: background 0.18s ease, border-bottom 0.18s ease;
+  list-style: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+  transition: background 180ms ease, border-bottom 180ms ease;
 }
-
-/* Hide default marker */
 .faq-section summary::-webkit-details-marker {
   display: none;
 }
 
-/* When details is open, remove bottom border on summary so header
-   visually connects with the body */
+/* Remove bottom border on open so header connects visually to body */
 .faq-section details[open] > summary {
   border-bottom: 0;
 }
 
-/* Hide all non-summary children when closed */
-.faq-section details:not([open]) > *:not(summary) {
-  display: none;
-}
-
-/* Body: all non-summary children get unified body styling when open */
-.faq-section details[open] > *:not(summary) {
-  display: block;
+/* FAQ body (.faq-body) is always in DOM but collapsed via max-height/opacity to avoid flicker */
+.faq-section .faq-body {
   background: #444; /* requested body color */
   color: #f4eadf;
-  margin-bottom: 20px;
-  padding: 15px;
+  margin-bottom: 0; /* controlled when open */
+  margin-top: 0;
+  padding: 0 16px; /* collapsed has no vertical padding */
   font-size: 14px;
   line-height: 1.6;
   letter-spacing: 0.5px;
-  font-weight: bold;
+  font-weight: 700;
   border-top: none;
+
+  /* collapse behaviour */
+  max-height: 0;
+  overflow: hidden;
+  opacity: 0;
+  transition: max-height 300ms cubic-bezier(0.2, 0.8, 0.2, 1),
+    opacity 180ms ease, padding 180ms ease, margin 180ms ease;
+  border-bottom-left-radius: 8px; /* keep bottom corners rounded when open */
+  border-bottom-right-radius: 8px;
 }
 
-/* Ensure .faq-body (explicit wrapper in markup) has identical styling and is hidden when closed */
-.faq-section .faq-body {
-  background: #444;
-  color: #f4eadf;
+/* When open expand smoothly */
+.faq-section details[open] > .faq-body {
+  max-height: 1000px; /* large enough to contain content */
+  opacity: 1;
+  padding: 15px 16px;
+  margin-top: -15px;
   margin-bottom: 20px;
-  padding: 15px;
-  font-size: 14px;
-  line-height: 1.6;
-  letter-spacing: 0.5px;
-  font-weight: bold;
-  display: block;
-}
-.faq-section details:not([open]) > .faq-body {
-  display: none;
 }
 
-/* Keep internal semantics (links / bold) styling consistent */
-.faq-section details[open] > *:not(summary) a {
-  color: inherit;
-  text-decoration: none;
-  border-bottom: 0.75px dotted var(--muted);
-}
-.faq-section details[open] > *:not(summary) a:hover {
-  color: var(--accent);
-}
-.faq-section details[open] > *:not(summary) b {
-  color: var(--accent);
-  font-weight: bold;
-}
-
-/* Icon rotation for toggles (if .icon exists inside summary) */
+/* Icon centering/rotation */
 .faq-section .icon {
-  background: #444; /* icon background matches faq-body */
-  color: var(--muted); /* icon color */
+  background: #444;
+  color: var(--muted);
   border-radius: 50%;
   width: 30px;
   height: 30px;
   font-size: 16px;
-  display: inline-flex; /* inline to keep flow, flex for perfect centering */
-  align-items: center; /* vertical center */
-  justify-content: center; /* horizontal center */
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   box-sizing: border-box;
-  transition: transform 0.18s ease;
+  transition: transform 180ms ease;
   padding: 0;
   margin: 0;
-  border: none; /* no extra border since bg is same as body */
   line-height: 1;
 }
-/* optional: small contrast ring (uncomment if you want a subtle outline)
-.faq-section .icon {
-  box-shadow: 0 0 0 2px rgba(0,0,0,0.06) inset;
+.faq-section details[open] .icon {
+  transform: rotate(45deg);
 }
-*/
 
-/* Ensure opened details stacks above others (so expanded content isn't clipped) */
+/* ensure expanded details sits above others */
 .faq-section details[open] {
   position: relative;
   z-index: 5;
 }
 
-/* Mobile tweaks to preserve spacing */
+/* Mobile tweaks */
 @media (max-width: 768px) {
   .faq-section summary {
     padding: 12px 14px;
   }
-  .faq-section details[open] > *:not(summary) {
+  .faq-section details[open] > .faq-body {
     padding: 12px 14px;
   }
 }
