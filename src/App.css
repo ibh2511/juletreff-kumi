@@ -309,7 +309,6 @@ textarea {
   max-height: 2000px; /* large enough for tallest FAQ */
   opacity: 1;
   padding: 15px;
-  margin-top: -15px;
   margin-bottom: 20px;
 }
 
@@ -325,12 +324,19 @@ textarea {
   align-items: center;
   justify-content: center;
   line-height: 1;
-  transition: transform 180ms ease;
+  position: relative;
 }
 
-/* Rotate + into × when open (looks like minus) */
-.faq-section details[open] .icon {
-  transform: rotate(45deg);
+/* Hide the original + text and use ::before instead */
+.faq-section .icon::before {
+  content: "+";
+  position: absolute;
+  transition: opacity 120ms ease;
+}
+
+/* When open, fade out + and show − */
+.faq-section details[open] .icon::before {
+  content: "−";
 }
 
 /* Link styles */
