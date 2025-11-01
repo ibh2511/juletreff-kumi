@@ -374,7 +374,8 @@ textarea {
 
 @media (max-width: 768px) {
   body {
-    padding: 0 0 25px 0; 
+    padding: 0 0 25px 0;
+  }
   .container {
     grid-template-columns: 1fr;
     grid-template-rows: repeat(4, auto);
