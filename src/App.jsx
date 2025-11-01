@@ -169,13 +169,28 @@ export default function App() {
 
               <div className="faq-body">
                 <p>
-                  Oslo Vegansamfunn arrangerer juletreff på KUMI i Oslobukta
-                  torsdag 19. desember kl 17.00–19.00.
+                  Oslo vegansamfunn arrangerer juletreff på KUMI i Oslobukta
+                  fredag 19. desember kl 19.00, hvor vi har lokalet for oss
+                  selv.
                 </p>
                 <p>
-                  Meld deg på innen <b>mandag 16. desember</b>, så får du
-                  e-postbekreftelse. Ta gjerne med en venn 💚
+                  Etterpå går vi videre til{" "}
+                  <a
+                    href="https://www.tolvteogkranen.no/kranen"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Kranen cocktailbar
+                  </a>
+                  i 13. etasje på MUNCH, ca. 200 meter unna (23 års
+                  aldersgrense)
                 </p>
+                <p>
+                  Ønsker du å bli med? Meld deg på via skjemaet over innen
+                  <b>tirsdag 16. desember</b>, og du vil motta en bekreftelse
+                  per e-post.
+                </p>
+                <p>Inviter gjerne med deg en venn 💚</p>
               </div>
             </details>
 
@@ -198,7 +213,7 @@ export default function App() {
                   .
                 </p>
                 <hr />
-                <h4>Hovedretter</h4>
+                <h3>Hovedretter</h3>
                 <p>
                   🌰 Nøttestek
                   <br />
@@ -212,16 +227,18 @@ export default function App() {
                   <br />
                   🍷 Rødvinssaus
                 </p>
+                <br />
                 <hr />
-                <h4>Dessert</h4>
+                <h3>Dessert</h3>
                 <p>
                   🍫 Marinerte Appelsiner med Sjokolade- og Appelsinkrem
                   <br />☕ Lokal Kaffe
                 </p>
+                <br />
                 <hr />
                 <p>
-                  Spørsmål om meny/pris:{" "}
-                  <a href="mailto:kumi@kumi.no">kumi@kumi.no</a> /{" "}
+                  Har du andre spørsmål om meny, kontakt KUMI på{" "}
+                  <a href="mailto:kumi@kumi.no">kumi@kumi.no</a> / eller
                   <a href="tel:+4797302866">973 02 866</a>
                 </p>
               </div>
@@ -235,8 +252,30 @@ export default function App() {
 
               <div className="faq-body">
                 <p>
-                  Sharing-meny, seks retter: 590,- per person.
-                  Drikkepakke/drikke kommer i tillegg 🍷🍾
+                  Menyen serveres i sharing-stil, med seks utvalgte retter til
+                  590,- per person. <b>Du betaler selv der og da til KUMI.</b>
+                </p>
+                <p>
+                  Ønsker du en vinpakke, ølpakke, eller annen drikke på KUMI
+                  kommer dette i tillegg, hør med personalet 🍷🍾
+                </p>
+                <p>
+                  På Kranen, hvor det er det 23 års aldersgrense, må du være
+                  forberedt på å vise legitimasjon. Du kjøper det du ønsker,
+                  drikkemeny finner du{" "}
+                  <a
+                    href="https://drive.google.com/file/d/1ZhKilxdVjzNH5u9K0xigndzo7pTYUKle/view?usp=sharing"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    her.
+                  </a>
+                </p>
+                <hr />
+                <p>
+                  Har du andre spørsmål om pris eller tilbud, kontakt KUMI på{" "}
+                  <a href="mailto:kumi@kumi.no">kumi@kumi.no</a> / eller{" "}
+                  <a href="tel:+4797302866">973 02 866</a>
                 </p>
               </div>
             </details>
