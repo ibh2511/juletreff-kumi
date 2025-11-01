@@ -298,12 +298,32 @@ textarea {
 .faq-section details[open] > *:not(summary) {
   display: block;
   background: #444; /* requested body color */
-  color: var(--muted);
-  padding: 15px 16px;
+  color: #f4eadf;
+  margin-bottom: 20px;
+  margin-top: -15px;
+  padding: 15px;
   font-size: 14px;
   line-height: 1.6;
   letter-spacing: 0.5px;
+  font-weight: bold;
   border-top: none;
+}
+
+/* Ensure .faq-body (explicit wrapper in markup) has identical styling and is hidden when closed */
+.faq-section .faq-body {
+  background: #444;
+  color: #f4eadf;
+  margin-bottom: 20px;
+  margin-top: -15px;
+  padding: 15px;
+  font-size: 14px;
+  line-height: 1.6;
+  letter-spacing: 0.5px;
+  font-weight: bold;
+  display: block;
+}
+.faq-section details:not([open]) > .faq-body {
+  display: none;
 }
 
 /* Keep internal semantics (links / bold) styling consistent */
@@ -399,6 +419,7 @@ textarea {
   position: relative;
   left: 0;
   right: 0;
+  top: 15px;
   display: flex;
   justify-content: center;
   pointer-events: none;
