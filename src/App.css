@@ -37,6 +37,12 @@ body {
   height: auto;
 }
 
+/* hindrer horisontal glipp/scroll fra små overspill */
+html,
+body {
+  overflow-x: hidden;
+}
+
 /* Legg til desktop padding separat */
 @media (min-width: 769px) {
   body {
@@ -371,18 +377,23 @@ textarea {
 
 /* Mobile tweaks */
 @media (max-width: 768px) {
+  body {
+    display: block;
+    padding: 10px 0 25px 0;
+  }
+
+  .container {
+    width: 100vw;
+    margin: 0;
+  }
+
   .faq-section summary {
     padding: 12px 14px;
   }
   .faq-section details[open] > .faq-body {
     padding: 12px 14px;
   }
-}
 
-@media (max-width: 768px) {
-  body {
-    padding: 10px 0 25px 0;
-  }
   .container {
     grid-template-columns: 1fr;
     grid-template-rows: repeat(4, auto);
