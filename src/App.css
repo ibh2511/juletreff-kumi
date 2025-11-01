@@ -311,15 +311,15 @@ textarea {
 
 /* Fixed, centered footer with robot arm emoji */
 .robot-footer {
-  position: fixed;
+  position: relative;
   left: 0;
   right: 0;
-  bottom: 12px;            /* space from bottom */
+  bottom: 12px;
   display: flex;
   justify-content: center;
-  pointer-events: none;    /* let clicks pass through */
+  pointer-events: none;
   z-index: 9999;
-  font-size: 28px;
+  font-size: 20px;
   line-height: 1;
   user-select: none;
   -webkit-user-select: none;
