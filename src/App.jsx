@@ -79,6 +79,9 @@ export default function App() {
             <div className="msg thanks">
               <h3>🎉 Takk for påmeldingen! 🎉</h3>
               <p>Sjekk e-posten din for bekreftelse 📬</p>
+              <p>
+                <small>Sjekk søppelpost/spam</small>
+              </p>
             </div>
           )}
 
