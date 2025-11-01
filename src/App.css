@@ -381,7 +381,7 @@ textarea {
 
 @media (max-width: 768px) {
   body {
-    padding: 0 10px 25px 0;
+    padding: 0 10px 0 25px;
   }
   .container {
     grid-template-columns: 1fr;
