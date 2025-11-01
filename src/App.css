@@ -16,6 +16,7 @@ body,
 #root {
   height: 100%; /* ensure the root fills the viewport for proper centering */
   min-height: 100vh;
+  min-height: 100%; /* behold minst høyde for root/html */
 }
 body {
   margin: 0;
@@ -28,12 +29,13 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  /* added: center everything in viewport */
+  /* center everything in viewport */
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 30px;
-  min-height: 100vh; /* ensure vertical centering even on small screens */
+  min-height: 100vh; /* sikrer vertikal sentrering */
+  height: auto; /* viktig: la body vokse med innholdet */
 }
 
 /* center page both axes reliably */
