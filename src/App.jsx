@@ -3,12 +3,25 @@ import "./App.css"
 import "./labelFloat.js"
 
 const GAS_URL =
-  "https://script.google.com/macros/s/AKfycbzDH2lXegWdaV9LASi_7y7aTTYIHKhr7VBJrSAJeSAtbhrqQ6fT3lkqL-bQkreVp-7b/exec" // <-- bytt
+  "https://script.google.com/macros/s/AKfycbzDH2lXegWdaV9LASi_7y7aTTYIHKhr7VBJrSAJeSAtbhrqQ6fT3lkqL-bQkreVp-7b/exec"
+
+// Bildene som skal veksle mellom
+const IMAGES = ["/images/kumi.jpeg", "/images/munch.jpg"]
 
 export default function App() {
   const [status, setStatus] = useState(null) // null | "ok" | "waitlist" | "duplicate" | "error"
   const [sending, setSending] = useState(false)
+  const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const iframeRef = useRef(null)
+
+  // Fade mellom bilder hvert 5. sekund
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % IMAGES.length)
+    }, 5000) // 5000ms = 5 sekunder
+
+    return () => clearInterval(interval)
+  }, [])
 
   useEffect(() => {
     function onMessage(evt) {
@@ -32,14 +45,19 @@ export default function App() {
     <>
       <div className="page">
         <div className="container">
-          {/* Bilde */}
+          {/* Bilde med fade */}
           <div className="booking-image">
-            <img
-              className="booking-img"
-              src="https://i.imgur.com/VztRpbC.jpeg"
-              alt="Juletreff på KUMI"
-              loading="lazy"
-            />
+            {IMAGES.map((src, index) => (
+              <img
+                key={src}
+                className={`booking-img ${
+                  index === currentImageIndex ? "active" : ""
+                }`}
+                src={src}
+                alt={`Juletreff på KUMI ${index + 1}`}
+                loading="lazy"
+              />
+            ))}
           </div>
 
           {/* Skjema */}
