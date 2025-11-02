@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState } from "react"
 import "./App.css"
-import { setupFloatingLabels } from "./labelFloat.js"
+import { setupFloatingLabels } from "./labelFloat.js";
 import { setupFaqAccordion } from "./faqAccordion.js"
+import { setupVisitorTracking } from "./visitorTracking.js"
+import AdminStats from "./AdminStats.jsx"
 
 const GAS_URL =
   "https://script.google.com/macros/s/AKfycbwOxLWolDJPu8m7ChUPiIyv2eCQxrgge8MBOOps6pZczXlG_47BA_qNTdmnSlScVcZe/exec"
@@ -11,7 +13,22 @@ export default function App() {
   const [status, setStatus] = useState(null) // null | "ok" | "waitlist" | "duplicate" | "error"
   const [sending, setSending] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [visitorInfo, setVisitorInfo] = useState(null)
+  const [showAdmin, setShowAdmin] = useState(false)
   const iframeRef = useRef(null)
+
+  // Sjekk om admin-siden skal vises
+  useEffect(() => {
+    const checkAdminRoute = () => {
+      const hash = window.location.hash
+      const pathname = window.location.pathname
+      setShowAdmin(hash === '#admin' || pathname.includes('/admin'))
+    }
+    
+    checkAdminRoute()
+    window.addEventListener('hashchange', checkAdminRoute)
+    return () => window.removeEventListener('hashchange', checkAdminRoute)
+  }, [])
 
   // Fade mellom bilder hvert 4.5 sekund
   useEffect(() => {
@@ -23,12 +40,17 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    const teardownLabels = setupFloatingLabels()
-    const teardownFaq = setupFaqAccordion()
+    const teardownLabels = setupFloatingLabels();
+    const teardownFaq = setupFaqAccordion();
+    
+    // Sett opp visitor tracking
+    const visitor = setupVisitorTracking();
+    setVisitorInfo(visitor);
+    
     return () => {
-      teardownLabels?.()
-      teardownFaq?.()
-    }
+      teardownLabels?.();
+      teardownFaq?.();
+    };
   }, [])
 
   useEffect(() => {
@@ -51,7 +73,10 @@ export default function App() {
 
   return (
     <>
-      <div className="page">
+      {showAdmin ? (
+        <AdminStats />
+      ) : (
+        <div className="page">
         <div className="container">
           {/* Bilde med fade */}
           <div className="booking-image">
@@ -197,8 +222,8 @@ export default function App() {
 
               <div className="faq-body">
                 <p>
-                  Oslo vegansamfunn arrangerer juletreff på KUMI i Oslobukta,{" "}
-                  <b>fredag 19. desember kl 19.00,</b> hvor vi har lokalet for
+                  Oslo vegansamfunn arrangerer juletreff på KUMI i Oslobukta{" "}
+                  <b>fredag 19. desember kl. 19.00,</b> hvor vi har lokalet for
                   oss selv.
                 </p>
                 <p>
@@ -210,11 +235,11 @@ export default function App() {
                   >
                     Kranen
                   </a>{" "}
-                  cocktailbar i 13. etasje på <b>MUNCH</b> ca. 200 meter unna (
-                  <i>23 års aldersgrense</i>)
+                  cocktailbar i 13. etasje på <b>MUNCH,</b> ca. 200 meter unna (
+                  <i>23 års aldersgrense</i>).
                 </p>
                 <p>
-                  Ønsker du å bli med? Meld deg på via skjemaet over, innen{" "}
+                  Ønsker du å bli med? Meld deg på via skjemaet over innen{" "}
                   <b>tirsdag 16. desember,</b> og du vil motta en bekreftelse
                   per e-post.
                 </p>
@@ -277,7 +302,7 @@ export default function App() {
               <div className="faq-body">
                 <p>
                   Menyen serveres i sharing-stil, med seks utvalgte retter til
-                  590,- per person. <b>Du betaler selv der og da til KUMI.</b>
+                  590 kr per person. <b>Du betaler selv der og da til KUMI.</b>
                 </p>
                 <p>
                   Ønsker du en vinpakke, ølpakke, eller annen drikke på KUMI
