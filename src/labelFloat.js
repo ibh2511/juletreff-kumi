@@ -3,17 +3,22 @@ document.addEventListener("DOMContentLoaded", () => {
   const fields = document.querySelectorAll(
     ".form-group input, .form-group textarea"
   )
-  fields.forEach((el) => {
-    const toggle = () => {
-      if (el.value && el.value.trim() !== "") {
-        el.classList.add("has-content")
-      } else {
-        el.classList.remove("has-content")
-      }
+
+  const sync = (el) => {
+    if (el.value.trim()) {
+      el.classList.add("has-content")
+    } else {
+      el.classList.remove("has-content")
     }
-    el.addEventListener("input", toggle)
-    el.addEventListener("change", toggle)
-    // init (for forhåndsutfylte felt/autofill)
-    toggle()
-  })
+  }
+
+  const hydrate = () => {
+    fields.forEach((field) => {
+      sync(field)
+      field.addEventListener("input", () => sync(field))
+      field.addEventListener("blur", () => sync(field))
+    })
+  }
+
+  hydrate()
 })
