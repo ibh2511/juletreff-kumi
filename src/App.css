@@ -29,12 +29,10 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 
-  /* FJERN FLEX-SENTERERING */
-  /* display: flex; */
-  /* align-items: center; */
-  /* justify-content: center; */
-
-  padding: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0; /* ENDRE FRA 30px TIL 0 */
   min-height: 100vh;
   height: auto;
 }
@@ -45,12 +43,18 @@ body {
   overflow-x: hidden;
 }
 
+/* Legg til desktop padding separat */
+@media (min-width: 769px) {
+  body {
+    padding: 30px;
+  }
+}
+
 .page {
-  /* Denne er ikke lenger nødvendig for sentrering */
-  /* min-height: 100vh; */
-  /* display: flex; */
-  /* align-items: center; */
-  /* justify-content: center; */
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: 0;
   box-sizing: border-box;
 }
@@ -65,7 +69,7 @@ body {
   border-radius: 15px;
   overflow: visible;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-  margin: 0 auto; /* Nøkkelen: sentrerer seg selv */
+  margin: 0 auto;
   align-self: center;
 }
 
@@ -374,10 +378,16 @@ textarea {
 /* Mobile tweaks */
 @media (max-width: 768px) {
   body {
-    padding: 0 0 25px 0; /* kun bunn-padding, ingen side-padding */
+    display: block;
+    padding: 10px 2px 25px 2px;
   }
+
   .container {
-    margin: 0; /* fjern auto-margin på mobil for full bredde */
+    width: 100%;
+    max-width: 100%;
+    margin: 0;
+    border-radius: 0;
+    overflow-x: hidden;
   }
 
   .faq-section summary {
