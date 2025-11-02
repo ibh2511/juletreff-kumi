@@ -1,46 +1,51 @@
-import { useEffect, useRef, useState } from "react"
-import "./App.css"
-import "./labelFloat.js"
-import "./faqAccordion.js"
+import { useEffect, useRef, useState } from "react";
+import "./App.css";
+import "./labelFloat.js";
+import { setupFaqAccordion } from "./faqAccordion.js";
 
 const GAS_URL =
-  "https://script.google.com/macros/s/AKfycbzDH2lXegWdaV9LASi_7y7aTTYIHKhr7VBJrSAJeSAtbhrqQ6fT3lkqL-bQkreVp-7b/exec"
+  "https://script.google.com/macros/s/AKfycbzDH2lXegWdaV9LASi_7y7aTTYIHKhr7VBJrSAJeSAtbhrqQ6fT3lkqL-bQkreVp-7b/exec";
 
 // Bildene som skal veksle mellom
-const IMAGES = ["images/kumi.jpeg", "images/munch.jpg"]
+const IMAGES = ["images/kumi.jpeg", "images/munch.jpg"];
 
 export default function App() {
-  const [status, setStatus] = useState(null) // null | "ok" | "waitlist" | "duplicate" | "error"
-  const [sending, setSending] = useState(false)
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const iframeRef = useRef(null)
+  const [status, setStatus] = useState(null); // null | "ok" | "waitlist" | "duplicate" | "error"
+  const [sending, setSending] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const iframeRef = useRef(null);
 
   // Fade mellom bilder hvert 4.5 sekund
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentImageIndex((prev) => (prev + 1) % IMAGES.length)
-    }, 4500) // 4500ms = 4.5 sekunder
+      setCurrentImageIndex((prev) => (prev + 1) % IMAGES.length);
+    }, 4500); // 4500ms = 4.5 sekunder
 
-    return () => clearInterval(interval)
-  }, [])
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     function onMessage(evt) {
       // Tillat bare Apps Script-domener
-      if (!/script\.google\.com|googleusercontent\.com/.test(evt.origin)) return
+      if (!/script\.google\.com|googleusercontent\.com/.test(evt.origin)) return;
 
-      const data = evt.data || {}
-      setSending(false)
+      const data = evt.data || {};
+      setSending(false);
 
-      if (data.duplicate) setStatus("duplicate")
-      else if (data.ok && data.waitlist) setStatus("waitlist")
-      else if (data.ok) setStatus("ok")
-      else setStatus("error")
+      if (data.duplicate) setStatus("duplicate");
+      else if (data.ok && data.waitlist) setStatus("waitlist");
+      else if (data.ok) setStatus("ok");
+      else setStatus("error");
     }
 
-    window.addEventListener("message", onMessage)
-    return () => window.removeEventListener("message", onMessage)
-  }, [])
+    window.addEventListener("message", onMessage);
+    return () => window.removeEventListener("message", onMessage);
+  }, []);
+
+  useEffect(() => {
+    const teardown = setupFaqAccordion();
+    return () => teardown();
+  }, []);
 
   return (
     <>
@@ -277,12 +282,7 @@ export default function App() {
                 <p>
                   Du kjøper det du ønsker på Kranen, drikkemeny finner du{" "}
                   <a
-                    href="https://drive.google.com/file/d/1ZhKilxdVjzNH5u9K0xigndzo7pTYUKle/view?usp=sharing"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    her
-                  </a>
+                    href="https://drive.google.com/file/d/1ZhKilxdVjzNH5u9K0
                 </p>
                 <br />
                 <hr />

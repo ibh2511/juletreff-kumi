@@ -1,10 +1,12 @@
-function initFaqAccordion() {
+export function setupFaqAccordion() {
   const allDetails = document.querySelectorAll(".faq-section details")
+  const cleanups = []
+
   allDetails.forEach((details) => {
     const summary = details.querySelector("summary")
     if (!summary) return
 
-    summary.addEventListener("click", (event) => {
+    const handler = (event) => {
       event.preventDefault()
 
       if (details.open) {
@@ -19,12 +21,11 @@ function initFaqAccordion() {
       })
 
       details.open = true
-    })
-  })
-}
+    }
 
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", initFaqAccordion)
-} else {
-  initFaqAccordion()
+    summary.addEventListener("click", handler)
+    cleanups.push(() => summary.removeEventListener("click", handler))
+  })
+
+  return () => cleanups.forEach((off) => off())
 }
