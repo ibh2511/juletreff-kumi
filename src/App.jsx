@@ -286,7 +286,7 @@ export default function App() {
                 <p>
                   Du kjøper det du ønsker på Kranen, drikkemeny finner du{" "}
                   <a
-                    href="https://drive.google.com/file/d/1ZhKilxdVjzNH5u9K0
+                    href="https://drive.google.com/file/d/1ZhKilxdVjzNH5u9K0xigndzo7pTYUKle/view?usp=sharing">
                   </a>
                 </p>
                 <br />
