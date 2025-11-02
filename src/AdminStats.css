@@ -260,16 +260,19 @@
   padding: 12px 15px;
   border: 2px solid var(--muted);
   border-radius: 8px;
-  background: var(--bg);
-  color: var(--panel);
+  background: white;
+  color: #333;
   font-family: inherit;
   font-size: 16px;
   transition: border-color 0.3s ease;
+  cursor: text;
+  caret-color: #333;
 }
 
 .login-form input[type="password"]:focus {
   outline: none;
   border-color: var(--accent);
+  cursor: text;
 }
 
 .login-form input[type="password"]:disabled {
