@@ -456,3 +456,46 @@ textarea {
   user-select: none;
   -webkit-user-select: none;
 }
+
+/* 1) La kolonnene få lov til å krympe */
+.container {
+  /* før: grid-template-columns: 1fr 1fr; */
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
+/* 2) Grid-barn må også få lov til å krympe */
+.booking-image,
+.booking-form,
+.faq-section,
+.map-container {
+  min-width: 0;
+}
+
+/* 3) FAQ: sørg for at både summary og body kan bryte og ikke “drar” i bredden */
+.faq-section summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px; /* litt luft mellom tekst og ikon */
+  min-width: 0; /* <- viktig i flex-kontekst */
+}
+
+.faq-section .faq-body {
+  box-sizing: border-box; /* padding skal inngå i bredden */
+  max-width: 100%; /* aldri bredere enn container */
+  min-width: 0; /* tillat krymping */
+  overflow-wrap: anywhere; /* bryt lange ord/lenker */
+  word-break: break-word; /* ekstra sikkerhet for eldre motorer */
+  /* behold dine overgangsregler (max-height/opacity), men ikke animer side-padding/margin */
+}
+
+/* 4) Hvis noe inni .faq-body er flex/grid, gi samme “kan krympe”-regel */
+.faq-section .faq-body > * {
+  min-width: 0;
+}
+
+/* 5) (Valgfritt, ekstra robust): isolér bredderegning for innholdet
+   - gjør at innholdet ikke påvirker foreldres inline-size */
+.faq-section {
+  contain: inline-size;
+} /* moderne browsere */
