@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react"
 import "./App.css"
 import "./labelFloat.js"
+import "./faqAccordion.js"
 
 const GAS_URL =
   "https://script.google.com/macros/s/AKfycbzDH2lXegWdaV9LASi_7y7aTTYIHKhr7VBJrSAJeSAtbhrqQ6fT3lkqL-bQkreVp-7b/exec"
@@ -63,7 +64,7 @@ export default function App() {
           {/* Skjema */}
           <div className="booking-form">
             <h2>✨Juletreff på KUMI🥂</h2>
-            <div className="subheader">19. desember kl 17.00</div>
+            <div className="subheader">19. desember kl 19.00</div>
 
             {status === "duplicate" && (
               <div className="msg error">
@@ -204,7 +205,7 @@ export default function App() {
                   <i>23 års aldersgrense</i>)
                 </p>
                 <p>
-                  Ønsker du å bli med? Meld deg på via skjemaet over innen{" "}
+                  Ønsker du å bli med? Meld deg på via skjemaet over, innen{" "}
                   <b>tirsdag 16. desember,</b> og du vil motta en bekreftelse
                   per e-post.
                 </p>
@@ -271,11 +272,7 @@ export default function App() {
                 </p>
                 <p>
                   Ønsker du en vinpakke, ølpakke, eller annen drikke på KUMI
-                  kommer dette i tillegg, hør med personalet 🍷🍾
-                </p>
-                <p>
-                  På Kranen, hvor det er det 23 års aldersgrense, må du være
-                  forberedt på å vise legitimasjon.{" "}
+                  kommer dette i tillegg, snakk med personalet 🍷🍾
                 </p>
                 <p>
                   Du kjøper det du ønsker på Kranen, drikkemeny finner du{" "}
