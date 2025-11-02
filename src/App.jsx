@@ -205,7 +205,7 @@ export default function App() {
                 </p>
                 <p>
                   Ønsker du å bli med? Meld deg på via skjemaet over innen{" "}
-                  <b>tirsdag 16. desember</b>, og du vil motta en bekreftelse
+                  <b>tirsdag 16. desember,</b> og du vil motta en bekreftelse
                   per e-post.
                 </p>
                 <p>Inviter gjerne med deg en venn 💚</p>

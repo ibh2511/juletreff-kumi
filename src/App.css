@@ -43,6 +43,11 @@ body {
   overflow-x: hidden;
 }
 
+/* Unngå breddehopp når scrollbars dukker opp */
+html {
+  scrollbar-gutter: stable;
+}
+
 /* Legg til desktop padding separat */
 @media (min-width: 769px) {
   body {
@@ -304,10 +309,11 @@ textarea {
   border-bottom: 0;
 }
 
+/* FAQ body: konstant L/R padding + ingen padding/margin i transition */
 .faq-section .faq-body {
   background: #444;
   color: #f4eadf;
-  padding: 0 15px;
+  padding: 0 14px; /* var: 0 15px (hold L/R konstant) */
   font-size: 14px;
   line-height: 1.6;
   letter-spacing: 0.5px;
@@ -318,61 +324,14 @@ textarea {
   max-height: 0;
   opacity: 0;
   overflow: hidden;
-  transition: max-height 320ms cubic-bezier(0.4, 0, 0.2, 1), opacity 240ms ease,
-    padding 320ms cubic-bezier(0.4, 0, 0.2, 1),
-    margin 320ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: max-height 320ms cubic-bezier(0.4, 0, 0.2, 1), opacity 240ms ease; /* fjern padding/margin fra transition */
 }
 
 .faq-section details[open] .faq-body {
   max-height: 2000px;
   opacity: 1;
-  padding: 15px;
-  margin-bottom: 20px;
-}
-
-.faq-section .icon {
-  background: #444;
-  color: var(--muted);
-  border-radius: 50%;
-  width: 30px;
-  height: 30px;
-  font-size: 18px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-  position: relative;
-  color: transparent;
-}
-
-.faq-section .icon::before {
-  content: "+";
-  position: absolute;
-  color: var(--muted);
-  transition: content 0s;
-}
-
-.faq-section details[open] .icon::before {
-  content: "−";
-}
-
-.faq-section .faq-body a {
-  color: inherit;
-  text-decoration: underline dotted #f4eadf;
-  text-decoration-thickness: 0.75px;
-  text-underline-offset: 2px;
-}
-.faq-section .faq-body a:hover {
-  color: var(--accent);
-}
-.faq-section .faq-body b {
-  color: var(--accent);
-  font-weight: bold;
-}
-
-.faq-section .faq-body h3 {
-  font-size: 20px;
-  margin: 20px 0;
+  padding: 15px 14px; /* vertikal endres, L/R beholdes */
+  margin-bottom: 20px; /* ikke animert */
 }
 
 /* Mobile tweaks */
@@ -394,7 +353,7 @@ textarea {
     padding: 12px 14px;
   }
   .faq-section details[open] > .faq-body {
-    padding: 12px 14px;
+    padding: 12px 14px; /* kun vertikal forskjell på mobil */
   }
 
   .container {
