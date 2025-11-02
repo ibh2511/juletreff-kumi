@@ -184,32 +184,31 @@ export default function App() {
                 <span>Hvem arrangerer?</span>
                 <span className="icon">+</span>
               </summary>
-              <div className="faq-content-wrapper">
-                <div className="faq-body">
-                  <p>
-                    Oslo vegansamfunn arrangerer juletreff på KUMI i Oslobukta,{" "}
-                    <b>fredag 19. desember kl 19.00,</b> hvor vi har lokalet for
-                    oss selv.
-                  </p>
-                  <p>
-                    Etterpå går vi videre til{" "}
-                    <a
-                      href="https://www.tolvteogkranen.no/kranen"
-                      target="_blank"
-                      rel="noreferrer"
-                    >
-                      Kranen
-                    </a>{" "}
-                    cocktailbar i 13. etasje på <b>MUNCH,</b> ca. 200 meter unna
-                    (<i>23 års aldersgrense</i>)
-                  </p>
-                  <p>
-                    Ønsker du å bli med? Meld deg på via skjemaet over innen{" "}
-                    <b>tirsdag 16. desember,</b> og du vil motta en bekreftelse
-                    per e-post.
-                  </p>
-                  <p>Inviter gjerne med deg en venn 💚</p>
-                </div>
+
+              <div className="faq-body">
+                <p>
+                  Oslo vegansamfunn arrangerer juletreff på KUMI i Oslobukta,{" "}
+                  <b>fredag 19. desember kl 19.00,</b> hvor vi har lokalet for
+                  oss selv.
+                </p>
+                <p>
+                  Etterpå går vi videre til{" "}
+                  <a
+                    href="https://www.tolvteogkranen.no/kranen"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Kranen
+                  </a>{" "}
+                  cocktailbar i 13. etasje på <b>MUNCH,</b> ca. 200 meter unna (
+                  <i>23 års aldersgrense</i>)
+                </p>
+                <p>
+                  Ønsker du å bli med? Meld deg på via skjemaet over innen{" "}
+                  <b>tirsdag 16. desember,</b> og du vil motta en bekreftelse
+                  per e-post.
+                </p>
+                <p>Inviter gjerne med deg en venn 💚</p>
               </div>
             </details>
 
