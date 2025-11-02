@@ -210,8 +210,7 @@ export default function App() {
                   >
                     Kranen
                   </a>{" "}
-                  cocktailbar i 13. etasje på{" "}
-                  <span className="munch-skewed">MUNCH</span>
+                  cocktailbar i 13. etasje på <b>MUNCH</b>
                   ca. 200 meter unna (<i>23 års aldersgrense</i>)
                 </p>
                 <p>

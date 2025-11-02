@@ -396,7 +396,7 @@ textarea {
   transform-origin: bottom left;
   will-change: transform;
   font-weight: bold;
-  color: #e79e50;
+  color: var(--accent);
 }
 
 .faq-section .icon {
