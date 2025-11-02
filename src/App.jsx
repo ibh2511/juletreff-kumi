@@ -7,7 +7,7 @@ import AdminStats from "./AdminStats.jsx"
 import AdminLogin from "./AdminLogin.jsx"
 
 const GAS_URL =
-  "https://script.google.com/macros/s/AKfycbwOxLWolDJPu8m7ChUPiIyv2eCQxrgge8MBOOps6pZczXlG_47BA_qNTdmnSlScVcZe/exec"
+  "https://script.google.com/macros/s/AKfycbzFvhagmEHZ3VJEnucZoz-yvU6M8htreM_R1oL8evH-B4cX5OusWHCTNo3mkE13a0I3/exec"
 const IMAGES = ["images/kumi.jpeg", "images/munch.jpg"]
 
 export default function App() {
@@ -123,7 +123,7 @@ export default function App() {
                     <p>
                       Har du trykket{" "}
                       <a
-                        href="https://www.facebook.com/events/1536821710285210"
+                        href="https://www.facebook.com/events/664624256515915"
                         target="_blank"
                         rel="noreferrer"
                       >
@@ -265,7 +265,7 @@ export default function App() {
                       >
                         Kranen
                       </a>{" "}
-                      cocktailbar i 13. etasje på <b>MUNCH,</b> ca. 200 meter
+                      Cocktailbar i 13. etasje på <b>MUNCH,</b> ca. 200 meter
                       unna (<i>23 års aldersgrense</i>).
                     </p>
                     <p>
