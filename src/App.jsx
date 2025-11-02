@@ -338,8 +338,8 @@ export default function App() {
                       <b>Du betaler selv der og da til KUMI.</b>
                     </p>
                     <p>
-                      Ønsker du en vinpakke, ølpakke, eller annen drikke på KUMI
-                      kommer dette i tillegg, snakk med personalet 🍷🍾
+                      Ønsker du en vin, øl, eller annen drikke på KUMI kommer
+                      dette i tillegg, snakk med personalet 🍷🍾
                     </p>
                     <p>
                       Du kjøper det du ønsker på Kranen, drikkemeny finner du{" "}
