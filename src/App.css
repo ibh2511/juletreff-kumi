@@ -400,6 +400,7 @@ textarea {
   .container {
     grid-template-columns: 1fr;
     grid-template-rows: repeat(4, auto);
+    border-radius: 10px;
   }
   .booking-image,
   .booking-form,
@@ -414,7 +415,6 @@ textarea {
     min-height: 300px;
     border-bottom: 0;
   }
-  .container,
   .booking-img {
     border-radius: 10px 10px 0 0;
   }
