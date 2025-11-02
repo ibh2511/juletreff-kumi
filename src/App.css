@@ -392,11 +392,11 @@ textarea {
 
 .faq-section .faq-body .munch-skewed {
   display: inline-block;
-  transform: skewX(-12deg);
+  transform: skewX(12deg);
   transform-origin: bottom left;
   will-change: transform;
   font-weight: bold;
-  background: #e79e50;
+  color: #e79e50;
 }
 
 .faq-section .icon {
