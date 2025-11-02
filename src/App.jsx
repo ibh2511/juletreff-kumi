@@ -4,9 +4,7 @@ import { setupFloatingLabels } from "./labelFloat.js"
 import { setupFaqAccordion } from "./faqAccordion.js"
 
 const GAS_URL =
-  "https://script.google.com/macros/s/AKfycbzDH2lXegWdaV9LASi_7y7aTTYIHKhr7VBJrSAJeSAtbhrqQ6fT3lkqL-bQkreVp-7b/exec"
-
-// Bildene som skal veksle mellom
+  "https://script.google.com/macros/s/AKfycbwOxLWolDJPu8m7ChUPiIyv2eCQxrgge8MBOOps6pZczXlG_47BA_qNTdmnSlScVcZe/exec"
 const IMAGES = ["images/kumi.jpeg", "images/munch.jpg"]
 
 export default function App() {
