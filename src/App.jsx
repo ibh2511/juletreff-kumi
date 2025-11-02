@@ -250,10 +250,10 @@ export default function App() {
                 <p>🍫 Marinerte Appelsiner med Sjokolade- og Appelsinkrem</p>
                 <br />
                 <hr />
+                <p>Har du andre spørsmål om meny?</p>
                 <p>
-                  Har du andre spørsmål om meny, kontakt KUMI på{" "}
-                  <a href="mailto:kumi@kumi.no">kumi@kumi.no</a> eller{" "}
-                  <a href="tel:+4797302866">973 02 866</a>
+                  kontakt KUMI på <a href="mailto:kumi@kumi.no">kumi@kumi.no</a>{" "}
+                  eller <a href="tel:+4797302866">973 02 866</a>
                 </p>
               </div>
             </details>
