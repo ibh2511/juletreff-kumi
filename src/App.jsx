@@ -80,13 +80,15 @@ export default function App() {
                 <h3>⚠️ E-post allerede påmeldt!</h3>
                 <p>Det ser ut til at denne e-posten er registrert.</p>
                 <p>
+                  Har du trykket{" "}
                   <a
                     href="https://www.facebook.com/events/1536821710285210"
                     target="_blank"
                     rel="noreferrer"
                   >
-                    Har du trykket «Skal» på Facebook-eventet? 📅
-                  </a>
+                    «Skal»
+                  </a>{" "}
+                  på Facebook-eventet? 📅
                 </p>
               </div>
             )}
@@ -108,7 +110,7 @@ export default function App() {
             {status === "ok" && (
               <div className="msg thanks">
                 <h3>🎉 Takk for påmeldingen! 🎉</h3>
-                <p>Sjekk e-posten din for bekreftelse 📬</p>
+                <p>Bekreftelse sendt på e-post 📬</p>
                 <p>
                   <small>Sjekk søppelpost/spam</small>
                 </p>
@@ -210,8 +212,8 @@ export default function App() {
                   >
                     Kranen
                   </a>{" "}
-                  cocktailbar i 13. etasje på <b>MUNCH</b>
-                  ca. 200 meter unna (<i>23 års aldersgrense</i>)
+                  cocktailbar i 13. etasje på <b>MUNCH</b> ca. 200 meter unna (
+                  <i>23 års aldersgrense</i>)
                 </p>
                 <p>
                   Ønsker du å bli med? Meld deg på via skjemaet over, innen{" "}
