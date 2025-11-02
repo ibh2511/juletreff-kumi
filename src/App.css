@@ -204,8 +204,8 @@ form {
 }
 
 .form-group textarea + .form-label {
-  top: 16px;
-  left: 12px;
+  top: 20px;
+  left: 10px;
   transform: translateY(-50%);
 }
 
