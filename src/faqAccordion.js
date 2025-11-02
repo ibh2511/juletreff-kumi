@@ -1,23 +1,30 @@
 function initFaqAccordion() {
-  // 1. Finn alle <details>-elementene i FAQ-seksjonen
   const allDetails = document.querySelectorAll(".faq-section details")
 
-  // 2. Gå gjennom hvert enkelt <details>-element
   allDetails.forEach((details) => {
-    // 3. Legg til en lytter som reagerer når elementet åpnes eller lukkes ('toggle')
-    details.addEventListener("toggle", (event) => {
-      // Hvis elementet som ble trykket på nå er lukket, gjør ingenting.
-      if (!details.open) {
+    const summary = details.querySelector("summary")
+    if (!summary) return
+
+    summary.addEventListener("click", (event) => {
+      // 1. Stopp standard-oppførselen. Vi tar kontrollen selv.
+      event.preventDefault()
+
+      // 2. Hvis den du klikket på allerede er åpen, bare lukk den og stopp.
+      if (details.open) {
+        details.open = false
         return
       }
 
-      // 4. Hvis elementet ble åpnet, gå gjennom *alle* de andre elementene
+      // 3. Hvis den du klikket på er lukket:
+      // Først, lukk alle andre som måtte være åpne.
       allDetails.forEach((otherDetails) => {
-        // 5. Hvis vi finner et annet element som er åpent, lukk det.
-        if (otherDetails !== details && otherDetails.open) {
+        if (otherDetails.open) {
           otherDetails.open = false
         }
       })
+
+      // 4. Til slutt, åpne den du faktisk klikket på.
+      details.open = true
     })
   })
 }
