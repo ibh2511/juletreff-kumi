@@ -32,12 +32,11 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0; /* ENDRE FRA 30px TIL 0 */
+  padding: 0;
   min-height: 100vh;
   height: auto;
 }
 
-/* hindrer horisontal glipp/scroll fra små overspill */
 html,
 body {
   overflow-x: hidden;
@@ -389,6 +388,15 @@ textarea {
   opacity: 1;
   padding: 15px;
   margin-bottom: 20px;
+}
+
+.faq-section .faq-body .munch-skewed {
+  display: inline-block;
+  transform: skewX(-12deg);
+  transform-origin: bottom left;
+  will-change: transform;
+  font-weight: bold;
+  background: #e79e50;
 }
 
 .faq-section .icon {
