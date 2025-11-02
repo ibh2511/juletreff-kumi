@@ -1,6 +1,5 @@
 function initFaqAccordion() {
   const allDetails = document.querySelectorAll(".faq-section details")
-
   allDetails.forEach((details) => {
     const summary = details.querySelector("summary")
     if (!summary) return
