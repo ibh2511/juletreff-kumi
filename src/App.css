@@ -166,10 +166,20 @@ form {
 }
 
 .form-group textarea + .form-label {
-  top: 10px;
+  top: 16px;
   left: 12px;
-  transform: none;
-  font-size: 16px;
+  transform: translateY(-50%);
+}
+
+.form-group textarea:focus + .form-label,
+.form-group textarea.has-content + .form-label {
+  top: 0;
+  left: 10px;
+  transform: translateY(-50%);
+  background: var(--panel);
+  padding: 0 5px;
+  color: var(--accent);
+  font-size: 13px;
 }
 
 textarea {
