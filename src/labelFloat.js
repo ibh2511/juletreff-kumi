@@ -1,39 +1,21 @@
-const SELECTOR = ".form-group input, .form-group textarea"
+const FIELDS = ".form-group input, .form-group textarea"
 
-function sync(el) {
-  if (el.value.trim()) {
-    el.classList.add("has-content")
-  } else {
-    el.classList.remove("has-content")
-  }
+function toggleHasContent(field) {
+  if (field.value.trim()) field.classList.add("has-content")
+  else field.classList.remove("has-content")
 }
 
-function wire(el) {
-  const handler = () => sync(el)
-  sync(el)
-  el.addEventListener("input", handler)
-  el.addEventListener("blur", handler)
-  return () => {
-    el.removeEventListener("input", handler)
-    el.removeEventListener("blur", handler)
-  }
-}
-
-function hydrate() {
-  const fields = document.querySelectorAll(SELECTOR)
-  if (!fields.length) return () => {}
-
-  const cleanups = Array.from(fields).map(wire)
+export function setupFloatingLabels() {
+  const fields = Array.from(document.querySelectorAll(FIELDS))
+  const cleanups = fields.map((field) => {
+    const handler = () => toggleHasContent(field)
+    handler() // initial synk
+    field.addEventListener("input", handler)
+    field.addEventListener("blur", handler)
+    return () => {
+      field.removeEventListener("input", handler)
+      field.removeEventListener("blur", handler)
+    }
+  })
   return () => cleanups.forEach((off) => off())
-}
-
-function init() {
-  const teardown = hydrate()
-  document.addEventListener("unload", teardown, { once: true })
-}
-
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", init, { once: true })
-} else {
-  init()
 }

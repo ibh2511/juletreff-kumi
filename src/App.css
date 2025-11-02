@@ -165,6 +165,27 @@ form {
   transition: background-color 9999s ease 0s;
 }
 
+/* fjern blå/grå bakgrunn ved autofill/valid/invalid */
+.form-group input:focus,
+.form-group input:valid,
+.form-group input:invalid,
+.form-group input.has-content,
+.form-group textarea:focus,
+.form-group textarea:valid,
+.form-group textarea:invalid,
+.form-group textarea.has-content {
+  background-color: transparent !important;
+}
+
+.form-group input:-webkit-autofill,
+.form-group input:-webkit-autofill:focus,
+.form-group input:-webkit-autofill:hover {
+  -webkit-box-shadow: 0 0 0 1000px var(--panel) inset;
+  -webkit-text-fill-color: var(--ink);
+  caret-color: var(--ink);
+  transition: background-color 9999s ease 0s;
+}
+
 .form-group-row {
   display: flex;
   gap: 15px;

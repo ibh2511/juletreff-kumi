@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react"
 import "./App.css"
-import "./labelFloat.js"
+import { setupFloatingLabels } from "./labelFloat.js";
 import { setupFaqAccordion } from "./faqAccordion.js"
 
 const GAS_URL =
@@ -25,8 +25,12 @@ export default function App() {
   }, [])
 
   useEffect(() => {
-    const teardown = setupFaqAccordion()
-    return () => teardown()
+    const teardownLabels = setupFloatingLabels();
+    const teardownFaq = setupFaqAccordion();
+    return () => {
+      teardownLabels?.();
+      teardownFaq?.();
+    };
   }, [])
 
   useEffect(() => {
@@ -282,11 +286,7 @@ export default function App() {
                 <p>
                   Du kjøper det du ønsker på Kranen, drikkemeny finner du{" "}
                   <a
-                    href="https://drive.google.com/file/d/1ZhKilxdVjzNH5u9K0xigndzo7pTYUKle/view?usp=sharing"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    her
+                    href="https://drive.google.com/file/d/1ZhKilxdVjzNH5u9K0
                   </a>
                 </p>
                 <br />
