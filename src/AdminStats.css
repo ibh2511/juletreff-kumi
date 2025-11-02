@@ -23,7 +23,14 @@
   font-size: 24px;
 }
 
-.back-btn {
+.header-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.back-btn,
+.logout-btn {
   background: var(--panel);
   color: var(--ink);
   border: none;
@@ -37,9 +44,19 @@
   display: inline-block;
 }
 
-.back-btn:hover {
+.back-btn:hover,
+.logout-btn:hover {
   background: var(--accent);
   transform: translateY(-2px);
+}
+
+.logout-btn {
+  background: #dc3545;
+  color: white;
+}
+
+.logout-btn:hover {
+  background: #c82333;
 }
 
 .stats-grid {
@@ -214,4 +231,96 @@
   .admin-actions {
     flex-direction: column;
   }
+}
+
+/* Login form styling */
+.login-form {
+  max-width: 400px;
+  margin: 0 auto;
+  background: var(--panel);
+  color: var(--ink);
+  padding: 40px;
+  border-radius: 15px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.login-form .form-group {
+  margin-bottom: 25px;
+}
+
+.login-form label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: var(--accent);
+}
+
+.login-form input[type="password"] {
+  width: 100%;
+  padding: 12px 15px;
+  border: 2px solid var(--muted);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--panel);
+  font-family: inherit;
+  font-size: 16px;
+  transition: border-color 0.3s ease;
+}
+
+.login-form input[type="password"]:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.login-form input[type="password"]:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.login-btn {
+  width: 100%;
+  background: var(--accent);
+  color: var(--panel);
+  border: none;
+  padding: 15px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-family: inherit;
+  font-weight: 600;
+  font-size: 16px;
+  transition: all 0.3s ease;
+}
+
+.login-btn:hover:not(:disabled) {
+  background: var(--panel);
+  color: var(--ink);
+  transform: translateY(-2px);
+}
+
+.login-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.error-message {
+  background: #dc3545;
+  color: white;
+  padding: 10px 15px;
+  border-radius: 8px;
+  margin-bottom: 20px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.login-info {
+  text-align: center;
+  margin-top: 30px;
+  padding-top: 20px;
+  border-top: 1px solid var(--muted);
+}
+
+.login-info p {
+  margin: 0;
+  color: var(--muted);
 }

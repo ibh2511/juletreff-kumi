@@ -36,6 +36,11 @@ export default function AdminStats() {
     }
   }
 
+  const handleLogout = () => {
+    sessionStorage.removeItem("juletreff-admin-auth")
+    window.location.href = "/juletreff-kumi/"
+  }
+
   if (!stats || !globalStats) {
     return <div className="admin-loading">Laster statistikk...</div>
   }
@@ -54,12 +59,17 @@ export default function AdminStats() {
     <div className="admin-container">
       <div className="admin-header">
         <h1>📊 Juletreff KUMI - Admin Statistikk</h1>
-        <button
-          className="back-btn"
-          onClick={() => (window.location.href = "/juletreff-kumi/")}
-        >
-          ← Tilbake til påmelding
-        </button>
+        <div className="header-actions">
+          <button
+            className="back-btn"
+            onClick={() => (window.location.href = "/juletreff-kumi/")}
+          >
+            ← Tilbake til påmelding
+          </button>
+          <button className="logout-btn" onClick={handleLogout}>
+            🚪 Logg ut
+          </button>
+        </div>
       </div>
 
       <div className="stats-grid">

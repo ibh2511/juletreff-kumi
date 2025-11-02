@@ -4,6 +4,7 @@ import { setupFloatingLabels } from "./labelFloat.js"
 import { setupFaqAccordion } from "./faqAccordion.js"
 import { setupVisitorTracking } from "./visitorTracking.js"
 import AdminStats from "./AdminStats.jsx"
+import AdminLogin from "./AdminLogin.jsx"
 
 const GAS_URL =
   "https://script.google.com/macros/s/AKfycbwOxLWolDJPu8m7ChUPiIyv2eCQxrgge8MBOOps6pZczXlG_47BA_qNTdmnSlScVcZe/exec"
@@ -15,6 +16,7 @@ export default function App() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [visitorInfo, setVisitorInfo] = useState(null)
   const [showAdmin, setShowAdmin] = useState(false)
+  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false)
   const iframeRef = useRef(null)
 
   // Sjekk om admin-siden skal vises
@@ -22,7 +24,14 @@ export default function App() {
     const checkAdminRoute = () => {
       const hash = window.location.hash
       const pathname = window.location.pathname
-      setShowAdmin(hash === "#admin" || pathname.includes("/admin"))
+      const shouldShowAdmin = hash === "#admin" || pathname.includes("/admin")
+      setShowAdmin(shouldShowAdmin)
+
+      // Sjekk autentisering ved admin-tilgang
+      if (shouldShowAdmin) {
+        const isAuth = sessionStorage.getItem("juletreff-admin-auth") === "true"
+        setIsAdminAuthenticated(isAuth)
+      }
     }
 
     checkAdminRoute()
@@ -71,10 +80,18 @@ export default function App() {
     return () => window.removeEventListener("message", onMessage)
   }, [])
 
+  const handleAdminLogin = () => {
+    setIsAdminAuthenticated(true)
+  }
+
   return (
     <>
       {showAdmin ? (
-        <AdminStats />
+        isAdminAuthenticated ? (
+          <AdminStats />
+        ) : (
+          <AdminLogin onLoginSuccess={handleAdminLogin} />
+        )
       ) : (
         <>
           <div className="page">
