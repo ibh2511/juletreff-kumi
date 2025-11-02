@@ -3,6 +3,7 @@ import {
   getVisitorInfo,
   resetVisitorTracking,
   getGlobalStatistics,
+  getGlobalStatisticsSync,
   resetAllStats,
 } from "./visitorTracking.js"
 import "./AdminStats.css"
@@ -19,11 +20,19 @@ export default function AdminStats() {
     return () => clearInterval(interval)
   }, [])
 
-  const loadStats = () => {
+  const loadStats = async () => {
     const visitorInfo = getVisitorInfo()
-    const globalInfo = getGlobalStatistics()
     setStats(visitorInfo)
-    setGlobalStats(globalInfo)
+
+    // Prøv å hente global statistikk fra backend
+    try {
+      const globalInfo = await getGlobalStatistics()
+      setGlobalStats(globalInfo)
+    } catch (error) {
+      // Fallback til lokal statistikk
+      const localInfo = getGlobalStatisticsSync()
+      setGlobalStats(localInfo)
+    }
   }
 
   const handleReset = () => {
@@ -74,13 +83,38 @@ export default function AdminStats() {
 
       <div className="stats-grid">
         <div className="stat-card">
-          <div className="stat-number">{globalStats.totalVisitors}</div>
+          <div className="stat-number">{globalStats.totalUniqueVisitors}</div>
           <div className="stat-label">Totalt unike besøkende</div>
+          <small
+            style={{
+              color: "var(--muted)",
+              fontSize: "12px",
+              marginTop: "5px",
+              display: "block",
+            }}
+          >
+            🌐 Global statistikk fra alle enheter
+          </small>
+        </div>
+
+        <div className="stat-card">
+          <div className="stat-number">{globalStats.totalVisits || "N/A"}</div>
+          <div className="stat-label">Totale besøk</div>
         </div>
 
         <div className="stat-card">
           <div className="stat-number">{stats.visitCount || 0}</div>
           <div className="stat-label">Dine besøk</div>
+          <small
+            style={{
+              color: "var(--muted)",
+              fontSize: "12px",
+              marginTop: "5px",
+              display: "block",
+            }}
+          >
+            📱 På denne enheten/browseren
+          </small>
         </div>
 
         <div className="stat-card">
@@ -135,15 +169,30 @@ export default function AdminStats() {
           <code>your-domain.com/juletreff-kumi/#admin</code>
         </p>
 
-        <h3>📝 Notater:</h3>
+        <h3>� Om statistikken:</h3>
         <ul>
-          <li>Data lagres i brukerens localStorage (browser-spesifikt)</li>
-          <li>Statistikk oppdateres automatisk hvert 5. sekund</li>
           <li>
-            Nullstilling sletter ALL tracking-data (inkludert global statistikk)
+            <strong>Totalt unike besøkende:</strong> Ekte globale data fra alle
+            enheter/browsere (via Google Apps Script)
           </li>
-          <li>Hver unique browser/device telles som egen besøkende</li>
-          <li>Global statistikk viser totalt på denne enheten/browseren</li>
+          <li>
+            <strong>Totale besøk:</strong> Alle besøk fra alle brukere
+            sammenlagt
+          </li>
+          <li>
+            <strong>Dine besøk:</strong> Kun dine besøk på denne
+            enheten/browseren
+          </li>
+          <li>Data synkroniseres automatisk til Google Sheets backend</li>
+        </ul>
+
+        <h3>📝 Tekniske notater:</h3>
+        <ul>
+          <li>Global statistikk hentes fra Google Apps Script backend</li>
+          <li>Fallback til lokal data hvis backend er utilgjengelig</li>
+          <li>Visitor tracking fungerer på tvers av enheter og browsere</li>
+          <li>Statistikk oppdateres automatisk hvert 5. sekund</li>
+          <li>Nullstilling sletter kun lokal tracking-data</li>
         </ul>
       </div>
     </div>
