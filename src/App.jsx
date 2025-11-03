@@ -274,8 +274,8 @@ export default function App() {
                       bekreftelse per e-post.
                     </p>
                     <p>
-                      Begrensert antall plasser, så det lønner seg å være tidlig
-                      ute! Inviter gjerne med deg en venn 💚
+                      Det er begrenset antall plasser, så det lønner seg å være
+                      tidlig ute! Inviter gjerne med deg en venn 💚
                     </p>
                   </div>
                 </details>
