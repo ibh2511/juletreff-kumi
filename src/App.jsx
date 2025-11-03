@@ -273,7 +273,10 @@ export default function App() {
                       <b>tirsdag 16. desember,</b> og du vil motta en
                       bekreftelse per e-post.
                     </p>
-                    <p>Inviter gjerne med deg en venn 💚</p>
+                    <p>
+                      Begrensert antall plasser, så det lønner seg å være tidlig
+                      ute! Inviter gjerne med deg en venn 💚
+                    </p>
                   </div>
                 </details>
 
