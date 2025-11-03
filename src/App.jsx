@@ -252,9 +252,9 @@ export default function App() {
 
                   <div className="faq-body">
                     <p>
-                      Oslo vegansamfunn arrangerer juletreff på KUMI i Oslobukta{" "}
-                      <b>fredag 19. desember kl. 19.00,</b> hvor vi har lokalet
-                      for oss selv.
+                      Oslo vegansamfunn og Vegan Norway arrangerer juletreff på
+                      KUMI i Oslobukta <b>fredag 19. desember kl. 19.00,</b>{" "}
+                      hvor vi har lokalet for oss selv.
                     </p>
                     <p>
                       Etterpå går vi videre til{" "}
