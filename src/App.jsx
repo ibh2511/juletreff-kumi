@@ -39,11 +39,11 @@ export default function App() {
     return () => window.removeEventListener("hashchange", checkAdminRoute)
   }, [])
 
-  // Fade mellom bilder hvert 4.5 sekund
+  // Fade mellom bilder hvert 4 sekund
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentImageIndex((prev) => (prev + 1) % IMAGES.length)
-    }, 4500) // 4500ms = 4.5 sekunder
+    }, 4000) // 4000ms = 4 sekunder
 
     return () => clearInterval(interval)
   }, [])
