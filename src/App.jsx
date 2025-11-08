@@ -349,11 +349,13 @@ export default function App() {
                       <b>Du betaler selv der og da til KUMI.</b>{" "}
                     </p>
                     <p>
-                      Du må gi beskjed innen <b>16. desember</b> dersom du
-                      likevel ikke skal være med. Hvis du ikke melder deg av
-                      innen fristen (se e-posten for mer), vil du få et
-                      Vipps-krav på 300 kr i no-show gebyr, som betales videre
-                      til KUMI.
+                      <i>
+                        Du må gi beskjed innen <b>16. desember</b> dersom du
+                        likevel ikke skal være med. Hvis du ikke melder deg av
+                        innen fristen (se e-posten for mer), vil du få et
+                        Vipps-krav på 300 kr i no-show gebyr, som betales videre
+                        til KUMI.
+                      </i>
                     </p>
                     <p>
                       Ønsker du vin, øl, eller annen drikke på KUMI kommer dette
