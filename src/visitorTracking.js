@@ -6,7 +6,7 @@ const STATS_KEY = "juletreff-kumi-stats"
 // Google Apps Script URL for visitor tracking
 // OPPDATER DENNE MED DIN EGEN WEB APP URL ETTER DEPLOYMENT:
 const GAS_VISITOR_URL =
-  "https://script.google.com/macros/s/AKfycbwG9At0bFDn2uZ6XycbYjUR3-0lPPZSogiSxUCwRc8YSIPddp-FGwU441uN_JS1H1IU/exec"
+  "https://script.google.com/macros/s/AKfycbywGzAlQxUVl9UiWvF1b2Ms0-lQNFnz1sui0X-w5JtN6VNacT19yj6KTxurZ-f1-z8c/exec"
 
 // Send visitor data til backend (silent - ingen error handling som forstyrrer UX)
 async function sendVisitorToBackend(visitorData) {
