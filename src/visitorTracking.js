@@ -6,11 +6,65 @@ const STATS_KEY = "juletreff-kumi-stats"
 // Google Apps Script URL for visitor tracking
 // OPPDATER DENNE MED DIN EGEN WEB APP URL ETTER DEPLOYMENT:
 const GAS_VISITOR_URL =
-  "https://script.google.com/macros/s/AKfycbwG9At0bFDn2uZ6XycbYjUR3-0lPPZSogiSxUCwRc8YSIPddp-FGwU441uN_JS1H1IU/exec"
+  "https://script.google.com/macros/s/AKfycbykn1AAJ3G3_geBNOuOwyz6wKSu9cNlGvt19Kt8YSQ4NFlOhgR1murpSqlzwmjiRH4I/exec"
+
+// Hent geolokasjon data
+async function getGeolocationData() {
+  try {
+    // Først prøv browser geolocation API
+    const position = await new Promise((resolve, reject) => {
+      if (!navigator.geolocation) {
+        reject(new Error("Geolocation not supported"))
+      }
+
+      navigator.geolocation.getCurrentPosition(resolve, reject, {
+        timeout: 10000,
+        enableHighAccuracy: true,
+        maximumAge: 300000, // 5 min cache
+      })
+    })
+
+    const { latitude, longitude } = position.coords
+
+    // Deretter hent land/by fra koordinatene via reverse geocoding
+    try {
+      const geoResponse = await fetch(
+        `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${latitude}&longitude=${longitude}&localityLanguage=no`
+      )
+      const geoData = await geoResponse.json()
+
+      return {
+        latitude: latitude.toFixed(6),
+        longitude: longitude.toFixed(6),
+        country: geoData.countryName || "Unknown",
+        city: geoData.city || geoData.locality || "Unknown",
+      }
+    } catch (error) {
+      // Fallback hvis reverse geocoding feiler
+      return {
+        latitude: latitude.toFixed(6),
+        longitude: longitude.toFixed(6),
+        country: "Unknown",
+        city: "Unknown",
+      }
+    }
+  } catch (error) {
+    // Fallback hvis geolocation feiler
+    return {
+      latitude: "Not available",
+      longitude: "Not available",
+      country: "Unknown",
+      city: "Unknown",
+    }
+  }
+}
 
 // Send visitor data til backend (silent - ingen error handling som forstyrrer UX)
 async function sendVisitorToBackend(visitorData) {
   try {
+    // Hent geolokasjon data asynkront
+    const geoData = await getGeolocationData()
+
     const formData = new FormData()
     formData.append("action", "track_visitor")
     formData.append("visitorId", visitorData.visitorId)
@@ -18,6 +72,10 @@ async function sendVisitorToBackend(visitorData) {
     formData.append("timestamp", Date.now())
     formData.append("userAgent", navigator.userAgent)
     formData.append("language", navigator.language)
+    formData.append("latitude", geoData.latitude)
+    formData.append("longitude", geoData.longitude)
+    formData.append("country", geoData.country)
+    formData.append("city", geoData.city)
 
     // Send async uten å vente på svar (for ikke å påvirke brukeropplevelse)
     fetch(GAS_VISITOR_URL, {
@@ -29,7 +87,7 @@ async function sendVisitorToBackend(visitorData) {
       console.log("📊 Visitor tracking sendt (backend unavailable)")
     })
 
-    console.log("📊 Visitor data sendt til backend")
+    console.log("📊 Visitor data sendt til backend (inkl. geolokasjon)")
   } catch (error) {
     console.log("📊 Backend tracking utilgjengelig")
   }
