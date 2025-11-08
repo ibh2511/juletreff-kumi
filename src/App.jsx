@@ -7,7 +7,7 @@ import AdminStats from "./AdminStats.jsx"
 import AdminLogin from "./AdminLogin.jsx"
 
 const GAS_URL =
-  "https://script.google.com/macros/s/AKfycby4IttVo_ct7ysYmnHvxAyM0FT_wSwTZq4QpgzNhRPnIF9YHnr1JNRVMp8ib3B3E3YN/exec"
+  "https://script.google.com/macros/s/AKfycbwgfaKMu_y216LWyLKoKBOYmRIeyPmiKRUQ-06IuzwAutrQuOdmKdmh8-Cdg5AQQH1_/exec"
 const IMAGES = ["images/kumi.jpeg", "images/munch.jpg"]
 
 export default function App() {
@@ -346,11 +346,14 @@ export default function App() {
                     <p>
                       Menyen serveres i sharing-stil, med seks utvalgte retter
                       til 590 kr per person.{" "}
-                      <b>Du betaler selv der og da til KUMI.</b> Du må gi
-                      beskjed innen 16. desember dersom du likevel ikke skal
-                      være med. Hvis du ikke melder deg av (se epost for mer)
-                      innen fristen, vil du få et Vipps-krav på 300 kr for
-                      no-show-gebyr, som betales videre til Kumi.
+                      <b>Du betaler selv der og da til KUMI.</b>{" "}
+                    </p>
+                    <p>
+                      Du må gi beskjed innen 16. desember dersom du likevel ikke
+                      skal være med. Hvis du ikke melder deg av{" "}
+                      <i>(se epost for mer)</i> innen fristen, vil du få et
+                      Vipps-krav på 300 kr for no-show gebyr, som betales videre
+                      til Kumi.
                     </p>
                     <p>
                       Ønsker du vin, øl, eller annen drikke på KUMI kommer dette
