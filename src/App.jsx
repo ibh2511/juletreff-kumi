@@ -76,9 +76,122 @@ export default function App() {
       else setStatus("error")
     }
 
+    // iOS fallback: Sjekk iframe innhold etter en forsinkelse
+    function checkIframeContent() {
+      if (!iframeRef.current || !sending) return
+
+      try {
+        const iframeDoc =
+          iframeRef.current.contentDocument ||
+          iframeRef.current.contentWindow?.document
+        if (iframeDoc) {
+          const bodyText = iframeDoc.body?.innerText || ""
+
+          // Prøv å parse respons fra iframe innhold
+          if (
+            bodyText.includes('"duplicate"') ||
+            bodyText.includes("duplicate")
+          ) {
+            setSending(false)
+            setStatus("duplicate")
+          } else if (
+            bodyText.includes('"waitlist"') &&
+            bodyText.includes('"ok"')
+          ) {
+            setSending(false)
+            setStatus("waitlist")
+          } else if (
+            bodyText.includes('"ok"') ||
+            bodyText.includes("success")
+          ) {
+            setSending(false)
+            setStatus("ok")
+          } else if (
+            bodyText.includes('"error"') ||
+            bodyText.includes("error")
+          ) {
+            setSending(false)
+            setStatus("error")
+          }
+        }
+      } catch (error) {
+        // Cross-origin eller andre feil - bruk timeout fallback
+        console.log("Iframe content check failed, using timeout fallback")
+      }
+    }
+
     window.addEventListener("message", onMessage)
-    return () => window.removeEventListener("message", onMessage)
-  }, [])
+
+    // iOS fallback: Sjekk iframe innhold hver 500ms når vi sender
+    let pollInterval
+    if (sending) {
+      pollInterval = setInterval(checkIframeContent, 500)
+
+      // Timeout fallback hvis ingenting skjer etter 10 sekunder
+      setTimeout(() => {
+        if (sending) {
+          setSending(false)
+          setStatus("ok") // Anta suksess siden e-post sendes ut
+        }
+      }, 10000)
+    }
+
+    return () => {
+      window.removeEventListener("message", onMessage)
+      if (pollInterval) clearInterval(pollInterval)
+    }
+  }, [sending])
+
+  const handleFormSubmit = () => {
+    setSending(true)
+
+    // iOS Safari fallback: Legg til onload listener på iframe
+    if (iframeRef.current) {
+      const handleIframeLoad = () => {
+        // Vent litt for at innholdet skal være klart
+        setTimeout(() => {
+          try {
+            const iframeDoc =
+              iframeRef.current?.contentDocument ||
+              iframeRef.current?.contentWindow?.document
+            if (iframeDoc) {
+              const bodyText = iframeDoc.body?.innerText || ""
+
+              if (bodyText.includes("duplicate")) {
+                setSending(false)
+                setStatus("duplicate")
+              } else if (
+                bodyText.includes("waitlist") &&
+                bodyText.includes("ok")
+              ) {
+                setSending(false)
+                setStatus("waitlist")
+              } else if (
+                bodyText.includes("ok") ||
+                bodyText.includes("success")
+              ) {
+                setSending(false)
+                setStatus("ok")
+              } else if (bodyText.includes("error")) {
+                setSending(false)
+                setStatus("error")
+              }
+            }
+          } catch (error) {
+            // Fallback til suksess etter timeout hvis vi ikke kan lese iframe
+            setTimeout(() => {
+              if (sending) {
+                setSending(false)
+                setStatus("ok")
+              }
+            }, 5000)
+          }
+        }, 1000)
+      }
+
+      iframeRef.current.onload = handleIframeLoad
+    }
+  }
 
   const handleAdminLogin = () => {
     setIsAdminAuthenticated(true)
@@ -180,7 +293,7 @@ export default function App() {
                   action={GAS_URL}
                   method="POST"
                   target="hidden_iframe"
-                  onSubmit={() => setSending(true)}
+                  onSubmit={handleFormSubmit}
                   style={{ display: status ? "none" : "block" }}
                 >
                   <div className="form-group-row">
