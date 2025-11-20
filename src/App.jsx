@@ -229,25 +229,8 @@ export default function App() {
                 <h2>✨Juletreff på KUMI🥂</h2>
                 <div className="subheader">19. desember kl 19.00</div>
 
-                {status === "duplicate" && (
-                  <div className="msg error">
-                    <h3>⚠️ E-post allerede påmeldt!</h3>
-                    <p>Det ser ut til at denne e-posten er registrert.</p>
-                    <p>
-                      Har du trykket{" "}
-                      <a
-                        href="https://www.facebook.com/events/664624256515915"
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        «Skal»
-                      </a>{" "}
-                      på Facebook-eventet? 📅
-                    </p>
-                  </div>
-                )}
-
-                {status === "waitlist" && (
+                {/* Vis kun venteliste-melding hvis status er 'waitlist' */}
+                {status === "waitlist" ? (
                   <div className="msg wait">
                     <h3>⚠️ Juletreffet er fullt</h3>
                     <p>
@@ -261,23 +244,41 @@ export default function App() {
                       </a>
                     </p>
                   </div>
-                )}
-
-                {status === "ok" && (
-                  <div className="msg thanks">
-                    <h3>🎉 Takk for påmeldingen! 🎉</h3>
-                    <p>Bekreftelse sendt på e-post 📬</p>
-                    <p>
-                      <small>Sjekk søppelpost/spam</small>
-                    </p>
-                  </div>
-                )}
-
-                {status === "error" && (
-                  <div className="msg error">
-                    <h3>⚠️ Noe gikk galt</h3>
-                    <p>Prøv igjen senere eller kontakt oss.</p>
-                  </div>
+                ) : (
+                  <>
+                    {status === "duplicate" && (
+                      <div className="msg error">
+                        <h3>⚠️ E-post allerede påmeldt!</h3>
+                        <p>Det ser ut til at denne e-posten er registrert.</p>
+                        <p>
+                          Har du trykket{" "}
+                          <a
+                            href="https://www.facebook.com/events/664624256515915"
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            «Skal»
+                          </a>{" "}
+                          på Facebook-eventet? 📅
+                        </p>
+                      </div>
+                    )}
+                    {status === "ok" && (
+                      <div className="msg thanks">
+                        <h3>🎉 Takk for påmeldingen! 🎉</h3>
+                        <p>Bekreftelse sendt på e-post 📬</p>
+                        <p>
+                          <small>Sjekk søppelpost/spam</small>
+                        </p>
+                      </div>
+                    )}
+                    {status === "error" && (
+                      <div className="msg error">
+                        <h3>⚠️ Noe gikk galt</h3>
+                        <p>Prøv igjen senere eller kontakt oss.</p>
+                      </div>
+                    )}
+                  </>
                 )}
 
                 {/* Skjult iframe: mottar Apps Script-responsen */}
