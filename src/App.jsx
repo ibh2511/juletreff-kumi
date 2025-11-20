@@ -12,6 +12,14 @@ const IMAGES = ["images/kumi.jpeg", "images/munch.jpg"]
 
 export default function App() {
   const [status, setStatus] = useState(null) // null | "ok" | "waitlist" | "duplicate" | "error"
+  // Hjelpefunksjon: kun sett status hvis ikke allerede waitlist/duplicate/error
+  const setStatusOnce = (newStatus) => {
+    setStatus((prev) => {
+      if (prev === "waitlist" || prev === "duplicate" || prev === "error")
+        return prev
+      return newStatus
+    })
+  }
   const [sending, setSending] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
   const [visitorInfo, setVisitorInfo] = useState(null)
@@ -70,10 +78,10 @@ export default function App() {
       const data = evt.data || {}
       setSending(false)
 
-      if (data.duplicate) setStatus("duplicate")
-      else if (data.ok && data.waitlist) setStatus("waitlist")
-      else if (data.ok) setStatus("ok")
-      else setStatus("error")
+      if (data.duplicate) setStatusOnce("duplicate")
+      else if (data.ok && data.waitlist) setStatusOnce("waitlist")
+      else if (data.ok) setStatusOnce("ok")
+      else setStatusOnce("error")
     }
 
     // iOS fallback: Sjekk iframe innhold etter en forsinkelse
@@ -93,25 +101,25 @@ export default function App() {
             bodyText.includes("duplicate")
           ) {
             setSending(false)
-            setStatus("duplicate")
+            setStatusOnce("duplicate")
           } else if (
             bodyText.includes('"waitlist"') &&
             bodyText.includes('"ok"')
           ) {
             setSending(false)
-            setStatus("waitlist")
+            setStatusOnce("waitlist")
           } else if (
             bodyText.includes('"ok"') ||
             bodyText.includes("success")
           ) {
             setSending(false)
-            setStatus("ok")
+            setStatusOnce("ok")
           } else if (
             bodyText.includes('"error"') ||
             bodyText.includes("error")
           ) {
             setSending(false)
-            setStatus("error")
+            setStatusOnce("error")
           }
         }
       } catch (error) {
@@ -131,7 +139,7 @@ export default function App() {
       setTimeout(() => {
         if (sending) {
           setSending(false)
-          setStatus("ok") // Anta suksess siden e-post sendes ut
+          setStatusOnce("ok") // Anta suksess, men ikke overskriv venteliste
         }
       }, 10000)
     }
@@ -159,22 +167,22 @@ export default function App() {
 
               if (bodyText.includes("duplicate")) {
                 setSending(false)
-                setStatus("duplicate")
+                setStatusOnce("duplicate")
               } else if (
                 bodyText.includes("waitlist") &&
                 bodyText.includes("ok")
               ) {
                 setSending(false)
-                setStatus("waitlist")
+                setStatusOnce("waitlist")
               } else if (
                 bodyText.includes("ok") ||
                 bodyText.includes("success")
               ) {
                 setSending(false)
-                setStatus("ok")
+                setStatusOnce("ok")
               } else if (bodyText.includes("error")) {
                 setSending(false)
-                setStatus("error")
+                setStatusOnce("error")
               }
             }
           } catch (error) {
@@ -182,7 +190,7 @@ export default function App() {
             setTimeout(() => {
               if (sending) {
                 setSending(false)
-                setStatus("ok")
+                setStatusOnce("ok")
               }
             }, 5000)
           }
