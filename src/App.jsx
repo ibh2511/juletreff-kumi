@@ -7,7 +7,7 @@ import AdminStats from "./AdminStats.jsx"
 import AdminLogin from "./AdminLogin.jsx"
 
 const GAS_URL =
-  "https://script.google.com/macros/s/AKfycbwgfaKMu_y216LWyLKoKBOYmRIeyPmiKRUQ-06IuzwAutrQuOdmKdmh8-Cdg5AQQH1_/exec"
+  "https://script.google.com/macros/s/AKfycbzPL_gm8ntdm-AhUhyEOou5akS0HoQdS8-E_l1b22yy5zEJfOTp5D3im5ss03JqenyG/exec"
 const IMAGES = ["images/kumi.jpeg", "images/munch.jpg"]
 
 export default function App() {
