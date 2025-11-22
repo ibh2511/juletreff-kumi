@@ -58,6 +58,11 @@ export default function App() {
     return () => clearInterval(interval)
   }, [])
 
+  // Nullstill imgLoaded når currentImageIndex endres
+  useEffect(() => {
+    setImgLoaded(false)
+  }, [currentImageIndex])
+
   useEffect(() => {
     const teardownLabels = setupFloatingLabels()
     const teardownFaq = setupFaqAccordion()
