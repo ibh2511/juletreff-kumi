@@ -22,8 +22,6 @@ export default function App() {
   }
   const [sending, setSending] = useState(false)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [imgLoaded, setImgLoaded] = useState(false)
-  const [mapLoaded, setMapLoaded] = useState(false)
   const [visitorInfo, setVisitorInfo] = useState(null)
   const [showAdmin, setShowAdmin] = useState(false)
   const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false)
@@ -57,16 +55,6 @@ export default function App() {
 
     return () => clearInterval(interval)
   }, [])
-
-  // Nullstill imgLoaded når currentImageIndex endres
-  useEffect(() => {
-    setImgLoaded(false)
-    // Fallback: vis bildet etter 3 sekunder selv om onLoad ikke trigges
-    const timeout = setTimeout(() => {
-      setImgLoaded((loaded) => loaded || true)
-    }, 3000)
-    return () => clearTimeout(timeout)
-  }, [currentImageIndex])
 
   useEffect(() => {
     const teardownLabels = setupFloatingLabels()
@@ -230,48 +218,17 @@ export default function App() {
           <div className="page">
             <div className="container">
               {/* Bilde med fade */}
-              <div className="booking-image" style={{ position: "relative" }}>
+              <div className="booking-image">
                 {IMAGES.map((src, index) => (
-                  <>
-                    <img
-                      key={src}
-                      className={`booking-img ${
-                        index === currentImageIndex ? "active" : ""
-                      }`}
-                      src={src}
-                      srcSet={
-                        src.includes("kumi")
-                          ? "/images/kumi-500.jpg 500w, /images/kumi.jpeg 1000w"
-                          : "/images/munch-500.jpg 500w, /images/munch.jpg 1000w"
-                      }
-                      sizes="(max-width: 600px) 90vw, 600px"
-                      alt={`Juletreff 2025`}
-                      width={1000}
-                      height={666}
-                      loading={index === currentImageIndex ? undefined : "lazy"}
-                      style={{
-                        display:
-                          imgLoaded && index === currentImageIndex
-                            ? "block"
-                            : "none",
-                      }}
-                      onLoad={() => setImgLoaded(true)}
-                    />
-                    {index === currentImageIndex && !imgLoaded && (
-                      <div
-                        style={{
-                          width: "100%",
-                          height: 180,
-                          background: "#eee",
-                          position: "absolute",
-                          top: 0,
-                          left: 0,
-                        }}
-                      >
-                        Laster bilde…
-                      </div>
-                    )}
-                  </>
+                  <img
+                    key={src}
+                    className={`booking-img ${
+                      index === currentImageIndex ? "active" : ""
+                    }`}
+                    src={src}
+                    alt={`Juletreff 2025`}
+                    loading="lazy"
+                  />
                 ))}
               </div>
 
@@ -404,28 +361,13 @@ export default function App() {
               </div>
 
               {/* Kart */}
-              <div className="map-container" style={{ position: "relative" }}>
+              <div className="map-container">
                 <iframe
                   src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d7990.0!2d10.689846816215897!3d59.90700408187198!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x46416e62c48b6a31%3A0xdbadeeb694f9f437!2sOperagata%2071B%2C%200194%20Oslo!5e0!3m2!1sen!2sno!4v1600000000000!5m2!1sen!2sno"
                   allowFullScreen=""
+                  loading="lazy"
                   title="KUMI kart"
-                  style={{ display: mapLoaded ? "block" : "none" }}
-                  onLoad={() => setMapLoaded(true)}
                 />
-                {!mapLoaded && (
-                  <div
-                    style={{
-                      width: "100%",
-                      height: 200,
-                      background: "#eee",
-                      position: "absolute",
-                      top: 0,
-                      left: 0,
-                    }}
-                  >
-                    Laster kart…
-                  </div>
-                )}
               </div>
 
               {/* FAQ */}
