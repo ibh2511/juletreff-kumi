@@ -61,6 +61,11 @@ export default function App() {
   // Nullstill imgLoaded når currentImageIndex endres
   useEffect(() => {
     setImgLoaded(false)
+    // Fallback: vis bildet etter 3 sekunder selv om onLoad ikke trigges
+    const timeout = setTimeout(() => {
+      setImgLoaded((loaded) => loaded || true)
+    }, 3000)
+    return () => clearTimeout(timeout)
   }, [currentImageIndex])
 
   useEffect(() => {
