@@ -139,7 +139,11 @@ export default function App() {
       setTimeout(() => {
         if (sending) {
           setSending(false)
-          setStatusOnce("ok") // Anta suksess, men ikke overskriv venteliste
+          setStatus((prev) => {
+            // Kun sett ok hvis status fortsatt er null
+            if (prev === null) return "ok"
+            return prev
+          })
         }
       }, 10000)
     }
@@ -190,7 +194,10 @@ export default function App() {
             setTimeout(() => {
               if (sending) {
                 setSending(false)
-                setStatusOnce("ok")
+                setStatus((prev) => {
+                  if (prev === null) return "ok"
+                  return prev
+                })
               }
             }, 5000)
           }
