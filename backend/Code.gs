@@ -21,7 +21,7 @@ var STANDARD_FACEBOOK_URL = 'https://www.facebook.com/events/664624256515915';
 var PAMELDING_ARK = 'Påmeldinger';
 var BESOK_ARK = 'Besøk';
 var KOLONNER = ['id', 'opprettet', 'status', 'fornavn', 'etternavn', 'epost', 'telefon', 'kommentar',
-  'belop', 'betaling', 'nokkel', 'betalt', 'epost_sendt', 'bindende_godtatt', 'trukket', 'refundert', 'notat', 'kilde', 'refusjon'];
+  'belop', 'betaling', 'nokkel', 'betalt', 'epost_sendt', 'bindende_godtatt', 'trukket', 'refundert', 'notat', 'kilde', 'refusjon', 'test'];
 var BESOK_KOLONNER = ['tid', 'besokende', 'kilde', 'enhet'];
 
 // Statuser:
@@ -32,6 +32,10 @@ var BESOK_KOLONNER = ['tid', 'besokende', 'kilde', 'enhet'];
 //  VENTELISTE  meldte seg på da det var fullt
 //  TRUKKET     trukket med legeerklæring (eller av arrangør)
 var HOLDER_PLASS = ['BETALT', 'UBETALT'];
+
+// Testpåmeldinger fra adminsiden har «ja» i kolonnen «test». De teller ikke som plasser,
+// er ikke med i tall, deltakerliste eller innbetalt, og kan slettes fra adminsiden.
+function erTest_(r) { return r && (r.test === 'ja' || r.test === true); }
 var VENTER_MINUTTER = 30;
 
 /* ------------------------------------------------------------------ */
@@ -59,8 +63,16 @@ function arrangement_() {
     start: new Date(cfg_('ARR_START', '2026-12-18T19:00:00+01:00')),
     noshow: Number(cfg_('NOSHOW_GEBYR', '300')),
     vippsNummer: cfg_('VIPPS_NUMMER', '76192'),
-    vippsAktiv: !!cfg_('VIPPS_CLIENT_ID', '')
+    // Bryteren i adminsiden. Vipps-API brukes bare når den står på OG nøklene finnes.
+    vippsModus: cfg_('VIPPS_MODUS', 'nummer') === 'api' ? 'api' : 'nummer',
+    vippsAktiv: cfg_('VIPPS_MODUS', 'nummer') === 'api' && harVippsNokler_()
   };
+}
+
+/** Alle fire Vipps-nøklene må ligge i Skriptegenskaper før API-et kan slås på. */
+function harVippsNokler_() {
+  return ['VIPPS_CLIENT_ID', 'VIPPS_CLIENT_SECRET', 'VIPPS_SUBSCRIPTION_KEY', 'VIPPS_MSN']
+    .every(function (k) { return !!cfg_(k, ''); });
 }
 
 function vippsBase_() {
@@ -105,6 +117,8 @@ function route_(e, body) {
       case 'logout':    return json_(adminLogout_(p.okt));
       case 'oversikt':  return json_(adminOversikt_(p.okt));
       case 'endre':     return json_(adminEndre_(p));
+      case 'innstillinger': return json_(adminInnstillinger_(p));
+      case 'testpamelding': return json_(adminTestpamelding_(p));
       default:          return json_({ ok: true, info: 'Juletreff KUMI API' });
     }
   } catch (err) {
@@ -125,7 +139,7 @@ function info_() {
   var a = arrangement_();
   var opptatt = opptatte_(alle_());
   return {
-    ok: true, pris: a.pris, dato: a.dato, sted: a.sted, fristTekst: a.fristTekst,
+    ok: true, pris: a.pris, dato: a.dato, sted: a.sted, fristTekst: a.fristTekst, kapasitet: a.kapasitet,
     stengt: Date.now() > a.frist.getTime(),
     ledige: Math.max(0, a.kapasitet - opptatt), fullt: opptatt >= a.kapasitet,
     vippsAktiv: a.vippsAktiv, vippsNummer: a.vippsNummer, noshow: a.noshow, start: a.start.toISOString()
@@ -136,6 +150,7 @@ function info_() {
 function opptatte_(rader) {
   var grense = Date.now() - VENTER_MINUTTER * 60000;
   return rader.filter(function (r) {
+    if (erTest_(r)) return false;
     return HOLDER_PLASS.indexOf(r.status) >= 0 || (r.status === 'VENTER' && new Date(r.opprettet).getTime() > grense);
   }).length;
 }
@@ -144,7 +159,7 @@ function opptatte_(rader) {
 /* Påmelding                                                           */
 /* ------------------------------------------------------------------ */
 
-function pamelding_(p) {
+function pamelding_(p, test) {
   var a = arrangement_();
   var d = {
     fornavn: tekst_(p.fornavn, 60), etternavn: tekst_(p.etternavn, 60),
@@ -154,10 +169,10 @@ function pamelding_(p) {
   if (!d.fornavn || !d.etternavn) return { ok: false, error: 'Skriv inn fornavn og etternavn' };
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.epost)) return { ok: false, error: 'Skriv inn en gyldig e-postadresse' };
   if (String(d.telefon).replace(/\D/g, '').length < 8) return { ok: false, error: 'Skriv inn et gyldig telefonnummer' };
-  if (!(p.bindende === true || p.bindende === 'true' || p.bindende === '1')) {
+  if (!test && !(p.bindende === true || p.bindende === 'true' || p.bindende === '1')) {
     return { ok: false, error: 'Du må bekrefte at påmeldingen er bindende' };
   }
-  if (Date.now() > a.frist.getTime()) return { ok: false, stengt: true, error: 'Påmeldingen er stengt' };
+  if (!test && Date.now() > a.frist.getTime()) return { ok: false, stengt: true, error: 'Påmeldingen er stengt' };
 
   var lock = LockService.getScriptLock();
   lock.waitLock(15000);
@@ -165,7 +180,8 @@ function pamelding_(p) {
   try {
     var rader = alle_();
     var grense = Date.now() - VENTER_MINUTTER * 60000;
-    var tidligere = rader.filter(function (r) { return r.epost === d.epost; });
+    // Testpåmeldinger sjekkes ikke mot ekte påmeldinger, og ekte påmeldinger ikke mot tester.
+    var tidligere = test ? [] : rader.filter(function (r) { return r.epost === d.epost && !erTest_(r); });
     if (tidligere.some(function (r) { return HOLDER_PLASS.indexOf(r.status) >= 0; })) {
       return { ok: true, duplicate: true };
     }
@@ -178,7 +194,7 @@ function pamelding_(p) {
       }
     });
 
-    var fullt = opptatte_(rader) >= a.kapasitet;
+    var fullt = !test && opptatte_(rader) >= a.kapasitet;
     if (fullt && tidligere.some(function (r) { return r.status === 'VENTELISTE'; })) {
       return { ok: true, waitlist: true };
     }
@@ -189,8 +205,10 @@ function pamelding_(p) {
     rad.opprettet = new Date();
     rad.belop = a.pris;
     rad.nokkel = nyNokkel_();
-    rad.bindende_godtatt = new Date();
-    rad.kilde = tekst_(p.kilde, 60);
+    rad.bindende_godtatt = test ? '' : new Date();
+    rad.kilde = test ? 'admin-test' : tekst_(p.kilde, 60);
+    rad.test = test ? 'ja' : '';
+    if (test) rad.notat = 'Testpåmelding fra admin';
     rad.status = fullt ? 'VENTELISTE' : a.vippsAktiv ? 'VENTER' : 'UBETALT';
     rad.betaling = fullt ? '' : a.vippsAktiv ? 'vipps' : 'manuell';
     sheet_(PAMELDING_ARK).appendRow(KOLONNER.map(function (k) { return celle_(rad[k]); }));
@@ -214,7 +232,7 @@ function pamelding_(p) {
       reference: rad.id,
       userFlow: 'WEB_REDIRECT',
       returnUrl: site + '/?betaling=' + encodeURIComponent(rad.id) + '&k=' + rad.nokkel,
-      paymentDescription: 'Juletreff på KUMI – ' + rad.fornavn + ' ' + rad.etternavn
+      paymentDescription: (test ? 'TEST ' : '') + 'Juletreff på KUMI – ' + rad.fornavn + ' ' + rad.etternavn
     }, 'create-' + rad.id);
     return { ok: true, status: 'VENTER', id: rad.id, k: rad.nokkel, redirectUrl: res.redirectUrl };
   } catch (err) {
@@ -370,7 +388,7 @@ function sendBekreftelse_(r) {
     'Har du spørsmål, kan du svare på denne e-posten.\n\nGod jul!';
 
   try {
-    MailApp.sendEmail(r.epost, (betalt ? 'Du er påmeldt' : 'Påmelding mottatt') + ': Juletreff på KUMI (' + r.id + ')', tekst,
+    MailApp.sendEmail(r.epost, (erTest_(r) ? '[TEST] ' : '') + (betalt ? 'Du er påmeldt' : 'Påmelding mottatt') + ': Juletreff på KUMI (' + r.id + ')', tekst,
       { htmlBody: html, name: cfg_('AVSENDER_NAVN', 'Juletreff på KUMI'), replyTo: cfg_('SVAR_EPOST', '') || undefined });
     var o = finn_('id', r.id);
     if (o) oppdater_(o._rad, { epost_sendt: new Date() });
@@ -456,7 +474,9 @@ function adminOversikt_(okt) {
   var rader = alle_();
   var antall = { BETALT: 0, UBETALT: 0, VENTER: 0, AVBRUTT: 0, VENTELISTE: 0, TRUKKET: 0 };
   var innbetalt = 0, refundert = 0;
+  var tester = 0;
   rader.forEach(function (r) {
+    if (erTest_(r)) { tester++; return; }
     antall[r.status] = (antall[r.status] || 0) + 1;
     if (r.betalt) innbetalt += Number(r.belop) || 0;
     if (r.refundert) refundert += r.refusjon === '' || r.refusjon == null ? Number(r.belop) || 0 : Number(r.refusjon) || 0;
@@ -473,6 +493,7 @@ function adminOversikt_(okt) {
     kilder[r[2] || 'direkte'] = (kilder[r[2] || 'direkte'] || 0) + 1;
   });
   rader.forEach(function (r) {
+    if (erTest_(r)) return;
     var d = dag(r.opprettet);
     var x = perDag[d] = perDag[d] || { dag: d, besok: 0, unike: {}, pameldinger: 0 };
     x.pameldinger++;
@@ -481,8 +502,9 @@ function adminOversikt_(okt) {
   return {
     ok: true,
     arrangement: { dato: a.dato, pris: a.pris, kapasitet: a.kapasitet, fristTekst: a.fristTekst, vippsAktiv: a.vippsAktiv,
-      start: a.start.toISOString(), noshow: a.noshow },
-    antall: antall,
+      vippsModus: a.vippsModus, harVippsNokler: harVippsNokler_(), vippsMiljo: cfg_('VIPPS_ENV', 'test'),
+      vippsNummer: a.vippsNummer, start: a.start.toISOString(), noshow: a.noshow },
+    antall: antall, tester: tester,
     ledige: Math.max(0, a.kapasitet - opptatte_(rader)),
     innbetalt: innbetalt, refundert: refundert,
     besok: { totalt: besok, unike: Object.keys(unikeTotalt).length,
@@ -494,7 +516,7 @@ function adminOversikt_(okt) {
     deltakere: rader.slice().reverse().map(function (r) {
       return { id: r.id, opprettet: r.opprettet, status: r.status, navn: r.fornavn + ' ' + r.etternavn, epost: r.epost,
         telefon: r.telefon, kommentar: r.kommentar, belop: r.belop, betaling: r.betaling, betalt: r.betalt,
-        trukket: r.trukket, refundert: r.refundert, refusjon: r.refusjon, notat: r.notat };
+        trukket: r.trukket, refundert: r.refundert, refusjon: r.refusjon, notat: r.notat, test: erTest_(r) };
     })
   };
 }
@@ -565,8 +587,74 @@ function adminEndre_(p) {
       return { ok: true, melding: o.fornavn + ' har fått plass og fått e-post med betalingsinfo' +
         (a.vippsNummer ? ' (Vipps-nummer ' + a.vippsNummer + ')' : '') + '.' };
     }
+    if (p.handling === 'slett') {
+      if (!erTest_(o)) return { ok: false, error: 'Bare testpåmeldinger kan slettes' };
+      if (o.status === 'BETALT' && o.betaling === 'vipps' && !o.refundert) {
+        return { ok: false, error: 'Testen er betalt i Vipps. Trekk den og refunder først, så kan den slettes.' };
+      }
+      if (o.status === 'VENTER') avbrytVipps_(o.id);
+      sheet_(PAMELDING_ARK).deleteRow(o._rad);
+      return { ok: true, melding: 'Testpåmeldingen ' + o.id + ' er slettet.' };
+    }
     return { ok: false, error: 'Ukjent handling' };
   } finally { lock.releaseLock(); }
+}
+
+/**
+ * Innstillinger fra adminsiden. Lagres i Skriptegenskaper, så de gjelder overalt:
+ * nettsiden, skjemaet, ventelisten og e-postene.
+ *  kapasitet   antall plasser (1–500)
+ *  vippsModus  'nummer' (deltakerne betaler til Vipps-nummeret) eller 'api' (Vipps-betaling direkte)
+ */
+function adminInnstillinger_(p) {
+  if (!sjekkOkt_(p.okt)) return { ok: false, utlogget: true, error: 'Logg inn på nytt' };
+  begrens_('endre', 60);
+  var props = PropertiesService.getScriptProperties();
+  var meldinger = [];
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    if (p.kapasitet !== undefined && p.kapasitet !== '') {
+      var k = Number(p.kapasitet);
+      if (!(k >= 1 && k <= 500 && Math.floor(k) === k)) return { ok: false, error: 'Antall plasser må være et helt tall mellom 1 og 500' };
+      var rader = alle_();
+      var opptatt = opptatte_(rader);
+      props.setProperty('KAPASITET', String(k));
+      meldinger.push('Antall plasser er nå ' + k + '.');
+      if (k < opptatt) meldinger.push(opptatt + ' har allerede plass. Ingen blir fjernet, men nye påmeldinger havner på ventelisten.');
+      var venter = rader.filter(function (r) { return r.status === 'VENTELISTE' && !erTest_(r); }).length;
+      if (k > opptatt && venter) meldinger.push(venter + ' står på ventelisten. Gi dem plass fra listen under hvis de skal få de nye plassene.');
+    }
+    if (p.vippsModus === 'api' || p.vippsModus === 'nummer') {
+      if (p.vippsModus === 'api') {
+        if (!harVippsNokler_()) {
+          return { ok: false, error: 'Vipps-API kan ikke slås på før Vipps-nøklene er lagt inn i Apps Script (VIPPS_CLIENT_ID, VIPPS_CLIENT_SECRET, VIPPS_SUBSCRIPTION_KEY og VIPPS_MSN). Til da brukes Vipps-nummeret.' };
+        }
+        try { CacheService.getScriptCache().remove('vipps_token'); vippsToken_(); }
+        catch (err) { return { ok: false, error: 'Fikk ikke kontakt med Vipps med nøklene som er lagt inn. Vipps-nummeret brukes fortsatt. (' + String(err.message).slice(0, 160) + ')' }; }
+      }
+      props.setProperty('VIPPS_MODUS', p.vippsModus);
+      meldinger.push(p.vippsModus === 'api'
+        ? 'Vipps-API er slått på' + (cfg_('VIPPS_ENV', 'test') === 'prod' ? '.' : ' i TESTMILJØET (VIPPS_ENV er ikke «prod»).') + ' Nye påmeldinger sendes rett til Vipps.'
+        : 'Vipps-API er slått av. Nye påmeldinger betaler til Vipps-nummer ' + cfg_('VIPPS_NUMMER', '76192') + '.');
+    }
+  } finally { lock.releaseLock(); }
+  return { ok: true, melding: meldinger.join(' ') || 'Ingen endringer.' };
+}
+
+/** Testpåmelding fra adminsiden: går gjennom samme løp som en ekte påmelding, men teller ikke. */
+function adminTestpamelding_(p) {
+  if (!sjekkOkt_(p.okt)) return { ok: false, utlogget: true, error: 'Logg inn på nytt' };
+  begrens_('endre', 60);
+  var res = pamelding_({
+    fornavn: p.fornavn || 'Test', etternavn: p.etternavn || 'Testesen',
+    epost: p.epost, telefon: p.telefon || '12345678', kommentar: p.kommentar || 'Testpåmelding'
+  }, true);
+  if (!res.ok) return res;
+  res.melding = res.status === 'VENTER'
+    ? 'Testpåmeldingen ' + res.id + ' er laget. Åpne Vipps-lenken for å teste betalingen.'
+    : 'Testpåmeldingen ' + res.id + ' er laget, og bekreftelsen er sendt til ' + String(p.epost) + '.';
+  return res;
 }
 
 /* ------------------------------------------------------------------ */

@@ -39,7 +39,10 @@ function Vilkar({ info }) {
 
       <h2>Påmelding og betaling</h2>
       <p>
-        Du melder deg på via skjemaet på nettsiden og betaler med Vipps.
+        Du melder deg på via skjemaet på nettsiden og betaler med Vipps
+        {info.vippsAktiv
+          ? ", der du sendes rett til betalingen."
+          : ` til nummer #${info.vippsNummer} etter at du har meldt deg på.`}{" "}
         Plassen din er sikret når betalingen er mottatt, og du får en
         bekreftelse på e-post. Påmeldingsfristen er {info.fristTekst}, eller
         tidligere hvis det blir fullt. Er det fullt, kan du sette deg på

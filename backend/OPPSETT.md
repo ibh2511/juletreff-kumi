@@ -81,3 +81,9 @@ Her ser du plasser tatt, betalt, ikke betalt, venteliste, trukket, innbetalt bel
 - Gmail sender 100 e-poster i døgnet fra Apps Script.
 - En påbegynt Vipps-betaling holder plassen i 30 minutter.
 - Regnearket er beskyttet mot formel-injeksjon, og det er en bremse på 30 påmeldinger per minutt.
+
+## Innstillinger i adminsiden
+
+- **Antall plasser** lagres som skriptegenskapen `KAPASITET`.
+- **Vipps-API av/på** lagres som `VIPPS_MODUS` (`nummer` eller `api`). API-et kan bare slås på når `VIPPS_CLIENT_ID`, `VIPPS_CLIENT_SECRET`, `VIPPS_SUBSCRIPTION_KEY` og `VIPPS_MSN` er lagt inn, og adminsiden sjekker at nøklene virker før det slås på. `VIPPS_ENV=prod` må være satt for ekte betalinger.
+- **Testpåmelding** lager en påmelding merket «test» (kolonnen `test` i regnearket). Den tar ikke plass, telles ikke og kan slettes fra adminsiden.
