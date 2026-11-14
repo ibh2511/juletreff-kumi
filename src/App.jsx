@@ -1,542 +1,637 @@
-import { useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useState } from "react"
 import "./App.css"
 import { setupFloatingLabels } from "./labelFloat.js"
 import { setupFaqAccordion } from "./faqAccordion.js"
-import { setupVisitorTracking } from "./visitorTracking.js"
+import { apiGet, apiPost, kilde, trackVisit } from "./api.js"
+import {
+  API_URL,
+  BINDENDE_KORT,
+  DEFAULTS,
+  KONTAKT_EPOST,
+  formatPrice,
+} from "./config.js"
 import AdminStats from "./AdminStats.jsx"
 import AdminLogin from "./AdminLogin.jsx"
 import VippsPayment from "./VippsPayment.jsx"
-import { PRICE_NOK, formatPrice } from "./payment.js"
+import LegalPage from "./LegalPage.jsx"
 
-const GAS_URL =
-  "https://script.google.com/macros/s/AKfycbyk7CuE9vw2mW1cUOux-0kmh0FZYYkM3CQwajDxgholpf3ZWRcb7zpLU8ANCWtNNNB3/exec"
 const IMAGES = ["images/kumi.jpeg", "images/munch.jpg"]
+const OKT_KEY = "juletreff-admin-okt"
+
+function viewFromHash() {
+  const h = window.location.hash.replace("#", "")
+  if (h === "admin" || window.location.pathname.includes("/admin")) return "admin"
+  if (h === "vilkar" || h === "personvern") return h
+  return "main"
+}
+
+function readOkt() {
+  try {
+    return sessionStorage.getItem(OKT_KEY) || ""
+  } catch {
+    return ""
+  }
+}
+
+// Statuser som skjuler skjemaet
+const FERDIG = [
+  "betalt",
+  "ubetalt",
+  "venter",
+  "sjekker",
+  "waitlist",
+  "duplicate",
+  "stengt",
+  "redirect",
+]
 
 export default function App() {
-  const [status, setStatus] = useState(null) // null | "ok" | "waitlist" | "duplicate" | "error"
-  // Hjelpefunksjon: kun sett status hvis ikke allerede waitlist/duplicate/error
-  const setStatusOnce = (newStatus) => {
-    setStatus((prev) => {
-      if (prev === "waitlist" || prev === "duplicate" || prev === "error")
-        return prev
-      return newStatus
-    })
-  }
-  const [sending, setSending] = useState(false)
+  const [view, setView] = useState(viewFromHash)
+  const [okt, setOkt] = useState(readOkt)
+  const [info, setInfo] = useState({ ...DEFAULTS, ledige: null, fullt: false })
+  // null | sending | redirect | sjekker | betalt | ubetalt | venter | avbrutt | waitlist | duplicate | stengt | error
+  const [status, setStatus] = useState(null)
+  const [errorText, setErrorText] = useState("")
+  const [detaljer, setDetaljer] = useState(null)
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
-  const [visitorInfo, setVisitorInfo] = useState(null)
-  const [showAdmin, setShowAdmin] = useState(false)
-  const [isAdminAuthenticated, setIsAdminAuthenticated] = useState(false)
-  const iframeRef = useRef(null)
 
-  // Sjekk om admin-siden skal vises
+  // Enkel ruting med #admin, #vilkar og #personvern
   useEffect(() => {
-    const checkAdminRoute = () => {
-      const hash = window.location.hash
-      const pathname = window.location.pathname
-      const shouldShowAdmin = hash === "#admin" || pathname.includes("/admin")
-      setShowAdmin(shouldShowAdmin)
-
-      // Sjekk autentisering ved admin-tilgang
-      if (shouldShowAdmin) {
-        const isAuth = sessionStorage.getItem("juletreff-admin-auth") === "true"
-        setIsAdminAuthenticated(isAuth)
-      }
+    const onHash = () => {
+      setView(viewFromHash())
+      window.scrollTo(0, 0)
     }
+    window.addEventListener("hashchange", onHash)
+    return () => window.removeEventListener("hashchange", onHash)
+  }, [])
 
-    checkAdminRoute()
-    window.addEventListener("hashchange", checkAdminRoute)
-    return () => window.removeEventListener("hashchange", checkAdminRoute)
+  // Pris, dato og ledige plasser fra backend, og anonym besøkstelling
+  useEffect(() => {
+    trackVisit()
+    apiGet({ action: "info" })
+      .then((d) => {
+        if (!d.ok) return
+        setInfo((prev) => ({
+          ...prev,
+          ...d,
+          vippsNummer: d.vippsNummer || prev.vippsNummer,
+        }))
+        if (d.stengt) setStatus((s) => s ?? "stengt")
+      })
+      .catch(() => {})
+  }, [])
+
+  // Tilbake fra Vipps: ?betaling=JT-1001&k=...
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search)
+    const id = q.get("betaling")
+    const k = q.get("k")
+    if (!id || !k) return
+    window.history.replaceState(
+      null,
+      "",
+      window.location.pathname + window.location.hash
+    )
+    setStatus("sjekker")
+    let forsok = 0
+    let timer
+    const sjekk = () => {
+      apiGet({ action: "status", id, k })
+        .then((d) => {
+          if (!d.ok) throw new Error(d.error)
+          setDetaljer({ ...d, id })
+          if (d.status === "BETALT") setStatus("betalt")
+          else if (d.status === "UBETALT") setStatus("ubetalt")
+          else if (d.status === "VENTER" && forsok++ < 20)
+            timer = setTimeout(sjekk, 2500)
+          else if (d.status === "VENTER") setStatus("venter")
+          else setStatus("avbrutt")
+        })
+        .catch(() => {
+          if (forsok++ < 5) timer = setTimeout(sjekk, 3000)
+          else setStatus("venter")
+        })
+    }
+    sjekk()
+    return () => clearTimeout(timer)
   }, [])
 
   // Fade mellom bilder hvert 4 sekund
   useEffect(() => {
     const interval = setInterval(() => {
       setCurrentImageIndex((prev) => (prev + 1) % IMAGES.length)
-    }, 4000) // 4000ms = 4 sekunder
-
+    }, 4000)
     return () => clearInterval(interval)
   }, [])
 
+  // Flytende etiketter og FAQ må kobles på nytt når forsiden vises
+  const skjemaSynlig = view === "main" && !FERDIG.includes(status)
   useEffect(() => {
+    if (view !== "main") return
     const teardownLabels = setupFloatingLabels()
     const teardownFaq = setupFaqAccordion()
-
-    // Sett opp visitor tracking
-    const visitor = setupVisitorTracking()
-    setVisitorInfo(visitor)
-
     return () => {
       teardownLabels?.()
       teardownFaq?.()
     }
-  }, [])
+  }, [view, skjemaSynlig])
 
-  useEffect(() => {
-    function onMessage(evt) {
-      // Tillat bare Apps Script-domener
-      if (!/script\.google\.com|googleusercontent\.com/.test(evt.origin)) return
-
-      const data = evt.data || {}
-      setSending(false)
-
-      if (data.duplicate) setStatusOnce("duplicate")
-      else if (data.ok && data.waitlist) setStatusOnce("waitlist")
-      else if (data.ok) setStatusOnce("ok")
-      else setStatusOnce("error")
-    }
-
-    // iOS fallback: Sjekk iframe innhold etter en forsinkelse
-    function checkIframeContent() {
-      if (!iframeRef.current || !sending) return
-
-      try {
-        const iframeDoc =
-          iframeRef.current.contentDocument ||
-          iframeRef.current.contentWindow?.document
-        if (iframeDoc) {
-          const bodyText = iframeDoc.body?.innerText || ""
-
-          // Prøv å parse respons fra iframe innhold
-          if (
-            bodyText.includes('"duplicate"') ||
-            bodyText.includes("duplicate")
-          ) {
-            setSending(false)
-            setStatusOnce("duplicate")
-          } else if (
-            bodyText.includes('"waitlist"') &&
-            bodyText.includes('"ok"')
-          ) {
-            setSending(false)
-            setStatusOnce("waitlist")
-          } else if (
-            bodyText.includes('"ok"') ||
-            bodyText.includes("success")
-          ) {
-            setSending(false)
-            setStatusOnce("ok")
-          } else if (
-            bodyText.includes('"error"') ||
-            bodyText.includes("error")
-          ) {
-            setSending(false)
-            setStatusOnce("error")
-          }
-        }
-      } catch (error) {
-        // Cross-origin eller andre feil - bruk timeout fallback
-        console.log("Iframe content check failed, using timeout fallback")
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    const f = new FormData(e.currentTarget)
+    setStatus("sending")
+    setErrorText("")
+    try {
+      if (!API_URL) throw new Error("Påmeldingen er ikke koblet til ennå.")
+      const d = await apiPost({
+        action: "pamelding",
+        fornavn: f.get("Fornavn"),
+        etternavn: f.get("Etternavn"),
+        telefon: f.get("Telefon"),
+        epost: f.get("Email"),
+        kommentar: f.get("Message"),
+        bindende: f.get("Bindende") === "ja",
+        kilde: kilde(),
+      })
+      if (d.duplicate) return setStatus("duplicate")
+      if (d.waitlist) return setStatus("waitlist")
+      if (d.stengt) return setStatus("stengt")
+      if (!d.ok) throw new Error(d.error || "Noe gikk galt")
+      if (d.redirectUrl) {
+        setStatus("redirect")
+        window.location.href = d.redirectUrl
+        return
       }
-    }
-
-    window.addEventListener("message", onMessage)
-
-    // iOS fallback: Sjekk iframe innhold hver 500ms når vi sender
-    let pollInterval
-    if (sending) {
-      pollInterval = setInterval(checkIframeContent, 500)
-
-      // Timeout fallback hvis ingenting skjer etter 10 sekunder
-      setTimeout(() => {
-        if (sending) {
-          setSending(false)
-          setStatus((prev) => {
-            // Kun sett ok hvis status fortsatt er null
-            if (prev === null) return "ok"
-            return prev
-          })
-        }
-      }, 10000)
-    }
-
-    return () => {
-      window.removeEventListener("message", onMessage)
-      if (pollInterval) clearInterval(pollInterval)
-    }
-  }, [sending])
-
-  const handleFormSubmit = () => {
-    setSending(true)
-
-    // iOS Safari fallback: Legg til onload listener på iframe
-    if (iframeRef.current) {
-      const handleIframeLoad = () => {
-        // Vent litt for at innholdet skal være klart
-        setTimeout(() => {
-          try {
-            const iframeDoc =
-              iframeRef.current?.contentDocument ||
-              iframeRef.current?.contentWindow?.document
-            if (iframeDoc) {
-              const bodyText = iframeDoc.body?.innerText || ""
-
-              if (bodyText.includes("duplicate")) {
-                setSending(false)
-                setStatusOnce("duplicate")
-              } else if (
-                bodyText.includes("waitlist") &&
-                bodyText.includes("ok")
-              ) {
-                setSending(false)
-                setStatusOnce("waitlist")
-              } else if (
-                bodyText.includes("ok") ||
-                bodyText.includes("success")
-              ) {
-                setSending(false)
-                setStatusOnce("ok")
-              } else if (bodyText.includes("error")) {
-                setSending(false)
-                setStatusOnce("error")
-              }
-            }
-          } catch (error) {
-            // Fallback til suksess etter timeout hvis vi ikke kan lese iframe
-            setTimeout(() => {
-              if (sending) {
-                setSending(false)
-                setStatus((prev) => {
-                  if (prev === null) return "ok"
-                  return prev
-                })
-              }
-            }, 5000)
-          }
-        }, 1000)
-      }
-
-      iframeRef.current.onload = handleIframeLoad
+      setDetaljer({
+        ...d,
+        fornavn: f.get("Fornavn"),
+        etternavn: f.get("Etternavn"),
+      })
+      setStatus("ubetalt")
+    } catch (err) {
+      setErrorText(err.message)
+      setStatus("error")
     }
   }
 
-  const handleAdminLogin = () => {
-    setIsAdminAuthenticated(true)
+  const loggInn = (nyOkt) => {
+    try {
+      sessionStorage.setItem(OKT_KEY, nyOkt)
+    } catch {
+      // privat modus: innloggingen varer til siden lukkes
+    }
+    setOkt(nyOkt)
   }
+
+  const loggUt = useCallback(() => {
+    if (okt) apiPost({ action: "logout", okt }).catch(() => {})
+    try {
+      sessionStorage.removeItem(OKT_KEY)
+    } catch {
+      // ignorer
+    }
+    setOkt("")
+  }, [okt])
+
+  if (view === "admin") {
+    return okt ? (
+      <AdminStats okt={okt} onLogout={loggUt} />
+    ) : (
+      <AdminLogin onLoginSuccess={loggInn} />
+    )
+  }
+
+  if (view === "vilkar" || view === "personvern") {
+    return <LegalPage page={view} info={info} />
+  }
+
+  const pris = formatPrice(detaljer?.belop || info.pris)
+  const vippsAktiv = !!info.vippsAktiv
+  const knappTekst = info.fullt
+    ? "Sett meg på venteliste"
+    : vippsAktiv
+      ? `Meld meg på og betal ${formatPrice(info.pris)}`
+      : `Meld meg på · ${formatPrice(info.pris)}`
+
+  const bindendeBoks = (
+    <div className="binding-box">
+      <b>Bindende påmelding.</b> Påmeldingen kan bare trekkes med
+      legeerklæring. Se <a href="#vilkar">salgsvilkårene</a>.
+    </div>
+  )
 
   return (
     <>
-      {showAdmin ? (
-        isAdminAuthenticated ? (
-          <AdminStats />
-        ) : (
-          <AdminLogin onLoginSuccess={handleAdminLogin} />
-        )
-      ) : (
-        <>
-          <div className="page">
-            <div className="container">
-              {/* Bilde med fade */}
-              <div className="booking-image">
-                {IMAGES.map((src, index) => (
-                  <img
-                    key={src}
-                    className={`booking-img ${
-                      index === currentImageIndex ? "active" : ""
-                    }`}
-                    src={src}
-                    alt={`Juletreff 2025`}
-                    loading={index === currentImageIndex ? undefined : "lazy"}
-                  />
-                ))}
+      <div className="page">
+        <div className="container">
+          {/* Bilde med fade */}
+          <div className="booking-image">
+            {IMAGES.map((src, index) => (
+              <img
+                key={src}
+                className={`booking-img ${
+                  index === currentImageIndex ? "active" : ""
+                }`}
+                src={src}
+                alt="Juletreff på KUMI"
+                loading={index === currentImageIndex ? undefined : "lazy"}
+              />
+            ))}
+          </div>
+
+          {/* Skjema */}
+          <div className="booking-form">
+            <h2>✨Juletreff på KUMI🥂</h2>
+            <div className="subheader">{info.dato}</div>
+
+            {skjemaSynlig && (
+              <div className="price-block">
+                <div className="price-tag">
+                  <span className="price-amount">{formatPrice(info.pris)}</span>
+                  <span className="price-unit">per person</span>
+                </div>
+                <ul className="included">
+                  <li>Vegansk julemeny med seks retter</li>
+                  <li>KUMI i Oslobukta for oss selv</li>
+                  <li>Cocktails på Kranen, MUNCH etterpå</li>
+                </ul>
+                <div className="price-note">
+                  {info.fullt
+                    ? "Fullt nå. Meld deg på ventelisten, du betaler først hvis du får plass."
+                    : vippsAktiv
+                      ? "Du betaler med Vipps når du melder deg på"
+                      : "Betales med Vipps når du har meldt deg på"}
+                </div>
+                {!info.fullt && info.ledige !== null && info.ledige <= 10 && (
+                  <div className="seats-left">
+                    Bare {info.ledige} {info.ledige === 1 ? "plass" : "plasser"}{" "}
+                    igjen
+                  </div>
+                )}
+                <div className="price-binding">{BINDENDE_KORT}</div>
               </div>
+            )}
 
-              {/* Skjema */}
-              <div className="booking-form">
-                <h2>✨Juletreff på KUMI🥂</h2>
-                <div className="subheader">19. desember kl 19.00</div>
+            {status === "sjekker" && (
+              <div className="msg">
+                <h3>Sjekker betalingen …</h3>
+                <p>Dette tar bare noen sekunder.</p>
+              </div>
+            )}
 
-                {!status && (
-                  <div className="price-block">
-                    <div className="price-tag">
-                      <span className="price-amount">
-                        {formatPrice(PRICE_NOK)}
-                      </span>
-                      <span className="price-unit">per person</span>
-                    </div>
-                    <ul className="included">
-                      <li>Vegansk julemeny med seks retter</li>
-                      <li>KUMI i Oslobukta for oss selv</li>
-                      <li>Cocktails på Kranen, MUNCH etterpå</li>
-                    </ul>
-                    <div className="price-note">
-                      Betales med Vipps når du har meldt deg på
-                    </div>
-                  </div>
-                )}
+            {status === "redirect" && (
+              <div className="msg">
+                <h3>Sender deg til Vipps …</h3>
+              </div>
+            )}
 
-                {/* Vis kun venteliste-melding hvis status er 'waitlist' */}
-                {status === "waitlist" ? (
-                  <div className="msg wait">
-                    <h3>⚠️ Juletreffet er fullt</h3>
-                    <p>
-                      Du kan sette deg på venteliste ved å sende oss en e-post.
-                    </p>
-                    <p>
-                      <a
-                        href={`mailto:isabelle.haugan@gmail.com?subject=Venteliste%20juletreff%20KUMI%20🥂`}
-                      >
-                        Sett meg på venteliste 🥳
-                      </a>
-                    </p>
-                  </div>
-                ) : (
-                  <>
-                    {status === "duplicate" && (
-                      <div className="msg error">
-                        <h3>⚠️ E-post allerede påmeldt!</h3>
-                        <p>Det ser ut til at denne e-posten er registrert.</p>
-                        <p>
-                          Har du trykket{" "}
-                          <a
-                            href="https://www.facebook.com/events/664624256515915"
-                            target="_blank"
-                            rel="noreferrer"
-                          >
-                            «Skal»
-                          </a>{" "}
-                          på Facebook-eventet? 📅
-                        </p>
-                      </div>
-                    )}
-                    {status === "ok" && (
-                      <div className="msg thanks">
-                        <h3>🎉 Takk for påmeldingen! 🎉</h3>
-                        <p>Bekreftelse sendt på e-post 📬</p>
-                        <p>
-                          <small>Sjekk søppelpost/spam</small>
-                        </p>
-                      </div>
-                    )}
-                    {status === "ok" && <VippsPayment />}
-                    {status === "error" && (
-                      <div className="msg error">
-                        <h3>⚠️ Noe gikk galt</h3>
-                        <p>Prøv igjen senere eller kontakt oss.</p>
-                      </div>
-                    )}
-                  </>
-                )}
+            {status === "betalt" && (
+              <>
+                <div className="msg thanks">
+                  <h3>🎉 Du er påmeldt! 🎉</h3>
+                  <p>Betalingen på {pris} er mottatt.</p>
+                  <p>
+                    Bekreftelse sendt til {detaljer?.epost || "e-posten din"} 📬
+                  </p>
+                  <p>
+                    <small>Sjekk søppelpost/spam</small>
+                  </p>
+                </div>
+                {bindendeBoks}
+              </>
+            )}
 
-                {/* Skjult iframe: mottar Apps Script-responsen */}
-                <iframe
-                  name="hidden_iframe"
-                  title="hidden_iframe"
-                  ref={iframeRef}
-                  style={{ display: "none", width: 0, height: 0, border: 0 }}
+            {status === "ubetalt" && (
+              <>
+                <div className="msg thanks">
+                  <h3>🎉 Takk for påmeldingen! 🎉</h3>
+                  <p>Bekreftelse sendt på e-post 📬</p>
+                  <p>
+                    <small>Sjekk søppelpost/spam</small>
+                  </p>
+                </div>
+                <VippsPayment
+                  belop={detaljer?.belop || info.pris}
+                  vippsNummer={detaljer?.vippsNummer || info.vippsNummer}
+                  navn={[detaljer?.fornavn, detaljer?.etternavn]
+                    .filter(Boolean)
+                    .join(" ")}
+                  id={detaljer?.id}
                 />
+                {bindendeBoks}
+              </>
+            )}
 
-                {/* IMPORTANT: action = GAS_URL, target = hidden_iframe */}
-                <form
-                  action={GAS_URL}
-                  method="POST"
-                  target="hidden_iframe"
-                  onSubmit={handleFormSubmit}
-                  style={{ display: status ? "none" : "block" }}
-                >
-                  <div className="form-group-row">
-                    <div className="form-group">
-                      <input
-                        type="text"
-                        name="Fornavn"
-                        id="firstName"
-                        required
-                      />
-                      <label htmlFor="firstName" className="form-label">
-                        Navn
-                      </label>
-                    </div>
-                    <div className="form-group">
-                      <input
-                        type="text"
-                        name="Etternavn"
-                        id="lastName"
-                        required
-                      />
-                      <label htmlFor="lastName" className="form-label">
-                        Etternavn
-                      </label>
-                    </div>
-                  </div>
+            {status === "venter" && (
+              <div className="msg">
+                <h3>Betalingen er ikke fullført ennå</h3>
+                <p>
+                  Godkjente du i Vipps, får du bekreftelsen på e-post i løpet
+                  av noen minutter.
+                </p>
+                <p>
+                  <button className="link-btn" onClick={() => setStatus(null)}>
+                    Meld deg på på nytt
+                  </button>
+                </p>
+              </div>
+            )}
 
-                  <div className="form-group-row">
-                    <div className="form-group">
-                      <input type="tel" name="Telefon" id="phone" required />
-                      <label htmlFor="phone" className="form-label">
-                        Telefon
-                      </label>
-                    </div>
-                    <div className="form-group">
-                      <input type="email" name="Email" id="email" required />
-                      <label htmlFor="email" className="form-label">
-                        E-post
-                      </label>
-                    </div>
-                  </div>
+            {status === "avbrutt" && (
+              <div className="msg error">
+                <h3>Betalingen ble avbrutt</h3>
+                <p>Ingen penger er trukket, og du er ikke påmeldt.</p>
+              </div>
+            )}
 
+            {status === "waitlist" && (
+              <div className="msg wait">
+                <h3>⚠️ Juletreffet er fullt</h3>
+                <p>
+                  Du står på ventelisten. Blir det ledig plass, får du en
+                  e-post. Du betaler ingenting før du har fått plass.
+                </p>
+              </div>
+            )}
+
+            {status === "stengt" && (
+              <div className="msg wait">
+                <h3>Påmeldingen er stengt</h3>
+                <p>Fristen for å melde seg på har gått ut.</p>
+                {KONTAKT_EPOST && (
+                  <p>
+                    Spørsmål? Skriv til{" "}
+                    <a href={`mailto:${KONTAKT_EPOST}`}>{KONTAKT_EPOST}</a>
+                  </p>
+                )}
+              </div>
+            )}
+
+            {status === "duplicate" && (
+              <div className="msg error">
+                <h3>⚠️ E-post allerede påmeldt!</h3>
+                <p>Det ser ut til at denne e-posten er registrert.</p>
+                <p>
+                  Har du trykket{" "}
+                  <a
+                    href="https://www.facebook.com/events/664624256515915"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    «Skal»
+                  </a>{" "}
+                  på Facebook-eventet? 📅
+                </p>
+              </div>
+            )}
+
+            {status === "error" && (
+              <div className="msg error form-error">
+                <h3>⚠️ Noe gikk galt</h3>
+                <p>{errorText || "Prøv igjen senere eller kontakt oss."}</p>
+              </div>
+            )}
+
+            {skjemaSynlig && (
+              <form onSubmit={handleSubmit}>
+                <div className="form-group-row">
                   <div className="form-group">
-                    <textarea name="Message" id="comment" rows="4"></textarea>
-                    <label htmlFor="comment" className="form-label">
-                      Kommentar
+                    <input type="text" name="Fornavn" id="firstName" required />
+                    <label htmlFor="firstName" className="form-label">
+                      Navn
                     </label>
                   </div>
-
-                  <div className="form-submit">
-                    <button type="submit" disabled={sending}>
-                      {sending
-                        ? "Sender …"
-                        : `Meld meg på · ${formatPrice(PRICE_NOK)}`}
-                    </button>
+                  <div className="form-group">
+                    <input type="text" name="Etternavn" id="lastName" required />
+                    <label htmlFor="lastName" className="form-label">
+                      Etternavn
+                    </label>
                   </div>
-                </form>
-              </div>
+                </div>
 
-              {/* Kart */}
-              <div className="map-container">
-                <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d7990.0!2d10.689846816215897!3d59.90700408187198!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x46416e62c48b6a31%3A0xdbadeeb694f9f437!2sOperagata%2071B%2C%200194%20Oslo!5e0!3m2!1sen!2sno!4v1600000000000!5m2!1sen!2sno"
-                  allowFullScreen=""
-                  title="KUMI kart"
-                />
-              </div>
-
-              {/* FAQ */}
-              <div className="faq-section">
-                <h3 style={{ textAlign: "center" }}>❓ FAQ</h3>
-
-                <details>
-                  <summary className="faq">
-                    <span>Hvem arrangerer?</span>
-                    <span className="icon">+</span>
-                  </summary>
-
-                  <div className="faq-body">
-                    <p>
-                      Oslo vegansamfunn og Vegan Norway arrangerer juletreff på
-                      KUMI i Oslobukta <b>fredag 19. desember kl. 19.00,</b>{" "}
-                      hvor vi har lokalet for oss selv.
-                    </p>
-                    <p>
-                      Etterpå går vi videre til{" "}
-                      <a
-                        href="https://www.tolvteogkranen.no/kranen"
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        Kranen
-                      </a>{" "}
-                      Cocktailbar i 13. etasje på <b>MUNCH,</b> ca. 200 meter
-                      unna (<i>23 års aldersgrense</i>).
-                    </p>
-                    <p>
-                      Ønsker du å bli med? Meld deg på via skjemaet over innen{" "}
-                      <b>tirsdag 16. desember,</b> og du vil motta en
-                      bekreftelse per e-post.
-                    </p>
-                    <p>
-                      Det er begrenset antall plasser, så det lønner seg å være
-                      tidlig ute! Inviter gjerne med deg en venn 💚
-                    </p>
+                <div className="form-group-row">
+                  <div className="form-group">
+                    <input type="tel" name="Telefon" id="phone" required />
+                    <label htmlFor="phone" className="form-label">
+                      Telefon
+                    </label>
                   </div>
-                </details>
-
-                <details>
-                  <summary className="faq">
-                    <span>Hva står på menyen?</span>
-                    <span className="icon">+</span>
-                  </summary>
-
-                  <div className="faq-body">
-                    <p>
-                      Les mer om menyen{" "}
-                      <a
-                        href="https://kumi.no/christmas-party/"
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        her
-                      </a>
-                    </p>
-                    <hr />
-                    <h3>Hovedretter</h3>
-                    <p>
-                      🌰 Nøttestek
-                      <br />
-                      🥬 Hjemmelaget Rødkål
-                      <br />
-                      🍊 Dampede Rosenkål med Appelsinsalat
-                      <br />
-                      🌱 Veganske Patties
-                      <br />
-                      🥔 Ovnsbakte Poteter med Urter
-                      <br />
-                      🍷 Rødvinssaus
-                    </p>
-                    <br />
-                    <hr />
-                    <h3>Dessert</h3>
-                    <p>
-                      🍫 Marinerte Appelsiner med Sjokolade- og Appelsinkrem
-                    </p>
-                    <br />
-                    <hr />
-                    <p>
-                      Har du andre spørsmål om meny? Kontakt KUMI på{" "}
-                      <a href="mailto:kumi@kumi.no">kumi@kumi.no</a> eller{" "}
-                      <a href="tel:+4797302866">973 02 866</a>
-                    </p>
+                  <div className="form-group">
+                    <input type="email" name="Email" id="email" required />
+                    <label htmlFor="email" className="form-label">
+                      E-post
+                    </label>
                   </div>
-                </details>
+                </div>
 
-                <details>
-                  <summary className="faq">
-                    <span>Hva koster det?</span>
-                    <span className="icon">+</span>
-                  </summary>
+                <div className="form-group">
+                  <textarea name="Message" id="comment" rows="4"></textarea>
+                  <label htmlFor="comment" className="form-label">
+                    Kommentar (f.eks. allergier)
+                  </label>
+                </div>
 
-                  <div className="faq-body">
-                    <p>
-                      Menyen serveres i sharing-stil, med seks utvalgte retter
-                      til <b>{formatPrice(PRICE_NOK)} per person.</b>
-                    </p>
-                    <p>
-                      Du betaler med <b>Vipps</b> rett etter at du har meldt
-                      deg på. Plassen din er sikret når betalingen er mottatt.
-                    </p>
-                    <p>
-                      <i>
-                        Kan du likevel ikke komme, gi beskjed innen{" "}
-                        <b>16. desember</b>.
-                      </i>
-                    </p>
-                    <p>
-                      Ønsker du vin, øl, eller annen drikke på KUMI kommer dette
-                      i tillegg, snakk med personalet 🍷🍾
-                    </p>
-                    <p>
-                      Du kjøper det du ønsker på Kranen, drikkemeny finner du{" "}
-                      <a href="https://drive.google.com/file/d/1ZhKilxdVjzNH5u9K0xigndzo7pTYUKle/view?usp=sharing">
-                        her
-                      </a>
-                    </p>
-                    <br />
-                    <hr />
-                    <p>
-                      Har du andre spørsmål om pris eller tilbud, kontakt KUMI
-                      på <a href="mailto:kumi@kumi.no">kumi@kumi.no</a> eller{" "}
-                      <a href="tel:+4797302866">973 02 866</a>
-                    </p>
-                  </div>
-                </details>
-              </div>
-            </div>
+                <label className="binding-check">
+                  <input type="checkbox" name="Bindende" value="ja" required />
+                  <span>
+                    Jeg forstår at påmeldingen er <b>bindende</b> og bare kan
+                    trekkes med legeerklæring, og jeg godtar{" "}
+                    <a href="#vilkar">salgsvilkårene</a>. Les også{" "}
+                    <a href="#personvern">personvernerklæringen</a>.
+                  </span>
+                </label>
+
+                <div className="form-submit">
+                  <button
+                    type="submit"
+                    className={vippsAktiv && !info.fullt ? "vipps-submit" : ""}
+                    disabled={status === "sending"}
+                  >
+                    {status === "sending" ? "Sender …" : knappTekst}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
 
-          <div className="robot-footer" aria-hidden="true">
-            🦾
+          {/* Kart */}
+          <div className="map-container">
+            <iframe
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d7990.0!2d10.689846816215897!3d59.90700408187198!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x46416e62c48b6a31%3A0xdbadeeb694f9f437!2sOperagata%2071B%2C%200194%20Oslo!5e0!3m2!1sen!2sno!4v1600000000000!5m2!1sen!2sno"
+              allowFullScreen=""
+              title="KUMI kart"
+            />
           </div>
-        </>
-      )}
+
+          {/* FAQ */}
+          <div className="faq-section">
+            <h3 style={{ textAlign: "center" }}>❓ FAQ</h3>
+
+            <details>
+              <summary className="faq">
+                <span>Hvem arrangerer?</span>
+                <span className="icon">+</span>
+              </summary>
+
+              <div className="faq-body">
+                <p>
+                  Oslo vegansamfunn og Vegan Norway arrangerer juletreff på KUMI
+                  i Oslobukta <b>{info.dato},</b> hvor vi har lokalet for oss
+                  selv.
+                </p>
+                <p>
+                  Etterpå går vi videre til{" "}
+                  <a
+                    href="https://www.tolvteogkranen.no/kranen"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Kranen
+                  </a>{" "}
+                  Cocktailbar i 13. etasje på <b>MUNCH,</b> ca. 200 meter unna (
+                  <i>23 års aldersgrense</i>).
+                </p>
+                <p>
+                  Ønsker du å bli med? Meld deg på via skjemaet over innen{" "}
+                  <b>{info.fristTekst},</b> og du vil motta en bekreftelse per
+                  e-post.
+                </p>
+                <p>
+                  Det er begrenset antall plasser, så det lønner seg å være
+                  tidlig ute! Inviter gjerne med deg en venn 💚
+                </p>
+              </div>
+            </details>
+
+            <details>
+              <summary className="faq">
+                <span>Hva står på menyen?</span>
+                <span className="icon">+</span>
+              </summary>
+
+              <div className="faq-body">
+                <p>
+                  Les mer om menyen{" "}
+                  <a
+                    href="https://kumi.no/christmas-party/"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    her
+                  </a>
+                </p>
+                <hr />
+                <h3>Hovedretter</h3>
+                <p>
+                  🌰 Nøttestek
+                  <br />
+                  🥬 Hjemmelaget Rødkål
+                  <br />
+                  🍊 Dampede Rosenkål med Appelsinsalat
+                  <br />
+                  🌱 Veganske Patties
+                  <br />
+                  🥔 Ovnsbakte Poteter med Urter
+                  <br />
+                  🍷 Rødvinssaus
+                </p>
+                <br />
+                <hr />
+                <h3>Dessert</h3>
+                <p>🍫 Marinerte Appelsiner med Sjokolade- og Appelsinkrem</p>
+                <br />
+                <hr />
+                <p>
+                  Har du andre spørsmål om meny? Kontakt KUMI på{" "}
+                  <a href="mailto:kumi@kumi.no">kumi@kumi.no</a> eller{" "}
+                  <a href="tel:+4797302866">973 02 866</a>
+                </p>
+              </div>
+            </details>
+
+            <details>
+              <summary className="faq">
+                <span>Hva koster det?</span>
+                <span className="icon">+</span>
+              </summary>
+
+              <div className="faq-body">
+                <p>
+                  Menyen serveres i sharing-stil, med seks utvalgte retter til{" "}
+                  <b>{formatPrice(info.pris)} per person.</b>
+                </p>
+                <p>
+                  Du betaler med <b>Vipps</b> når du melder deg på. Plassen din
+                  er sikret når betalingen er mottatt.
+                </p>
+                <p>
+                  Ønsker du vin, øl, eller annen drikke på KUMI kommer dette i
+                  tillegg, snakk med personalet 🍷🍾
+                </p>
+                <p>
+                  Du kjøper det du ønsker på Kranen, drikkemeny finner du{" "}
+                  <a href="https://drive.google.com/file/d/1ZhKilxdVjzNH5u9K0xigndzo7pTYUKle/view?usp=sharing">
+                    her
+                  </a>
+                </p>
+                <br />
+                <hr />
+                <p>
+                  Har du andre spørsmål om pris eller tilbud, kontakt KUMI på{" "}
+                  <a href="mailto:kumi@kumi.no">kumi@kumi.no</a> eller{" "}
+                  <a href="tel:+4797302866">973 02 866</a>
+                </p>
+              </div>
+            </details>
+
+            <details>
+              <summary className="faq">
+                <span>Kan jeg melde meg av?</span>
+                <span className="icon">+</span>
+              </summary>
+
+              <div className="faq-body">
+                <p>
+                  <b>Påmeldingen er bindende.</b> Vi bestiller mat og bord hos
+                  KUMI ut fra antall påmeldte, så du kan ikke melde deg av og få
+                  pengene tilbake fordi planene endrer seg.
+                </p>
+                <p>
+                  Blir du syk, kan du trekke påmeldingen med{" "}
+                  <b>legeerklæring.</b> Send den til oss
+                  {KONTAKT_EPOST && (
+                    <>
+                      {" "}
+                      på <a href={`mailto:${KONTAKT_EPOST}`}>{KONTAKT_EPOST}</a>
+                    </>
+                  )}{" "}
+                  så snart du kan, og senest tre dager etter arrangementet. Da
+                  får du hele beløpet tilbake.
+                </p>
+                <p>
+                  Les mer i <a href="#vilkar">salgsvilkårene</a>.
+                </p>
+              </div>
+            </details>
+          </div>
+        </div>
+      </div>
+
+      <footer className="site-footer">
+        <a href="#vilkar">Salgsvilkår</a>
+        <span>·</span>
+        <a href="#personvern">Personvern</a>
+        {KONTAKT_EPOST && (
+          <>
+            <span>·</span>
+            <a href={`mailto:${KONTAKT_EPOST}`}>Kontakt</a>
+          </>
+        )}
+      </footer>
+
+      <div className="robot-footer" aria-hidden="true">
+        🦾
+      </div>
     </>
   )
 }
