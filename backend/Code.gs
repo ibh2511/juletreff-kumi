@@ -53,14 +53,14 @@ function cfg_(key, fallback) {
 
 function arrangement_() {
   return {
-    pris: Number(cfg_('PRIS', '560')),
-    dato: cfg_('DATO_TEKST', 'Fredag 18. desember kl. 19.00'),
+    pris: Number(cfg_('PRIS', '600')),
+    dato: cfg_('DATO_TEKST', 'Fredag 18. desember kl. 18.30'),
     sted: cfg_('STED', 'KUMI, Operagata 71B, Oslobukta'),
-    frist: new Date(cfg_('PAMELDINGSFRIST', '2026-12-15T23:59:59+01:00')),
-    fristTekst: cfg_('FRIST_TEKST', 'tirsdag 15. desember'),
+    frist: new Date(cfg_('PAMELDINGSFRIST', '2026-12-17T23:59:59+01:00')),
+    fristTekst: cfg_('FRIST_TEKST', 'torsdag 17. desember'),
     kapasitet: Number(cfg_('KAPASITET', '30')),
     // Trekk med legeerklæring under 48 timer før start: vi beholder no-show-gebyret til KUMI
-    start: new Date(cfg_('ARR_START', '2026-12-18T19:00:00+01:00')),
+    start: new Date(cfg_('ARR_START', '2026-12-18T18:30:00+01:00')),
     noshow: Number(cfg_('NOSHOW_GEBYR', '300')),
     vippsNummer: cfg_('VIPPS_NUMMER', '76192'),
     // Bryteren i adminsiden. Vipps-API brukes bare når den står på OG nøklene finnes.
@@ -345,50 +345,108 @@ function bindendeTekst_(belop) {
     ' kr tilbake, fordi vi beholder ' + a.noshow + ' kr til KUMIs no-show-gebyr.';
 }
 
+/** Bekreftelse i samme stil som den opprinnelige e-posten: fersken ramme, mørkt kort, bilde øverst. */
 function sendBekreftelse_(r) {
   if (!r.epost) return;
   var a = arrangement_();
   var site = cfg_('SITE_URL', 'https://ibh2511.github.io/juletreff-kumi').replace(/\/$/, '');
   var betalt = r.status === 'BETALT';
   var fb = cfg_('FACEBOOK_URL', STANDARD_FACEBOOK_URL);
-  var betalingTekst = betalt
-    ? 'Betalt: ' + r.belop + ' kr med Vipps. Plassen din er sikret.'
-    : 'Betal ' + r.belop + ' kr med Vipps' + (a.vippsNummer ? ' til Vipps-nummer ' + a.vippsNummer : '') +
-      ', og skriv «Juletreff ' + r.fornavn + ' ' + r.etternavn + '» i meldingen. Plassen din er sikret når betalingen er mottatt.';
+  var bilde = cfg_('EPOST_BILDE', site + '/images/kumi.jpeg');
+  var kart = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent('KUMI Operagata 71B Oslo');
+  var e = escapeHtml_;
+  var fornavn = e(r.fornavn), etternavn = e(r.etternavn);
+  var melding = 'Juletreff ' + r.fornavn + ' ' + r.etternavn;
 
-  var rad = function (k, v) {
-    return '<tr><td style="padding:6px 0;color:#bdb3a8">' + k + '</td><td style="padding:6px 0;text-align:right;color:#fff"><b>' + v + '</b></td></tr>';
+  var td = 'padding: 8px; color: #F4EADF;';
+  var linje = ' border-bottom: 1px solid #555;';
+  var rad = function (k, v, sist, farge) {
+    return '<tr><td style="' + td + (sist ? '' : linje) + ' width: 110px;" bgcolor="#333"><b>' + k + '</b></td>' +
+      '<td style="' + td + (sist ? '' : linje) + (farge ? ' color: ' + farge + ';' : '') + '" bgcolor="#333">' + v + '</td></tr>';
   };
+  var tabell = function (innhold, margin) {
+    return '<table width="100%" cellpadding="0" cellspacing="0" style="' + (margin || '') +
+      'color: #F4EADF; font-size: 1rem; text-align: left;">' + innhold + '</table>';
+  };
+
+  var betaling = betalt
+    ? '<div style="border: 1px solid #6fbf73; border-radius: 10px; padding: 20px; margin: 30px 0;">' +
+      '<h3 style="font-size: 1.2rem; color: #8fd694; margin: 0 0 6px 0; text-align: center;">Betalt ' + r.belop + ' kr ✓</h3>' +
+      '<p style="text-align: center; margin: 0;">Plassen din er sikret.</p></div>'
+    : '<div style="border: 1px solid #ff5b24; border-radius: 10px; padding: 20px; margin: 30px 0;">' +
+      '<h3 style="font-size: 1.2rem; color: #ff5b24; margin: 0 0 10px 0; text-align: center;">Betal ' + r.belop + ' kr med Vipps</h3>' +
+      '<p style="text-align: center; margin: 0 0 15px 0;">Plassen din er sikret når betalingen er mottatt.</p>' +
+      tabell(
+        (a.vippsNummer ? rad('Vipps-nummer:', '<b>#' + e(a.vippsNummer) + '</b>', false, '#edb77d') : '') +
+        rad('Beløp:', '<b>' + r.belop + ' kr</b>', false, '#edb77d') +
+        rad('Melding:', '<b>' + e(melding) + '</b>', true, '#edb77d')) +
+      '</div>';
+
   var html =
-    '<div style="background:#111;padding:24px 12px;font-family:Arial,sans-serif">' +
-    '<div style="max-width:520px;margin:0 auto;background:#1c1c1c;border-radius:12px;padding:28px;color:#f4eadf">' +
-    '<h1 style="margin:0 0 6px;font-size:24px;color:#edb77d">' + (betalt ? 'Du er påmeldt! 🎄' : 'Takk for påmeldingen!') + '</h1>' +
-    '<p style="margin:0 0 18px">Hei ' + escapeHtml_(r.fornavn) + ', vi gleder oss til å se deg på juletreffet.</p>' +
-    '<table style="width:100%;border-collapse:collapse;font-size:15px">' +
-    rad('Når', escapeHtml_(a.dato)) + rad('Hvor', escapeHtml_(a.sted)) +
-    rad('Pris', r.belop + ' kr') + rad('Påmeldings-ID', r.id) + '</table>' +
-    '<p style="margin:18px 0 0;padding:12px 14px;border-radius:8px;background:' + (betalt ? '#1f3326' : '#3a2416') + '">' +
-    escapeHtml_(betalingTekst) + '</p>' +
-    '<p style="margin:18px 0 0;padding:12px 14px;border-radius:8px;border:1px solid #edb77d;color:#fff">' +
-    escapeHtml_(bindendeTekst_(r.belop)) + '</p>' +
-    '<p style="margin:22px 0 0;text-align:center"><a href="' + fb + '" style="display:inline-block;padding:12px 22px;' +
-    'border-radius:8px;background:#1877f2;color:#fff;font-weight:bold;text-decoration:none">Trykk «Skal» på Facebook-eventet 📅</a></p>' +
-    '<p style="margin:18px 0 0;font-size:13px;color:#bdb3a8">Spørsmål eller legeerklæring? Svar på denne e-posten. ' +
-    '<a style="color:#edb77d" href="' + site + '/#vilkar">Salgsvilkår</a> · ' +
-    '<a style="color:#edb77d" href="' + site + '/#personvern">Personvern</a></p>' +
-    '</div></div>';
+    '<!DOCTYPE html><html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">' +
+    '<meta name="color-scheme" content="light only"><style>@media only screen and (max-width: 600px) {' +
+    '.ytre { padding: 10px !important; } .indre { padding: 14px !important; }' +
+    '.knapp { font-size: .8rem !important; padding: 8px 15px !important; } }</style></head><body style="margin: 0;">' +
+    '<table align="center" width="100%" cellpadding="0" cellspacing="0" class="ytre" style="background-color: #ffd9b0; ' +
+    "font-family: 'Poppins', Arial, sans-serif; color: #333; max-width: 600px; margin: auto; padding: 30px;\" bgcolor=\"#ffd9b0\">" +
+
+    '<tr><td style="padding: 0; border-radius: 15px 15px 0 0; overflow: hidden;" bgcolor="#ffd9b0">' +
+    '<img src="' + bilde + '" alt="Juletreff på KUMI" style="width: 100%; height: 175px; object-fit: cover; display: block; border-radius: 15px 15px 0 0;">' +
+    '</td></tr>' +
+
+    '<tr><td class="indre" style="background-color: #333; color: #F4EADF; padding: 30px;" bgcolor="#333">' +
+    '<h2 style="color: #edb77d; font-size: 1.5rem; margin-top: 0; text-align: center;">Hei ' + fornavn + ',</h2>' +
+    '<p style="font-weight: bold; font-size: 1.1rem; margin: 20px 0 0 0; letter-spacing: 0.5px; text-align: center;">' +
+    (betalt ? 'Du er påmeldt Juletreff på KUMI 🌿' : 'Takk for din påmelding til Juletreff på KUMI 🌿') + '</p>' +
+
+    betaling +
+
+    tabell(
+      rad('Sted:', '<a href="' + kart + '" style="color: #edb77d; text-decoration: none; border-bottom: 1px dotted #edb77d;">' +
+        e(a.sted) + '</a>') +
+      rad('Tid:', e(a.dato)) +
+      rad('Påmelding:', r.id, true), 'margin: 30px 0; ') +
+
+    '<p style="font-size: 1.2rem; font-weight: bold; margin: 40px 0; text-align: center;">' +
+    '<a href="' + fb + '" class="knapp" style="display: inline-block; background-color: #edb77d; padding: 10px 20px; ' +
+    'border-radius: 8px; color: #333; font-weight: bold; text-decoration: none; border: 2px dashed #333;">' +
+    'Trykk «Skal» på Facebook-eventet! 📅</a></p>' +
+
+    '<h3 style="font-size: 1.2rem; color: #edb77d; margin-bottom: 10px; text-align: left;">Dine detaljer:</h3>' +
+    tabell(
+      rad('Navn:', fornavn + ' ' + etternavn) +
+      rad('Telefon:', e(r.telefon)) +
+      rad('E-post:', '<span style="color: #F4EADF; text-decoration: none;">' +
+        e(r.epost).replace('@', '&#8203;@').replace(/\./g, '&#8203;.') + '</span>', !r.kommentar) +
+      (r.kommentar ? rad('Melding:', e(r.kommentar), true) : '')) +
+
+    '<p style="font-size: .85rem; line-height: 1.5; margin: 30px 0 0 0; color: #bdb3a8; text-align: center;">' +
+    e(bindendeTekst_(r.belop)) + '</p>' +
+    '</td></tr>' +
+
+    '<tr><td style="background-color: #111; padding: 20px; text-align: center; color: #777; border-radius: 0 0 15px 15px;" bgcolor="#111">' +
+    '<p style="font-size: .8rem; margin: 0 0 6px 0;">Spørsmål, eller må du melde deg av med legeerklæring? Svar på denne e-posten.</p>' +
+    '<p style="font-size: .8rem; margin: 0;"><a href="' + site + '/#vilkar" style="color: #999;">Salgsvilkår</a> · ' +
+    '<a href="' + site + '/#personvern" style="color: #999;">Personvern</a></p>' +
+    '</td></tr></table></body></html>';
 
   var tekst =
     'Hei ' + r.fornavn + '!\n\n' +
-    (betalt ? 'Du er påmeldt juletreffet på KUMI.' : 'Takk for påmeldingen til juletreffet på KUMI.') + '\n\n' +
-    'Når: ' + a.dato + '\nHvor: ' + a.sted + '\nPris: ' + r.belop + ' kr\nPåmeldings-ID: ' + r.id + '\n\n' +
-    betalingTekst + '\n\n' + bindendeTekst_(r.belop) + '\n\n' +
+    (betalt ? 'Du er påmeldt Juletreff på KUMI. Plassen din er sikret.' : 'Takk for din påmelding til Juletreff på KUMI.') + '\n\n' +
+    (betalt ? 'Betalt: ' + r.belop + ' kr.'
+      : 'Betal ' + r.belop + ' kr med Vipps' + (a.vippsNummer ? ' til #' + a.vippsNummer : '') +
+        ' og skriv «' + melding + '» i meldingen. Plassen din er sikret når betalingen er mottatt.') + '\n\n' +
+    'Sted: ' + a.sted + '\nTid: ' + a.dato + '\nPåmelding: ' + r.id + '\n\n' +
     'Trykk «Skal» på Facebook-eventet: ' + fb + '\n\n' +
-    'Salgsvilkår: ' + site + '/#vilkar\nPersonvern: ' + site + '/#personvern\n\n' +
-    'Har du spørsmål, kan du svare på denne e-posten.\n\nGod jul!';
+    bindendeTekst_(r.belop) + '\n\n' +
+    'Spørsmål, eller må du melde deg av med legeerklæring? Svar på denne e-posten.\n' +
+    'Salgsvilkår: ' + site + '/#vilkar\nPersonvern: ' + site + '/#personvern';
+
+  var emne = (erTest_(r) ? '[TEST] ' : '') +
+    (betalt ? '✨ Du er påmeldt Juletreff på KUMI 🥂' : '✨ Juletreff på KUMI 🥂 Betal ' + r.belop + ' kr med Vipps');
 
   try {
-    MailApp.sendEmail(r.epost, (erTest_(r) ? '[TEST] ' : '') + (betalt ? 'Du er påmeldt' : 'Påmelding mottatt') + ': Juletreff på KUMI (' + r.id + ')', tekst,
+    MailApp.sendEmail(r.epost, emne, tekst,
       { htmlBody: html, name: cfg_('AVSENDER_NAVN', 'Juletreff på KUMI'), replyTo: cfg_('SVAR_EPOST', '') || undefined });
     var o = finn_('id', r.id);
     if (o) oppdater_(o._rad, { epost_sendt: new Date() });

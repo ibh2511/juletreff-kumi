@@ -9,9 +9,9 @@ export const API_URL =
 
 // Visningsverdier før backend har svart. Backend (Skriptegenskaper) bestemmer det som gjelder.
 export const DEFAULTS = {
-  pris: Number(import.meta.env.VITE_PRIS || 560),
-  dato: import.meta.env.VITE_DATO_TEKST || "Fredag 18. desember kl. 19.00",
-  fristTekst: import.meta.env.VITE_FRIST_TEKST || "tirsdag 15. desember",
+  pris: Number(import.meta.env.VITE_PRIS || 600),
+  dato: import.meta.env.VITE_DATO_TEKST || "Fredag 18. desember kl. 18.30",
+  fristTekst: import.meta.env.VITE_FRIST_TEKST || "torsdag 17. desember",
   vippsNummer: import.meta.env.VITE_VIPPS_NUMBER || "76192",
   // Beholdes ved trekk med legeerklæring under 48 timer før start (KUMIs no-show-gebyr)
   noshow: 300,
@@ -21,6 +21,3 @@ export const DEFAULTS = {
 export const KONTAKT_EPOST = import.meta.env.VITE_KONTAKT_EPOST || ""
 
 export const formatPrice = (nok) => `${Number(nok).toLocaleString("nb-NO")} kr`
-
-export const BINDENDE_KORT =
-  "Påmeldingen er bindende og kan bare trekkes med legeerklæring."

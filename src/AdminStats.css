@@ -466,3 +466,49 @@
   color: #6b2c91;
   margin-left: 4px;
 }
+
+/* Handlinger: nedtrekksmeny med fargekoder */
+.handling-velger {
+  font: inherit;
+  font-size: 13px;
+  padding: 6px 28px 6px 10px;
+  border: 1px solid #d9cbb8;
+  border-radius: 8px;
+  background: #fff
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238a7a6a'/%3E%3C/svg%3E")
+    no-repeat right 10px center;
+  -webkit-appearance: none;
+  appearance: none;
+  color: #111;
+  cursor: pointer;
+  max-width: 190px;
+}
+.handling-velger:focus-visible {
+  outline: 2px solid #111;
+  outline-offset: 1px;
+}
+.handling-velger.h-betalt { border-color: #1e6b33; }
+.handling-velger.h-tilbud { border-color: #23466e; }
+.handling-velger.h-refundert { border-color: #b58100; }
+.handling-velger.h-trekk,
+.handling-velger.h-slett { border-color: #b3261e; }
+
+.handling {
+  padding-left: 10px;
+  border-left: 3px solid #d9cbb8;
+}
+.handling.h-betalt { border-left-color: #1e6b33; }
+.handling.h-tilbud { border-left-color: #23466e; }
+.handling.h-refundert { border-left-color: #b58100; }
+.handling.h-trekk,
+.handling.h-slett { border-left-color: #b3261e; }
+
+.handling-knapper .mini.bekreft {
+  color: #fff;
+  border-color: transparent;
+}
+.handling-knapper .mini.bekreft.h-betalt { background: #1e6b33; }
+.handling-knapper .mini.bekreft.h-tilbud { background: #23466e; }
+.handling-knapper .mini.bekreft.h-refundert { background: #9a6d00; }
+.handling-knapper .mini.bekreft.h-trekk,
+.handling-knapper .mini.bekreft.h-slett { background: #b3261e; }

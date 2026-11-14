@@ -5,7 +5,6 @@ import { setupFaqAccordion } from "./faqAccordion.js"
 import { apiGet, apiPost, kilde, trackVisit } from "./api.js"
 import {
   API_URL,
-  BINDENDE_KORT,
   DEFAULTS,
   KONTAKT_EPOST,
   formatPrice,
@@ -21,7 +20,8 @@ const LegalPage = lazy(() => import("./LegalPage.jsx"))
 const IMAGES = ["images/kumi.jpeg", "images/munch.jpg"]
 
 // Teksten i FAQ-en «Blir det underholdning?»
-const UNDERHOLDNING = "[Underholdning: fyll inn hva som skjer i løpet av kvelden]"
+const UNDERHOLDNING =
+  "Ja! Underholdning er inkludert i prisen. Mer om hva som skjer i løpet av kvelden kommer snart."
 const OKT_KEY = "juletreff-admin-okt"
 
 function viewFromHash() {
@@ -268,15 +268,14 @@ export default function App() {
                   <span className="price-unit">per person</span>
                 </div>
                 <ul className="included">
-                  <li>Vegansk julemeny med seks retter</li>
-                  <li>KUMI i Oslobukta for oss selv</li>
+                  <li>Seks veganske juleretter</li>
+                  <li>Underholdning</li>
+                  <li>KUMI for oss selv</li>
                 </ul>
                 <div className="price-note">
                   {info.fullt
-                    ? "Fullt nå. Meld deg på ventelisten, du betaler først hvis du får plass."
-                    : vippsAktiv
-                      ? "Du betaler med Vipps når du melder deg på"
-                      : "Betales med Vipps når du har meldt deg på"}
+                    ? "Fullt nå, men meld deg gjerne på ventelisten. Du betaler først hvis du får plass."
+                    : `Betal enkelt med Vipps · påmelding innen ${info.fristTekst}`}
                 </div>
                 {!info.fullt && info.ledige !== null && info.ledige <= 10 && (
                   <div className="seats-left">
@@ -284,7 +283,6 @@ export default function App() {
                     igjen
                   </div>
                 )}
-                <div className="price-binding">{BINDENDE_KORT}</div>
               </div>
             )}
 
@@ -478,10 +476,8 @@ export default function App() {
                 <label className="binding-check">
                   <input type="checkbox" name="Bindende" value="ja" required />
                   <span>
-                    Jeg forstår at påmeldingen er bindende og bare kan
-                    trekkes med legeerklæring, og jeg godtar{" "}
-                    <a href="#vilkar">salgsvilkårene</a>. Les også{" "}
-                    <a href="#personvern">personvernerklæringen</a>.
+                    Jeg godtar <a href="#vilkar">salgsvilkårene</a> og at
+                    påmeldingen er bindende (unntak ved legeerklæring).
                   </span>
                 </label>
 
@@ -603,8 +599,8 @@ export default function App() {
 
               <div className="faq-body">
                 <p>
-                  Menyen serveres i sharing-stil, med seks utvalgte retter til{" "}
-                  {formatPrice(info.pris)} per person.
+                  {formatPrice(info.pris)} per person for seks utvalgte retter i
+                  sharing-stil, og underholdning.
                 </p>
                 <p>
                   {vippsAktiv
