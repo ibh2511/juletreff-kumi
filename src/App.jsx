@@ -5,9 +5,10 @@ import { setupFaqAccordion } from "./faqAccordion.js"
 import { setupVisitorTracking } from "./visitorTracking.js"
 import AdminStats from "./AdminStats.jsx"
 import AdminLogin from "./AdminLogin.jsx"
+import VippsPayment from "./VippsPayment.jsx"
+import { PRICE_NOK, formatPrice } from "./payment.js"
 
-const GAS_URL =
-  "https://script.google.com/macros/s/AKfycbyk7CuE9vw2mW1cUOux-0kmh0FZYYkM3CQwajDxgholpf3ZWRcb7zpLU8ANCWtNNNB3/exec"
+import { GAS_SIGNUP_URL as GAS_URL } from "./gas.js"
 const IMAGES = ["images/kumi.jpeg", "images/munch.jpg"]
 
 export default function App() {
@@ -244,6 +245,25 @@ export default function App() {
                 <h2>✨Juletreff på KUMI🥂</h2>
                 <div className="subheader">19. desember kl 19.00</div>
 
+                {!status && (
+                  <div className="price-block">
+                    <div className="price-tag">
+                      <span className="price-amount">
+                        {formatPrice(PRICE_NOK)}
+                      </span>
+                      <span className="price-unit">per person</span>
+                    </div>
+                    <ul className="included">
+                      <li>Vegansk julemeny med seks retter</li>
+                      <li>KUMI i Oslobukta for oss selv</li>
+                      <li>Cocktails på Kranen, MUNCH etterpå</li>
+                    </ul>
+                    <div className="price-note">
+                      Betales med Vipps når du har meldt deg på
+                    </div>
+                  </div>
+                )}
+
                 {/* Vis kun venteliste-melding hvis status er 'waitlist' */}
                 {status === "waitlist" ? (
                   <div className="msg wait">
@@ -287,6 +307,7 @@ export default function App() {
                         </p>
                       </div>
                     )}
+                    {status === "ok" && <VippsPayment />}
                     {status === "error" && (
                       <div className="msg error">
                         <h3>⚠️ Noe gikk galt</h3>
@@ -361,7 +382,9 @@ export default function App() {
 
                   <div className="form-submit">
                     <button type="submit" disabled={sending}>
-                      {sending ? "Sender …" : "Send"}
+                      {sending
+                        ? "Sender …"
+                        : `Meld meg på · ${formatPrice(PRICE_NOK)}`}
                     </button>
                   </div>
                 </form>
@@ -473,16 +496,16 @@ export default function App() {
                   <div className="faq-body">
                     <p>
                       Menyen serveres i sharing-stil, med seks utvalgte retter
-                      til 590 kr per person.{" "}
-                      <b>Du betaler selv der og da til KUMI.</b>{" "}
+                      til <b>{formatPrice(PRICE_NOK)} per person.</b>
+                    </p>
+                    <p>
+                      Du betaler med <b>Vipps</b> rett etter at du har meldt
+                      deg på. Plassen din er sikret når betalingen er mottatt.
                     </p>
                     <p>
                       <i>
-                        Du må gi beskjed innen <b>16. desember</b> dersom du
-                        likevel ikke skal være med. Hvis du ikke melder deg av
-                        innen fristen (se e-post for mer), vil du få et
-                        Vipps-krav på 300 kr i no-show gebyr, som betales videre
-                        til KUMI.
+                        Kan du likevel ikke komme, gi beskjed innen{" "}
+                        <b>16. desember</b>.
                       </i>
                     </p>
                     <p>

@@ -265,6 +265,7 @@ textarea {
 }
 
 .msg {
+  width: 100%;
   text-align: center;
   padding: 20px;
   border-radius: 10px;
@@ -531,4 +532,134 @@ textarea {
 .faq-section,
 .map-container {
   min-width: 0;
+}
+
+/* Pris og hva som er inkludert */
+.price-block {
+  width: 100%;
+  margin: -10px 0 30px;
+  padding: 22px 24px;
+  border: 1px solid rgba(237, 183, 125, 0.35);
+  border-radius: 12px;
+  background: linear-gradient(
+    160deg,
+    rgba(237, 183, 125, 0.12),
+    rgba(237, 183, 125, 0.03)
+  );
+}
+.price-tag {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 8px;
+}
+.price-amount {
+  font-size: 34px;
+  font-weight: 800;
+  color: var(--accent);
+  letter-spacing: 0.5px;
+}
+.price-unit {
+  font-size: 14px;
+  color: var(--muted);
+  opacity: 0.8;
+}
+.included {
+  list-style: none;
+  padding: 0;
+  margin: 14px 0 12px;
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.9;
+}
+.included li::before {
+  content: "✦";
+  color: var(--accent);
+  margin-right: 8px;
+}
+.price-note {
+  font-size: 12px;
+  color: #bebebe;
+  letter-spacing: 0.5px;
+}
+
+/* Vipps-betaling etter påmelding */
+.vipps-card {
+  width: 100%;
+  margin-top: 20px;
+  padding: 26px 24px;
+  border-radius: 12px;
+  background: #1c1c1c;
+  border: 1px solid #ff5b24;
+  color: var(--muted);
+  text-align: center;
+  animation: fadeIn 1.25s ease-in-out;
+}
+.vipps-step {
+  display: inline-block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #ff5b24;
+  margin-bottom: 6px;
+}
+.vipps-card h3 {
+  margin: 0 0 8px;
+  font-size: 22px;
+  color: var(--ink);
+}
+.vipps-lead {
+  margin: 0 0 18px;
+  font-size: 14px;
+}
+.vipps-button {
+  display: block;
+  padding: 14px 0;
+  margin-bottom: 18px;
+  border-radius: 8px;
+  background: #ff5b24;
+  color: #fff;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+.vipps-button:hover {
+  background: #e64a15;
+  color: #fff;
+}
+.vipps-qr {
+  display: block;
+  width: 180px;
+  max-width: 100%;
+  margin: 0 auto 18px;
+  border-radius: 8px;
+  background: #fff;
+  padding: 8px;
+}
+.vipps-steps {
+  text-align: left;
+  margin: 0 auto;
+  padding-left: 20px;
+  max-width: 320px;
+  font-size: 14px;
+  line-height: 2;
+}
+.vipps-steps b {
+  color: var(--accent);
+}
+.vipps-number {
+  padding: 2px 10px;
+  border-radius: 6px;
+  border: 1px dashed var(--accent);
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+.vipps-copied {
+  margin-left: 8px;
+  font-size: 12px;
+  color: #8fd18f;
 }
