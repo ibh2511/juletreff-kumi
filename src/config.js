@@ -8,9 +8,9 @@ export const API_URL = import.meta.env.VITE_API_URL || ""
 // Visningsverdier før backend har svart. Backend (Skriptegenskaper) bestemmer det som gjelder.
 export const DEFAULTS = {
   pris: Number(import.meta.env.VITE_PRIS || 570),
-  dato: import.meta.env.VITE_DATO_TEKST || "Fredag 19. desember kl. 19.00",
-  fristTekst: import.meta.env.VITE_FRIST_TEKST || "tirsdag 16. desember",
-  vippsNummer: import.meta.env.VITE_VIPPS_NUMBER || "",
+  dato: import.meta.env.VITE_DATO_TEKST || "Fredag 18. desember kl. 19.00",
+  fristTekst: import.meta.env.VITE_FRIST_TEKST || "tirsdag 15. desember",
+  vippsNummer: import.meta.env.VITE_VIPPS_NUMBER || "76192",
 }
 
 // Kontakt for spørsmål, venteliste og legeerklæring (settes i .env)

@@ -1,7 +1,7 @@
 import { KONTAKT_EPOST, formatPrice } from "./config.js"
 
 // Fyll inn før lansering (se backend/OPPSETT.md)
-const ARRANGOR = "[Arrangør: navn på foreningen som tar imot betalingen]"
+const ARRANGOR = "Nordisk vegan"
 const ORGNR = "[org.nr.]"
 const KONTAKTPERSON = "[Kontaktperson]"
 const OPPDATERT = "[dato]"

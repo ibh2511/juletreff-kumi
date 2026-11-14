@@ -50,12 +50,12 @@ function cfg_(key, fallback) {
 function arrangement_() {
   return {
     pris: Number(cfg_('PRIS', '570')),
-    dato: cfg_('DATO_TEKST', 'Fredag 19. desember kl. 19.00'),
+    dato: cfg_('DATO_TEKST', 'Fredag 18. desember kl. 19.00'),
     sted: cfg_('STED', 'KUMI, Operagata 71B, Oslobukta'),
-    frist: new Date(cfg_('PAMELDINGSFRIST', '2026-12-16T23:59:59+01:00')),
-    fristTekst: cfg_('FRIST_TEKST', 'tirsdag 16. desember'),
-    kapasitet: Number(cfg_('KAPASITET', '40')),
-    vippsNummer: cfg_('VIPPS_NUMMER', ''),
+    frist: new Date(cfg_('PAMELDINGSFRIST', '2026-12-15T23:59:59+01:00')),
+    fristTekst: cfg_('FRIST_TEKST', 'tirsdag 15. desember'),
+    kapasitet: Number(cfg_('KAPASITET', '30')),
+    vippsNummer: cfg_('VIPPS_NUMMER', '76192'),
     vippsAktiv: !!cfg_('VIPPS_CLIENT_ID', '')
   };
 }
