@@ -13,6 +13,11 @@
  * Skriptegenskaper (Prosjektinnstillinger > Skriptegenskaper). Se backend/OPPSETT.md.
  */
 
+// Regnearket i Drive-mappen «Juletreff KUMI 2026». Kan overstyres med SHEET_ID i Skriptegenskaper.
+var STANDARD_SHEET_ID = '1uAHLTHwgjCizlvYMFi_SO28o5bhb1j6KD86dYPxc-4g';
+// Facebook-eventet. Kan overstyres med FACEBOOK_URL i Skriptegenskaper.
+var STANDARD_FACEBOOK_URL = 'https://www.facebook.com/events/664624256515915';
+
 var PAMELDING_ARK = 'Påmeldinger';
 var BESOK_ARK = 'Besøk';
 var KOLONNER = ['id', 'opprettet', 'status', 'fornavn', 'etternavn', 'epost', 'telefon', 'kommentar',
@@ -60,7 +65,7 @@ function vippsBase_() {
 }
 
 function sheet_(name) {
-  var ss = SpreadsheetApp.openById(cfg_('SHEET_ID'));
+  var ss = SpreadsheetApp.openById(cfg_('SHEET_ID', STANDARD_SHEET_ID));
   var sh = ss.getSheetByName(name);
   var kol = name === PAMELDING_ARK ? KOLONNER : BESOK_KOLONNER;
   if (!sh) {
@@ -320,6 +325,7 @@ function sendBekreftelse_(r) {
   var a = arrangement_();
   var site = cfg_('SITE_URL', 'https://ibh2511.github.io/juletreff-kumi').replace(/\/$/, '');
   var betalt = r.status === 'BETALT';
+  var fb = cfg_('FACEBOOK_URL', STANDARD_FACEBOOK_URL);
   var betalingTekst = betalt
     ? 'Betalt: ' + r.belop + ' kr med Vipps. Plassen din er sikret.'
     : 'Betal ' + r.belop + ' kr med Vipps' + (a.vippsNummer ? ' til Vipps-nummer ' + a.vippsNummer : '') +
@@ -340,6 +346,8 @@ function sendBekreftelse_(r) {
     escapeHtml_(betalingTekst) + '</p>' +
     '<p style="margin:18px 0 0;padding:12px 14px;border-radius:8px;border:1px solid #edb77d;color:#fff">' +
     '<b>Bindende påmelding.</b> ' + escapeHtml_(BINDENDE_TEKST.replace('Påmeldingen er bindende. ', '')) + '</p>' +
+    '<p style="margin:22px 0 0;text-align:center"><a href="' + fb + '" style="display:inline-block;padding:12px 22px;' +
+    'border-radius:8px;background:#1877f2;color:#fff;font-weight:bold;text-decoration:none">Trykk «Skal» på Facebook-eventet 📅</a></p>' +
     '<p style="margin:18px 0 0;font-size:13px;color:#bdb3a8">Spørsmål eller legeerklæring? Svar på denne e-posten. ' +
     '<a style="color:#edb77d" href="' + site + '/#vilkar">Salgsvilkår</a> · ' +
     '<a style="color:#edb77d" href="' + site + '/#personvern">Personvern</a></p>' +
@@ -350,6 +358,7 @@ function sendBekreftelse_(r) {
     (betalt ? 'Du er påmeldt juletreffet på KUMI.' : 'Takk for påmeldingen til juletreffet på KUMI.') + '\n\n' +
     'Når: ' + a.dato + '\nHvor: ' + a.sted + '\nPris: ' + r.belop + ' kr\nPåmeldings-ID: ' + r.id + '\n\n' +
     betalingTekst + '\n\n' + BINDENDE_TEKST + '\n\n' +
+    'Trykk «Skal» på Facebook-eventet: ' + fb + '\n\n' +
     'Salgsvilkår: ' + site + '/#vilkar\nPersonvern: ' + site + '/#personvern\n\n' +
     'Har du spørsmål, kan du svare på denne e-posten.\n\nGod jul!';
 
@@ -607,10 +616,7 @@ function escapeHtml_(s) {
 /** 1) Lager regnearket og utløseren. Kjør én gang. */
 function oppsett() {
   var props = PropertiesService.getScriptProperties();
-  if (!props.getProperty('SHEET_ID')) {
-    var ss = SpreadsheetApp.create('Juletreff KUMI – påmeldinger og besøk');
-    props.setProperty('SHEET_ID', ss.getId());
-  }
+  if (!props.getProperty('SHEET_ID')) props.setProperty('SHEET_ID', STANDARD_SHEET_ID);
   sheet_(PAMELDING_ARK); sheet_(BESOK_ARK);
   ScriptApp.getProjectTriggers().forEach(function (t) {
     if (t.getHandlerFunction() === 'pollPending') ScriptApp.deleteTrigger(t);

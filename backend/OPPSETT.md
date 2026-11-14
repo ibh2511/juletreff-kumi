@@ -33,6 +33,7 @@ Løsningen virker på to måter:
 | `VIPPS_NUMMER` | Vipps-nummeret (brukes uten Vipps-avtale, og når noen får plass fra ventelisten) |
 | `AVSENDER_NAVN` | `Juletreff på KUMI` |
 | `SVAR_EPOST` | e-posten deltakerne svarer til (spørsmål og legeerklæring) |
+| `FACEBOOK_URL` | lenken til årets Facebook-event (knappen i bekreftelses-e-posten) |
 
 Med Vipps-avtale legger du også til (hentes fra portal.vippsmobilepay.com → Utvikler):
 
@@ -46,7 +47,7 @@ Med Vipps-avtale legger du også til (hentes fra portal.vippsmobilepay.com → U
 
 Så lenge `VIPPS_CLIENT_ID` er tom, brukes Vipps-nummeret.
 
-4. Kjør funksjonen **`oppsett`** én gang. Den lager regnearket og en utløser som sjekker ubetalte Vipps-betalinger hvert 5. minutt.
+4. Kjør funksjonen **`oppsett`** én gang. Den kobler til regnearket i Drive-mappen «Juletreff KUMI 2026» (`1uAHLTHwgjCizlvYMFi_SO28o5bhb1j6KD86dYPxc-4g`), lager fanene «Påmeldinger» og «Besøk», og lager en utløser som sjekker ubetalte Vipps-betalinger hvert 5. minutt.
 5. Åpne **`settAdminPassord`**, bytt ut `SKRIV-PASSORDET-HER` med et passord på minst 12 tegn, kjør den, og **slett passordet fra koden** etterpå. Bare en saltet hash lagres.
 
 ## 2. Publiser backend
