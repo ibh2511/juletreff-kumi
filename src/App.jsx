@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react"
+import { Suspense, lazy, useCallback, useEffect, useState } from "react"
 import "./App.css"
 import { setupFloatingLabels } from "./labelFloat.js"
 import { setupFaqAccordion } from "./faqAccordion.js"
@@ -10,12 +10,22 @@ import {
   KONTAKT_EPOST,
   formatPrice,
 } from "./config.js"
-import AdminStats from "./AdminStats.jsx"
-import AdminLogin from "./AdminLogin.jsx"
 import VippsPayment from "./VippsPayment.jsx"
-import LegalPage from "./LegalPage.jsx"
 
-const IMAGES = ["images/kumi.jpeg", "images/munch.jpg"]
+// Admin og vilkår lastes bare når de åpnes, så forsiden blir mindre og raskere
+const AdminStats = lazy(() => import("./AdminStats.jsx"))
+const AdminLogin = lazy(() => import("./AdminLogin.jsx"))
+const LegalPage = lazy(() => import("./LegalPage.jsx"))
+
+// WebP i to størrelser, med JPEG som reserve for eldre nettlesere
+const IMAGES = [
+  { navn: "kumi", jpg: "images/kumi.jpeg" },
+  { navn: "munch", jpg: "images/munch.jpg" },
+]
+const BILDE_SIZES = "(max-width: 768px) 100vw, 600px"
+
+// Teksten i FAQ-en «Blir det underholdning?»
+const UNDERHOLDNING = "[Underholdning: fyll inn hva som skjer i løpet av kvelden]"
 const OKT_KEY = "juletreff-admin-okt"
 
 function viewFromHash() {
@@ -116,13 +126,14 @@ export default function App() {
     return () => clearTimeout(timer)
   }, [])
 
-  // Fade mellom bilder hvert 4 sekund
+  // Fade mellom bilder hvert 4 sekund (bare på forsiden)
   useEffect(() => {
+    if (view !== "main") return
     const interval = setInterval(() => {
       setCurrentImageIndex((prev) => (prev + 1) % IMAGES.length)
     }, 4000)
     return () => clearInterval(interval)
-  }, [])
+  }, [view])
 
   // Flytende etiketter og FAQ må kobles på nytt når forsiden vises
   const skjemaSynlig = view === "main" && !FERDIG.includes(status)
@@ -194,15 +205,23 @@ export default function App() {
   }, [okt])
 
   if (view === "admin") {
-    return okt ? (
-      <AdminStats okt={okt} onLogout={loggUt} />
-    ) : (
-      <AdminLogin onLoginSuccess={loggInn} />
+    return (
+      <Suspense fallback={null}>
+        {okt ? (
+          <AdminStats okt={okt} onLogout={loggUt} />
+        ) : (
+          <AdminLogin onLoginSuccess={loggInn} />
+        )}
+      </Suspense>
     )
   }
 
   if (view === "vilkar" || view === "personvern") {
-    return <LegalPage page={view} info={info} />
+    return (
+      <Suspense fallback={null}>
+        <LegalPage page={view} info={info} />
+      </Suspense>
+    )
   }
 
   const pris = formatPrice(detaljer?.belop || info.pris)
@@ -226,16 +245,26 @@ export default function App() {
         <div className="container">
           {/* Bilde med fade */}
           <div className="booking-image">
-            {IMAGES.map((src, index) => (
-              <img
-                key={src}
-                className={`booking-img ${
-                  index === currentImageIndex ? "active" : ""
-                }`}
-                src={src}
-                alt="Juletreff på KUMI"
-                loading={index === currentImageIndex ? undefined : "lazy"}
-              />
+            {IMAGES.map((bilde, index) => (
+              <picture key={bilde.navn}>
+                <source
+                  type="image/webp"
+                  srcSet={`images/${bilde.navn}-600.webp 600w, images/${bilde.navn}-1000.webp 1000w`}
+                  sizes={BILDE_SIZES}
+                />
+                <img
+                  className={`booking-img ${
+                    index === currentImageIndex ? "active" : ""
+                  }`}
+                  src={bilde.jpg}
+                  alt="Juletreff på KUMI"
+                  width="1000"
+                  height="666"
+                  decoding="async"
+                  fetchPriority={index === 0 ? "high" : "low"}
+                  loading={index === 0 ? undefined : "lazy"}
+                />
+              </picture>
             ))}
           </div>
 
@@ -396,13 +425,25 @@ export default function App() {
               <form onSubmit={handleSubmit}>
                 <div className="form-group-row">
                   <div className="form-group">
-                    <input type="text" name="Fornavn" id="firstName" required />
+                    <input
+                      type="text"
+                      name="Fornavn"
+                      id="firstName"
+                      autoComplete="given-name"
+                      required
+                    />
                     <label htmlFor="firstName" className="form-label">
                       Navn
                     </label>
                   </div>
                   <div className="form-group">
-                    <input type="text" name="Etternavn" id="lastName" required />
+                    <input
+                      type="text"
+                      name="Etternavn"
+                      id="lastName"
+                      autoComplete="family-name"
+                      required
+                    />
                     <label htmlFor="lastName" className="form-label">
                       Etternavn
                     </label>
@@ -411,13 +452,29 @@ export default function App() {
 
                 <div className="form-group-row">
                   <div className="form-group">
-                    <input type="tel" name="Telefon" id="phone" required />
+                    <input
+                      type="tel"
+                      name="Telefon"
+                      id="phone"
+                      autoComplete="tel"
+                      inputMode="tel"
+                      required
+                    />
                     <label htmlFor="phone" className="form-label">
                       Telefon
                     </label>
                   </div>
                   <div className="form-group">
-                    <input type="email" name="Email" id="email" required />
+                    <input
+                      type="email"
+                      name="Email"
+                      id="email"
+                      autoComplete="email"
+                      inputMode="email"
+                      autoCapitalize="none"
+                      spellCheck="false"
+                      required
+                    />
                     <label htmlFor="email" className="form-label">
                       E-post
                     </label>
@@ -459,6 +516,8 @@ export default function App() {
             <iframe
               src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d7990.0!2d10.689846816215897!3d59.90700408187198!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x46416e62c48b6a31%3A0xdbadeeb694f9f437!2sOperagata%2071B%2C%200194%20Oslo!5e0!3m2!1sen!2sno!4v1600000000000!5m2!1sen!2sno"
               allowFullScreen=""
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
               title="KUMI kart"
             />
           </div>
@@ -475,8 +534,8 @@ export default function App() {
 
               <div className="faq-body">
                 <p>
-                  Oslo vegansamfunn og Vegan Norway arrangerer juletreff på KUMI
-                  i Oslobukta <b>{info.dato},</b> hvor vi har lokalet for oss
+                  Oslo vegansamfunn, Vegan Norway og Nordisk vegan arrangerer
+                  juletreff på KUMI i Oslobukta <b>{info.dato},</b> hvor vi har lokalet for oss
                   selv.
                 </p>
                 <p>
@@ -581,6 +640,17 @@ export default function App() {
                   <a href="mailto:kumi@kumi.no">kumi@kumi.no</a> eller{" "}
                   <a href="tel:+4797302866">973 02 866</a>
                 </p>
+              </div>
+            </details>
+
+            <details>
+              <summary className="faq">
+                <span>Blir det underholdning?</span>
+                <span className="icon">+</span>
+              </summary>
+
+              <div className="faq-body">
+                <p>{UNDERHOLDNING}</p>
               </div>
             </details>
 
