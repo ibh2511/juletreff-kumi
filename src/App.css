@@ -663,3 +663,147 @@ textarea {
   font-size: 12px;
   color: #8fd18f;
 }
+
+/* Bindende påmelding */
+.price-binding {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid rgba(237, 183, 125, 0.25);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--accent);
+}
+.seats-left {
+  margin-top: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ff8a5b;
+}
+.binding-check {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  text-align: left;
+  margin: -8px 0 22px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+  cursor: pointer;
+}
+.binding-check input {
+  flex: none;
+  width: 18px;
+  height: 18px;
+  margin: 2px 0 0;
+  accent-color: var(--accent);
+}
+.binding-check a,
+.binding-box a {
+  color: var(--accent);
+  border-bottom: 0.75px dotted var(--accent);
+}
+.binding-box {
+  width: 100%;
+  margin-top: 16px;
+  padding: 14px 16px;
+  border: 1px solid var(--accent);
+  border-radius: 10px;
+  font-size: 14px;
+  color: var(--muted);
+  text-align: left;
+}
+.binding-box b {
+  color: var(--ink);
+}
+.form-error {
+  margin-bottom: 24px;
+}
+.form-submit button.vipps-submit {
+  background: #ff5b24;
+  color: #fff;
+}
+.form-submit button.vipps-submit:hover {
+  background: #e64a15;
+}
+.vipps-ref {
+  margin: 14px 0 0;
+  font-size: 12px;
+  color: #bebebe;
+}
+.link-btn {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  color: var(--muted);
+  border-bottom: 0.75px dotted var(--muted);
+  cursor: pointer;
+}
+
+/* Bunntekst med lenker */
+.site-footer {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 18px;
+  font-size: 13px;
+  color: #5b4a3a;
+}
+.site-footer a {
+  color: #111;
+  font-weight: 500;
+  border-bottom: 0.75px dotted #111;
+}
+
+/* Salgsvilkår og personvern */
+.legal-page {
+  width: min(100%, 760px);
+  margin: 0 auto;
+  padding: 24px 16px 40px;
+}
+.legal {
+  background: var(--panel);
+  color: var(--muted);
+  border-radius: 15px;
+  padding: 32px 28px;
+  line-height: 1.65;
+  font-size: 15px;
+}
+.legal h1 {
+  color: var(--accent);
+  font-size: 30px;
+  margin: 14px 0 4px;
+}
+.legal h2 {
+  color: var(--ink);
+  font-size: 18px;
+  letter-spacing: 0.3px;
+  margin: 26px 0 6px;
+}
+.legal p,
+.legal ul {
+  margin: 0 0 10px;
+}
+.legal li {
+  margin-bottom: 8px;
+}
+.legal a {
+  color: var(--accent);
+  font-weight: 400;
+}
+.legal b {
+  color: var(--ink);
+}
+.legal-updated {
+  font-size: 13px;
+  font-style: italic;
+  color: #bebebe;
+}
+.legal-back {
+  font-size: 14px;
+}
+@media (max-width: 450px) {
+  .legal {
+    padding: 24px 18px;
+  }
+}

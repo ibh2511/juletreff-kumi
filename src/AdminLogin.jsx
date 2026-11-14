@@ -1,9 +1,9 @@
 import { useState } from "react"
+import { apiPost } from "./api.js"
 import "./AdminStats.css"
 
-// Enkelt passord (kan endres her)
-const ADMIN_PASSWORD = "juletreff2025"
-
+// Passordet sjekkes i backend (Apps Script). Nettleseren får bare en tidsbegrenset
+// innloggingsnøkkel tilbake, og passordet lagres aldri her.
 export default function AdminLogin({ onLoginSuccess }) {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
@@ -13,48 +13,42 @@ export default function AdminLogin({ onLoginSuccess }) {
     e.preventDefault()
     setIsLoading(true)
     setError("")
-
-    // Simuler litt loading-tid for sikkerhet
-    await new Promise((resolve) => setTimeout(resolve, 500))
-
-    if (password === ADMIN_PASSWORD) {
-      // Lagre autentisering i sessionStorage (forsvinner ved browser-lukking)
-      sessionStorage.setItem("juletreff-admin-auth", "true")
-      onLoginSuccess()
-    } else {
-      setError("Feil passord")
-      setPassword("")
+    try {
+      const d = await apiPost({ action: "admin", passord: password })
+      if (d.ok && d.okt) {
+        onLoginSuccess(d.okt)
+        return
+      }
+      setError(d.error || "Feil passord")
+    } catch {
+      setError("Fikk ikke kontakt med backend")
     }
+    setPassword("")
     setIsLoading(false)
   }
 
   return (
     <div className="admin-container">
       <div className="admin-header">
-        <h1>🔐 Admin Login</h1>
-        <button
-          className="back-btn"
-          onClick={() => (window.location.href = "/juletreff-kumi/")}
-        >
+        <h1>🔐 Admin</h1>
+        <a className="back-btn" href="#">
           ← Tilbake til påmelding
-        </button>
+        </a>
       </div>
 
       <div className="login-form">
         <form onSubmit={handleSubmit}>
-          <div className="form-group">
-            <label htmlFor="admin-password">Passord:</label>
-            <input
-              type="password"
-              id="admin-password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              disabled={isLoading}
-              autoFocus
-              placeholder="Skriv inn admin-passord"
-            />
-          </div>
+          <label htmlFor="admin-password">Passord</label>
+          <input
+            type="password"
+            id="admin-password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
+            disabled={isLoading}
+            autoFocus
+            autoComplete="current-password"
+          />
 
           {error && <div className="error-message">⚠️ {error}</div>}
 
@@ -63,15 +57,9 @@ export default function AdminLogin({ onLoginSuccess }) {
             disabled={isLoading || !password.trim()}
             className="login-btn"
           >
-            {isLoading ? "Logger inn..." : "Logg inn"}
+            {isLoading ? "Logger inn …" : "Logg inn"}
           </button>
         </form>
-
-        <div className="login-info">
-          <p>
-            <small>💡 Tips: Kontakt admin for passord</small>
-          </p>
-        </div>
       </div>
     </div>
   )
