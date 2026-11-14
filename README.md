@@ -5,4 +5,4 @@ Påmeldingsside for juletreffet på KUMI, med Vipps-betaling, bindende påmeldin
 - `src/` – React-siden (Vite). `#admin` er adminsiden, `#vilkar` og `#personvern` er salgsvilkår og personvern.
 - `backend/` – Google Apps Script som tar imot påmeldinger, håndterer Vipps, sender bekreftelse og gir data til adminsiden.
 
-Se [backend/OPPSETT.md](backend/OPPSETT.md) for oppsett. Kort: `cp .env.example .env`, fyll inn, og `npm run deploy`.
+Se [backend/OPPSETT.md](backend/OPPSETT.md) for oppsett. Siden publiseres automatisk til GitHub Pages når noe merges til `main` (`.github/workflows/deploy.yml`). Du kan også publisere manuelt under Actions → «Publiser siden» → Run workflow.

@@ -21,7 +21,9 @@ export default function AdminLogin({ onLoginSuccess }) {
       }
       setError(d.error || "Feil passord")
     } catch {
-      setError("Fikk ikke kontakt med backend")
+      setError(
+        "Fikk ikke kontakt med backend. Sjekk at Apps Script er publisert med tilgang «Alle»."
+      )
     }
     setPassword("")
     setIsLoading(false)

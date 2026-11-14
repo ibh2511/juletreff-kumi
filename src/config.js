@@ -13,6 +13,8 @@ export const DEFAULTS = {
   dato: import.meta.env.VITE_DATO_TEKST || "Fredag 18. desember kl. 19.00",
   fristTekst: import.meta.env.VITE_FRIST_TEKST || "tirsdag 15. desember",
   vippsNummer: import.meta.env.VITE_VIPPS_NUMBER || "76192",
+  // Beholdes ved trekk med legeerklæring under 48 timer før start (KUMIs no-show-gebyr)
+  noshow: 300,
 }
 
 // Kontakt for spørsmål, venteliste og legeerklæring (settes i .env)
