@@ -414,7 +414,12 @@ function adminLogin_(passord) {
   var cache = CacheService.getScriptCache();
   var forsok = Number(cache.get('admin_feil') || 0);
   if (forsok >= 10) return { ok: false, error: 'For mange forsøk. Vent 15 minutter.' };
-  if (!passord || hashPassord_(passord, cfg_('ADMIN_SALT')) !== cfg_('ADMIN_PASSORD_HASH')) {
+  hentNyttAdminPassord_();
+  var salt = cfg_('ADMIN_SALT', ''), hash = cfg_('ADMIN_PASSORD_HASH', '');
+  if (!salt || !hash) {
+    return { ok: false, error: 'Adminpassordet er ikke satt ennå. Legg det inn som skriptegenskapen ADMIN_PASSORD i Apps Script (Prosjektinnstillinger → Skriptegenskaper).' };
+  }
+  if (!passord || hashPassord_(passord, salt) !== hash) {
     cache.put('admin_feil', String(forsok + 1), 900);
     Utilities.sleep(800);
     return { ok: false, error: 'Feil passord' };
@@ -423,6 +428,17 @@ function adminLogin_(passord) {
   var okt = nyNokkel_(48);
   cache.put('admin_okt_' + okt, '1', 2 * 3600); // innloggingen varer i 2 timer
   return { ok: true, okt: okt };
+}
+
+/** Et passord lagt inn som skriptegenskapen ADMIN_PASSORD gjøres om til salt + hash, og klarteksten slettes. */
+function hentNyttAdminPassord_() {
+  var props = PropertiesService.getScriptProperties();
+  var nytt = props.getProperty('ADMIN_PASSORD');
+  if (!nytt) return;
+  var salt = nyNokkel_(32);
+  props.setProperty('ADMIN_SALT', salt);
+  props.setProperty('ADMIN_PASSORD_HASH', hashPassord_(nytt, salt));
+  props.deleteProperty('ADMIN_PASSORD');
 }
 
 function adminLogout_(okt) {
