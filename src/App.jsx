@@ -8,8 +8,7 @@ import AdminLogin from "./AdminLogin.jsx"
 import VippsPayment from "./VippsPayment.jsx"
 import { PRICE_NOK, formatPrice } from "./payment.js"
 
-const GAS_URL =
-  "https://script.google.com/macros/s/AKfycbyk7CuE9vw2mW1cUOux-0kmh0FZYYkM3CQwajDxgholpf3ZWRcb7zpLU8ANCWtNNNB3/exec"
+import { GAS_SIGNUP_URL as GAS_URL } from "./gas.js"
 const IMAGES = ["images/kumi.jpeg", "images/munch.jpg"]
 
 export default function App() {
