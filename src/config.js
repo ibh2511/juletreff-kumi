@@ -3,7 +3,9 @@
 // Verdiene settes ved bygging i en .env-fil (se .env.example).
 
 // Adressen til Apps Script-backenden (backend/Code.gs), slutter på /exec
-export const API_URL = import.meta.env.VITE_API_URL || ""
+export const API_URL =
+  import.meta.env.VITE_API_URL ||
+  "https://script.google.com/macros/s/AKfycby96iLN04Wscf4Y73WyVeLGcHGIQisuefsv-p7_cXogQ4Yo7IDFf8_WEDCYY2h_Mj8QTw/exec"
 
 // Visningsverdier før backend har svart. Backend (Skriptegenskaper) bestemmer det som gjelder.
 export const DEFAULTS = {
