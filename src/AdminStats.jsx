@@ -168,10 +168,18 @@ export default function AdminStats({ okt, onLogout }) {
 
   const handlingTekst = {
     betalt: "Marker som betalt",
-    trekk: "Trekk påmeldingen",
-    refundert: "Marker som refundert",
     tilbud: "Gi plass fra ventelisten",
+    refundert: "Marker som refundert",
+    trekk: "Trekk påmeldingen",
     slett: "Slett testen",
+  }
+  // Fargekoder: grønn = betaling inn, blå = plass, gul = penger ut, rød = fjerner påmeldingen
+  const handlingIkon = {
+    betalt: "🟢",
+    tilbud: "🔵",
+    refundert: "🟡",
+    trekk: "🔴",
+    slett: "⚫",
   }
 
   return (
@@ -455,21 +463,31 @@ export default function AdminStats({ okt, onLogout }) {
                         {r.notat && <div className="liten">📝 {r.notat}</div>}
                       </td>
                       <td className="handlinger">
-                        {valg.map((h) => (
-                          <button
-                            key={h}
-                            className={`mini ${h === "trekk" || h === "slett" ? "fare" : ""}`}
-                            onClick={() => apne(r.id, h)}
+                        {valg.length > 0 && (
+                          <select
+                            className={`handling-velger ${erAapen ? `h-${aapen.handling}` : ""}`}
+                            aria-label={`Handling for ${r.navn}`}
+                            value={erAapen ? aapen.handling : ""}
+                            onChange={(e) =>
+                              e.target.value
+                                ? apne(r.id, e.target.value)
+                                : setAapen(null)
+                            }
                           >
-                            {handlingTekst[h]}
-                          </button>
-                        ))}
+                            <option value="">Velg handling …</option>
+                            {valg.map((h) => (
+                              <option key={h} value={h}>
+                                {handlingIkon[h]} {handlingTekst[h]}
+                              </option>
+                            ))}
+                          </select>
+                        )}
                       </td>
                     </tr>,
                     erAapen && (
                       <tr key={`${r.id}-handling`} className="handling-rad">
                         <td colSpan={6}>
-                          <div className="handling">
+                          <div className={`handling h-${aapen.handling}`}>
                             <b>
                               {handlingTekst[aapen.handling]}: {r.navn}
                             </b>
@@ -545,7 +563,7 @@ export default function AdminStats({ okt, onLogout }) {
                             />
                             <div className="handling-knapper">
                               <button
-                                className={`mini ${["trekk", "slett"].includes(aapen.handling) ? "fare" : "ok"}`}
+                                className={`mini bekreft h-${aapen.handling}`}
                                 disabled={jobber}
                                 onClick={() => utfor(r)}
                               >

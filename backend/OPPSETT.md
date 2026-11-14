@@ -24,11 +24,11 @@ Løsningen virker på to måter:
 | Egenskap | Verdi |
 |---|---|
 | `SITE_URL` | `https://ibh2511.github.io/juletreff-kumi` |
-| `PRIS` | `560` |
-| `DATO_TEKST` | `Fredag 18. desember kl. 19.00` |
+| `PRIS` | `600` |
+| `DATO_TEKST` | `Fredag 18. desember kl. 18.30` |
 | `STED` | `KUMI, Operagata 71B, Oslobukta` |
-| `PAMELDINGSFRIST` | `2026-12-15T23:59:59+01:00` (påmeldingen stenger automatisk) |
-| `FRIST_TEKST` | `tirsdag 15. desember` |
+| `PAMELDINGSFRIST` | `2026-12-17T23:59:59+01:00` (påmeldingen stenger automatisk) |
+| `FRIST_TEKST` | `torsdag 17. desember` |
 | `KAPASITET` | `30` |
 | `VIPPS_NUMMER` | Vipps-nummeret (brukes uten Vipps-avtale, og når noen får plass fra ventelisten) |
 | `AVSENDER_NAVN` | `Juletreff på KUMI` |
