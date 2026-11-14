@@ -262,27 +262,41 @@ export default function App() {
             <div className="subheader">{info.dato}</div>
 
             {skjemaSynlig && (
-              <div className="price-block">
-                <div className="price-tag">
-                  <span className="price-amount">{formatPrice(info.pris)}</span>
-                  <span className="price-unit">per person</span>
-                </div>
-                <ul className="included">
-                  <li>Seks veganske juleretter</li>
-                  <li>Underholdning</li>
-                  <li>KUMI for oss selv</li>
-                </ul>
-                <div className="price-note">
-                  {info.fullt
-                    ? "Fullt nå, men meld deg gjerne på ventelisten. Du betaler først hvis du får plass."
-                    : `Betal enkelt med Vipps · påmelding innen ${info.fristTekst}`}
-                </div>
-                {!info.fullt && info.ledige !== null && info.ledige <= 10 && (
-                  <div className="seats-left">
-                    Bare {info.ledige} {info.ledige === 1 ? "plass" : "plasser"}{" "}
-                    igjen
+              <div className="ticket">
+                <div className="ticket-head">
+                  <div className="ticket-price">
+                    <span className="ticket-amount">{formatPrice(info.pris)}</span>
+                    <span className="ticket-unit">per person</span>
                   </div>
-                )}
+                  {info.fullt ? (
+                    <span className="ticket-pill full">Fullt · venteliste</span>
+                  ) : (
+                    info.ledige !== null &&
+                    info.ledige <= 10 && (
+                      <span className="ticket-pill">
+                        {info.ledige} {info.ledige === 1 ? "plass" : "plasser"}{" "}
+                        igjen
+                      </span>
+                    )
+                  )}
+                </div>
+                <div className="ticket-cut" aria-hidden="true" />
+                <ul className="ticket-items">
+                  <li>
+                    <span aria-hidden="true">🍽️</span>Seks veganske juleretter
+                  </li>
+                  <li>
+                    <span aria-hidden="true">🎶</span>Underholdning
+                  </li>
+                  <li>
+                    <span aria-hidden="true">🎄</span>KUMI for oss selv
+                  </li>
+                </ul>
+                <div className="ticket-foot">
+                  {info.fullt
+                    ? "Du betaler først hvis du får plass"
+                    : `Vipps · påmelding innen ${info.fristTekst}`}
+                </div>
               </div>
             )}
 
