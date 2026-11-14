@@ -20,6 +20,12 @@ const LegalPage = lazy(() => import("./LegalPage.jsx"))
 const IMAGES = ["images/kumi.jpeg", "images/munch.jpg"]
 
 // Teksten i FAQ-en «Blir det underholdning?»
+// «torsdag 17. desember» → «17. des»
+const kortDato = (t) => {
+  const m = String(t || "").match(/(\d{1,2})\.\s*([a-zæøå]{3})/i)
+  return m ? `${m[1]}. ${m[2].toLowerCase()}` : t
+}
+
 const UNDERHOLDNING =
   "Ja! Underholdning er inkludert i prisen. Mer om hva som skjer i løpet av kvelden kommer snart."
 const OKT_KEY = "juletreff-admin-okt"
@@ -262,31 +268,29 @@ export default function App() {
             <div className="subheader">{info.dato}</div>
 
             {skjemaSynlig && (
-              <div className="pris">
-                <div className="pris-belop">
-                  {formatPrice(info.pris)} <span>per person</span>
-                </div>
-                <p className="pris-inkl">
-                  <span>Seks veganske juleretter</span> ·{" "}
-                  <span>underholdning</span> · <span>KUMI for oss selv</span>
-                </p>
-                <p className="pris-frist">
-                  {info.fullt ? (
-                    "Fullt nå. Du kan stå på venteliste og betaler bare hvis du får plass."
-                  ) : (
-                    <span>Påmelding innen {info.fristTekst}</span>
-                  )}
-                  {!info.fullt && info.ledige !== null && info.ledige <= 10 && (
-                    <>
-                      {" · "}
-                      <strong>
-                        {info.ledige} {info.ledige === 1 ? "plass" : "plasser"}{" "}
-                        igjen
-                      </strong>
-                    </>
-                  )}
-                </p>
-              </div>
+              <>
+                <dl className="fakta">
+                  <div>
+                    <dt>per person</dt>
+                    <dd>{formatPrice(info.pris)}</dd>
+                  </div>
+                  <div>
+                    <dt>+ underholdning</dt>
+                    <dd>6 retter</dd>
+                  </div>
+                  <div>
+                    <dt>påmeldingsfrist</dt>
+                    <dd>{kortDato(info.fristTekst)}</dd>
+                  </div>
+                </dl>
+                {(info.fullt || (info.ledige !== null && info.ledige <= 10)) && (
+                  <p className="fakta-status">
+                    {info.fullt
+                      ? "Fullt nå. Meld deg på ventelisten, du betaler bare hvis du får plass."
+                      : `Bare ${info.ledige} ${info.ledige === 1 ? "plass" : "plasser"} igjen`}
+                  </p>
+                )}
+              </>
             )}
 
             {status === "sjekker" && (

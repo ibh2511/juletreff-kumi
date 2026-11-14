@@ -542,48 +542,61 @@ textarea {
   min-width: 0;
 }
 
-/* Pris: tre rolige linjer */
-.pris {
+/* Nøkkelfakta mellom overskrift og skjema: samme bredde, linje og hjørner som feltene */
+.fakta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   width: 100%;
-  margin: 4px 0 30px;
-  text-align: center;
+  margin: 0 0 30px;
+  border: 1px solid rgba(244, 234, 223, 0.35);
+  border-radius: 4px;
 }
-.pris-belop {
-  font-size: 30px;
+.fakta > div {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 2px;
+  padding: 14px 6px 12px;
+  min-width: 0;
+}
+.fakta > div + div {
+  border-left: 1px solid rgba(244, 234, 223, 0.18);
+}
+.fakta dd {
+  margin: 0;
+  font-size: 22px;
   font-weight: 500;
   line-height: 1.2;
   color: var(--accent);
-  letter-spacing: 0.5px;
-}
-.pris-belop span {
-  font-size: 13px;
-  font-weight: 300;
-  color: var(--muted);
-  opacity: 0.7;
-  letter-spacing: 0.5px;
-}
-.pris-inkl {
-  margin: 8px 0 0;
-  font-size: 14px;
-  font-weight: 300;
-  color: var(--muted);
-  letter-spacing: 0.3px;
-}
-.pris-frist {
-  margin: 4px 0 0;
-  font-size: 12px;
-  font-weight: 300;
-  color: #bdb3a8;
-  letter-spacing: 0.4px;
-}
-.pris-inkl span,
-.pris-frist span,
-.pris-frist strong {
+  letter-spacing: 1px;
   white-space: nowrap;
 }
-.pris-frist strong {
-  font-weight: 500;
+.fakta dt {
+  font-size: 11px;
+  font-weight: 300;
+  color: #bdb3a8;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+.fakta-status {
+  margin: -18px 0 26px;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.6px;
   color: #ffab8a;
+}
+@media (max-width: 420px) {
+  .fakta dd {
+    font-size: 18px;
+    letter-spacing: 0.5px;
+  }
+  .fakta > div {
+    padding: 12px 4px 10px;
+  }
+  .fakta dt {
+    font-size: 9.5px;
+    letter-spacing: 0.6px;
+  }
 }
 
 /* Vipps-betaling etter påmelding */
