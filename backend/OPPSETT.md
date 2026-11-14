@@ -24,7 +24,7 @@ Løsningen virker på to måter:
 | Egenskap | Verdi |
 |---|---|
 | `SITE_URL` | `https://ibh2511.github.io/juletreff-kumi` |
-| `PRIS` | `570` |
+| `PRIS` | `560` |
 | `DATO_TEKST` | `Fredag 18. desember kl. 19.00` |
 | `STED` | `KUMI, Operagata 71B, Oslobukta` |
 | `PAMELDINGSFRIST` | `2026-12-15T23:59:59+01:00` (påmeldingen stenger automatisk) |

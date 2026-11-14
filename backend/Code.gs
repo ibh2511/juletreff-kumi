@@ -49,7 +49,7 @@ function cfg_(key, fallback) {
 
 function arrangement_() {
   return {
-    pris: Number(cfg_('PRIS', '570')),
+    pris: Number(cfg_('PRIS', '560')),
     dato: cfg_('DATO_TEKST', 'Fredag 18. desember kl. 19.00'),
     sted: cfg_('STED', 'KUMI, Operagata 71B, Oslobukta'),
     frist: new Date(cfg_('PAMELDINGSFRIST', '2026-12-15T23:59:59+01:00')),

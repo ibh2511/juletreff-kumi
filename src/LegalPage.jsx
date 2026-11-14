@@ -2,7 +2,9 @@ import { KONTAKT_EPOST, formatPrice } from "./config.js"
 
 // Fyll inn før lansering (se backend/OPPSETT.md)
 const ARRANGOR = "Nordisk vegan"
-const ORGNR = "[org.nr.]"
+const MOTTAKER = "Elstad Media"
+const ORGNR = "938 529 205"
+const ADRESSE = "Bruddveien 4, 2016 Frogner"
 const KONTAKTPERSON = "[Kontaktperson]"
 const OPPDATERT = "[dato]"
 
@@ -22,8 +24,8 @@ function Vilkar({ info }) {
 
       <h2>Arrangør</h2>
       <p>
-        Juletreffet arrangeres av Oslo vegansamfunn og Vegan Norway. Betalingen
-        tas imot av {ARRANGOR}, org.nr. {ORGNR}. Kontakt: {KONTAKTPERSON},{" "}
+        Arrangør: {ARRANGOR}. Betalingen tas imot av {MOTTAKER}, org.nr.{" "}
+        {ORGNR}, {ADRESSE}. Kontakt: {KONTAKTPERSON},{" "}
         <Epost />.
       </p>
 
@@ -93,7 +95,8 @@ function Personvern() {
 
       <h2>Behandlingsansvarlig</h2>
       <p>
-        {ARRANGOR}, org.nr. {ORGNR}, er ansvarlig for personopplysningene som
+        {MOTTAKER}, org.nr. {ORGNR}, {ADRESSE}, er ansvarlig for
+        personopplysningene som
         samles inn ved påmelding til juletreffet. Kontaktperson for personvern
         er {KONTAKTPERSON}, <Epost />.
       </p>
