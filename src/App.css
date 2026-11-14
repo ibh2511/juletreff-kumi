@@ -42,6 +42,11 @@ html,
 body {
   overflow-x: hidden;
 }
+/* Lar innholdet krympe til skjermbredden i stedet for å presse seg utover */
+#root {
+  min-width: 0;
+  max-width: 100%;
+}
 
 /* Legg til desktop padding separat */
 @media (min-width: 769px) {

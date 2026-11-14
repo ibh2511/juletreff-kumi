@@ -58,7 +58,7 @@ export default function AdminStats({ okt, onLogout }) {
   const [refunder, setRefunder] = useState(true)
   const [sent, setSent] = useState(false) // trukket under 48 timer før start
   const [jobber, setJobber] = useState(false)
-  const [melding, setMelding] = useState("")
+  const [melding, setMelding] = useState(null) // { tekst, sted, feil }
   const [plasser, setPlasser] = useState("")
   const [test, setTest] = useState({ fornavn: "Test", etternavn: "Testesen", epost: "" })
   const [testLenke, setTestLenke] = useState("")
@@ -104,7 +104,7 @@ export default function AdminStats({ okt, onLogout }) {
     // Standard: under 48 timer hvis det er mindre enn 48 timer igjen nå
     const start = data?.arrangement?.start
     setSent(!!start && Date.now() > new Date(start).getTime() - 48 * 36e5)
-    setMelding("")
+    setMelding(null)
   }
 
   const utfor = async (r) => {
@@ -121,19 +121,19 @@ export default function AdminStats({ okt, onLogout }) {
       })
       if (d.utlogget) return onLogout()
       if (!d.ok) throw new Error(d.error)
-      setMelding(d.melding || "Lagret.")
+      setMelding({ tekst: d.melding || "Lagret.", sted: "liste" })
       setAapen(null)
       await last()
     } catch (err) {
-      setMelding(`⚠️ ${err.message}`)
+      setMelding({ tekst: err.message, sted: "liste", feil: true })
     }
     setJobber(false)
   }
 
   // Innstillinger og testpåmelding lagres i backend og gjelder for hele løsningen
-  const send = async (body, etter) => {
+  const send = async (body, sted, etter) => {
     setJobber(true)
-    setMelding("")
+    setMelding(null)
     try {
       const d = await apiPost({ ...body, okt })
       if (d.utlogget) return onLogout()
@@ -142,14 +142,23 @@ export default function AdminStats({ okt, onLogout }) {
         throw new Error(
           "Backend kjenner ikke denne funksjonen ennå. Lim inn den nye Code.gs og lag en ny versjon."
         )
-      setMelding(d.melding)
+      setMelding({ tekst: d.melding, sted })
       etter?.(d)
       await last()
     } catch (err) {
-      setMelding(`⚠️ ${err.message}`)
+      setMelding({ tekst: err.message, sted, feil: true })
     }
     setJobber(false)
   }
+
+  // Meldingen vises ved funksjonen som ga den
+  const vis = (sted) =>
+    melding?.sted === sted && (
+      <div className={`admin-note lokal ${melding.feil ? "feil" : "ok"}`} role="status">
+        {melding.feil ? "⚠️ " : "✓ "}
+        {melding.tekst}
+      </div>
+    )
 
   if (!data) {
     return (
@@ -205,7 +214,6 @@ export default function AdminStats({ okt, onLogout }) {
       </div>
 
       {feil && <div className="admin-note feil">⚠️ {feil}</div>}
-      {melding && <div className="admin-note">{melding}</div>}
 
       <div className="stats-grid">
         <div className="stat-card">
@@ -271,7 +279,7 @@ export default function AdminStats({ okt, onLogout }) {
                   jobber || plasser === "" || Number(plasser) === arr.kapasitet
                 }
                 onClick={() =>
-                  send({ action: "innstillinger", kapasitet: Number(plasser) }, () =>
+                  send({ action: "innstillinger", kapasitet: Number(plasser) }, "plasser", () =>
                     setPlasser("")
                   )
                 }
@@ -283,6 +291,7 @@ export default function AdminStats({ okt, onLogout }) {
               {opptatt} har plass nå. Siden, skjemaet og ventelisten følger
               tallet med en gang.
             </div>
+            {vis("plasser")}
           </div>
 
           <div className="innstilling">
@@ -293,10 +302,13 @@ export default function AdminStats({ okt, onLogout }) {
                 checked={arr.vippsModus === "api"}
                 disabled={jobber || (!arr.harVippsNokler && arr.vippsModus !== "api")}
                 onChange={(e) =>
-                  send({
-                    action: "innstillinger",
-                    vippsModus: e.target.checked ? "api" : "nummer",
-                  })
+                  send(
+                    {
+                      action: "innstillinger",
+                      vippsModus: e.target.checked ? "api" : "nummer",
+                    },
+                    "vipps"
+                  )
                 }
               />
               <span className="bryter-spor" aria-hidden="true" />
@@ -309,6 +321,7 @@ export default function AdminStats({ okt, onLogout }) {
               {!arr.harVippsNokler &&
                 " API-et kan slås på når Vipps-avtalen er på plass og nøklene er lagt inn i Apps Script."}
             </div>
+            {vis("vipps")}
           </div>
 
           <div className="innstilling">
@@ -338,7 +351,7 @@ export default function AdminStats({ okt, onLogout }) {
                 className="mini ok"
                 disabled={jobber || !test.epost.includes("@")}
                 onClick={() =>
-                  send({ action: "testpamelding", ...test }, (d) => {
+                  send({ action: "testpamelding", ...test }, "test", (d) => {
                     setTestLenke(d.redirectUrl || "")
                     setFilter("test")
                   })
@@ -347,6 +360,7 @@ export default function AdminStats({ okt, onLogout }) {
                 Lag test
               </button>
             </div>
+            {vis("test")}
             {testLenke && (
               <div className="liten">
                 <a href={testLenke} target="_blank" rel="noreferrer">
@@ -406,11 +420,13 @@ export default function AdminStats({ okt, onLogout }) {
           })}
         </div>
 
+        {vis("liste")}
+
         {deltakere.length === 0 ? (
           <div className="tom">Ingen påmeldinger her.</div>
         ) : (
           <div className="tabell">
-            <table>
+            <table className="deltakere">
               <thead>
                 <tr>
                   <th>Navn</th>
@@ -434,16 +450,16 @@ export default function AdminStats({ okt, onLogout }) {
                   if (r.test) valg.push("slett")
                   const erAapen = aapen?.id === r.id
                   return [
-                    <tr key={r.id}>
-                      <td>
+                    <tr key={r.id} className="deltaker">
+                      <td className="c-navn">
                         <b>{r.navn}</b>
                         <div className="liten">{r.id}</div>
                       </td>
-                      <td>
+                      <td className="c-kontakt">
                         <a href={`mailto:${r.epost}`}>{r.epost}</a>
                         <div className="liten">{r.telefon}</div>
                       </td>
-                      <td>
+                      <td className="c-status">
                         <span className={`badge ${s.klasse}`}>{s.tekst}</span>
                         {r.test && <span className="badge test">Test</span>}
                         <div className="liten">
@@ -457,8 +473,8 @@ export default function AdminStats({ okt, onLogout }) {
                               : ""}
                         </div>
                       </td>
-                      <td className="liten">{dato(r.opprettet)}</td>
-                      <td className="kommentar">
+                      <td className="liten c-dato">{dato(r.opprettet)}</td>
+                      <td className="kommentar c-kommentar">
                         {r.kommentar}
                         {r.notat && <div className="liten">📝 {r.notat}</div>}
                       </td>
