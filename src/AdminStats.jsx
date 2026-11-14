@@ -19,6 +19,7 @@ const FILTRE = [
   { id: "trukket", tekst: "Trukket", match: ["TRUKKET"] },
   { id: "avbrutt", tekst: "Avbrutt", match: ["AVBRUTT"] },
   { id: "alle", tekst: "Alle", match: null },
+  { id: "test", tekst: "Test", match: null, test: true },
 ]
 
 const dato = (v) =>
@@ -58,6 +59,9 @@ export default function AdminStats({ okt, onLogout }) {
   const [sent, setSent] = useState(false) // trukket under 48 timer før start
   const [jobber, setJobber] = useState(false)
   const [melding, setMelding] = useState("")
+  const [plasser, setPlasser] = useState("")
+  const [test, setTest] = useState({ fornavn: "Test", etternavn: "Testesen", epost: "" })
+  const [testLenke, setTestLenke] = useState("")
 
   const last = useCallback(async () => {
     try {
@@ -83,6 +87,7 @@ export default function AdminStats({ okt, onLogout }) {
     const q = sok.trim().toLowerCase()
     return data.deltakere.filter(
       (r) =>
+        (f.test ? r.test : !r.test) &&
         (!f.match || f.match.includes(r.status)) &&
         (!q ||
           [r.navn, r.epost, r.telefon, r.id]
@@ -125,6 +130,27 @@ export default function AdminStats({ okt, onLogout }) {
     setJobber(false)
   }
 
+  // Innstillinger og testpåmelding lagres i backend og gjelder for hele løsningen
+  const send = async (body, etter) => {
+    setJobber(true)
+    setMelding("")
+    try {
+      const d = await apiPost({ ...body, okt })
+      if (d.utlogget) return onLogout()
+      if (!d.ok) throw new Error(d.error)
+      if (!d.melding)
+        throw new Error(
+          "Backend kjenner ikke denne funksjonen ennå. Lim inn den nye Code.gs og lag en ny versjon."
+        )
+      setMelding(d.melding)
+      etter?.(d)
+      await last()
+    } catch (err) {
+      setMelding(`⚠️ ${err.message}`)
+    }
+    setJobber(false)
+  }
+
   if (!data) {
     return (
       <div className="admin-container">
@@ -145,6 +171,7 @@ export default function AdminStats({ okt, onLogout }) {
     trekk: "Trekk påmeldingen",
     refundert: "Marker som refundert",
     tilbud: "Gi plass fra ventelisten",
+    slett: "Slett testen",
   }
 
   return (
@@ -169,12 +196,6 @@ export default function AdminStats({ okt, onLogout }) {
         </div>
       </div>
 
-      {!arr.vippsAktiv && (
-        <div className="admin-note">
-          Vipps-avtalen er ikke koblet til ennå. Deltakerne betaler til
-          Vipps-nummeret, og du markerer betalingen som mottatt her.
-        </div>
-      )}
       {feil && <div className="admin-note feil">⚠️ {feil}</div>}
       {melding && <div className="admin-note">{melding}</div>}
 
@@ -223,6 +244,118 @@ export default function AdminStats({ okt, onLogout }) {
       </div>
 
       <section className="panel">
+        <h2>Innstillinger</h2>
+        <div className="innstillinger">
+          <div className="innstilling">
+            <div className="innstilling-tittel">Antall plasser</div>
+            <div className="innstilling-rad">
+              <input
+                type="number"
+                min="1"
+                max="500"
+                inputMode="numeric"
+                value={plasser === "" ? arr.kapasitet : plasser}
+                onChange={(e) => setPlasser(e.target.value)}
+              />
+              <button
+                className="mini ok"
+                disabled={
+                  jobber || plasser === "" || Number(plasser) === arr.kapasitet
+                }
+                onClick={() =>
+                  send({ action: "innstillinger", kapasitet: Number(plasser) }, () =>
+                    setPlasser("")
+                  )
+                }
+              >
+                Lagre
+              </button>
+            </div>
+            <div className="liten">
+              {opptatt} har plass nå. Siden, skjemaet og ventelisten følger
+              tallet med en gang.
+            </div>
+          </div>
+
+          <div className="innstilling">
+            <div className="innstilling-tittel">Betaling</div>
+            <label className="bryter">
+              <input
+                type="checkbox"
+                checked={arr.vippsModus === "api"}
+                disabled={jobber || (!arr.harVippsNokler && arr.vippsModus !== "api")}
+                onChange={(e) =>
+                  send({
+                    action: "innstillinger",
+                    vippsModus: e.target.checked ? "api" : "nummer",
+                  })
+                }
+              />
+              <span className="bryter-spor" aria-hidden="true" />
+              Vipps-API {arr.vippsModus === "api" ? "på" : "av"}
+            </label>
+            <div className="liten">
+              {arr.vippsAktiv
+                ? `Deltakerne sendes rett til Vipps og betaler med en gang${arr.vippsMiljo !== "prod" ? " (testmiljø)" : ""}.`
+                : `Deltakerne betaler til Vipps-nummer #${arr.vippsNummer}, og du markerer betalingen som mottatt her.`}
+              {!arr.harVippsNokler &&
+                " API-et kan slås på når Vipps-avtalen er på plass og nøklene er lagt inn i Apps Script."}
+            </div>
+          </div>
+
+          <div className="innstilling">
+            <div className="innstilling-tittel">Testpåmelding</div>
+            <div className="innstilling-rad">
+              <input
+                type="text"
+                placeholder="Fornavn"
+                value={test.fornavn}
+                onChange={(e) => setTest({ ...test, fornavn: e.target.value })}
+              />
+              <input
+                type="text"
+                placeholder="Etternavn"
+                value={test.etternavn}
+                onChange={(e) => setTest({ ...test, etternavn: e.target.value })}
+              />
+            </div>
+            <div className="innstilling-rad">
+              <input
+                type="email"
+                placeholder="E-post som skal få bekreftelsen"
+                value={test.epost}
+                onChange={(e) => setTest({ ...test, epost: e.target.value })}
+              />
+              <button
+                className="mini ok"
+                disabled={jobber || !test.epost.includes("@")}
+                onClick={() =>
+                  send({ action: "testpamelding", ...test }, (d) => {
+                    setTestLenke(d.redirectUrl || "")
+                    setFilter("test")
+                  })
+                }
+              >
+                Lag test
+              </button>
+            </div>
+            {testLenke && (
+              <div className="liten">
+                <a href={testLenke} target="_blank" rel="noreferrer">
+                  Åpne Vipps-betalingen for testen
+                </a>
+              </div>
+            )}
+            <div className="liten">
+              Går gjennom det samme som en ekte påmelding, med e-post merket
+              [TEST]. Den tar ikke plass, telles ikke og er ikke med i
+              deltakerlisten. Slett den når du er ferdig.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="panel">
         <div className="panel-head">
           <h2>Påmeldinger</h2>
           <div className="panel-tools">
@@ -236,8 +369,8 @@ export default function AdminStats({ okt, onLogout }) {
               className="back-btn"
               onClick={() =>
                 lastNedCsv(
-                  data.deltakere.filter((r) =>
-                    ["BETALT", "UBETALT"].includes(r.status)
+                  data.deltakere.filter(
+                    (r) => !r.test && ["BETALT", "UBETALT"].includes(r.status)
                   )
                 )
               }
@@ -248,9 +381,11 @@ export default function AdminStats({ okt, onLogout }) {
         </div>
         <div className="filters">
           {FILTRE.map((f) => {
-            const n = f.match
-              ? f.match.reduce((s, k) => s + (a[k] || 0), 0)
-              : data.deltakere.length
+            const n = f.test
+              ? data.tester || 0
+              : f.match
+                ? f.match.reduce((s, k) => s + (a[k] || 0), 0)
+                : data.deltakere.length - (data.tester || 0)
             return (
               <button
                 key={f.id}
@@ -288,6 +423,7 @@ export default function AdminStats({ okt, onLogout }) {
                     valg.push("trekk")
                   if (r.status === "TRUKKET" && r.betalt && !r.refundert)
                     valg.push("refundert")
+                  if (r.test) valg.push("slett")
                   const erAapen = aapen?.id === r.id
                   return [
                     <tr key={r.id}>
@@ -301,6 +437,7 @@ export default function AdminStats({ okt, onLogout }) {
                       </td>
                       <td>
                         <span className={`badge ${s.klasse}`}>{s.tekst}</span>
+                        {r.test && <span className="badge test">Test</span>}
                         <div className="liten">
                           {formatPrice(r.belop)}
                           {r.betaling === "vipps" ? " · Vipps" : ""}
@@ -321,7 +458,7 @@ export default function AdminStats({ okt, onLogout }) {
                         {valg.map((h) => (
                           <button
                             key={h}
-                            className={`mini ${h === "trekk" ? "fare" : ""}`}
+                            className={`mini ${h === "trekk" || h === "slett" ? "fare" : ""}`}
                             onClick={() => apne(r.id, h)}
                           >
                             {handlingTekst[h]}
@@ -408,7 +545,7 @@ export default function AdminStats({ okt, onLogout }) {
                             />
                             <div className="handling-knapper">
                               <button
-                                className={`mini ${aapen.handling === "trekk" ? "fare" : "ok"}`}
+                                className={`mini ${["trekk", "slett"].includes(aapen.handling) ? "fare" : "ok"}`}
                                 disabled={jobber}
                                 onClick={() => utfor(r)}
                               >

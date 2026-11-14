@@ -48,7 +48,7 @@ Med Vipps-avtale legger du også til (hentes fra portal.vippsmobilepay.com → U
 Så lenge `VIPPS_CLIENT_ID` er tom, brukes Vipps-nummeret.
 
 4. Kjør funksjonen **`oppsett`** én gang. Den kobler til regnearket i Drive-mappen «Juletreff KUMI 2026» (`1uAHLTHwgjCizlvYMFi_SO28o5bhb1j6KD86dYPxc-4g`), lager fanene «Påmeldinger» og «Besøk», og lager en utløser som sjekker ubetalte Vipps-betalinger hvert 5. minutt.
-5. Åpne **`settAdminPassord`**, bytt ut `SKRIV-PASSORDET-HER` med et passord på minst 12 tegn, kjør den, og **slett passordet fra koden** etterpå. Bare en saltet hash lagres.
+5. Sett adminpassordet: gå til **Prosjektinnstillinger** (tannhjulet) → **Skriptegenskaper** → **Legg til skriptegenskap**, navn `ADMIN_PASSORD`, verdi = passordet (minst 12 tegn). Første gang noen logger inn, gjøres det om til en saltet hash og klarteksten slettes. (Alternativt: kjør `settAdminPassord` med passordet skrevet inn i koden, og slett det etterpå.)
 
 ## 2. Publiser backend
 
@@ -81,3 +81,9 @@ Her ser du plasser tatt, betalt, ikke betalt, venteliste, trukket, innbetalt bel
 - Gmail sender 100 e-poster i døgnet fra Apps Script.
 - En påbegynt Vipps-betaling holder plassen i 30 minutter.
 - Regnearket er beskyttet mot formel-injeksjon, og det er en bremse på 30 påmeldinger per minutt.
+
+## Innstillinger i adminsiden
+
+- **Antall plasser** lagres som skriptegenskapen `KAPASITET`.
+- **Vipps-API av/på** lagres som `VIPPS_MODUS` (`nummer` eller `api`). API-et kan bare slås på når `VIPPS_CLIENT_ID`, `VIPPS_CLIENT_SECRET`, `VIPPS_SUBSCRIPTION_KEY` og `VIPPS_MSN` er lagt inn, og adminsiden sjekker at nøklene virker før det slås på. `VIPPS_ENV=prod` må være satt for ekte betalinger.
+- **Testpåmelding** lager en påmelding merket «test» (kolonnen `test` i regnearket). Den tar ikke plass, telles ikke og kan slettes fra adminsiden.

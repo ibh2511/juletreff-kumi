@@ -607,8 +607,10 @@ export default function App() {
                   {formatPrice(info.pris)} per person.
                 </p>
                 <p>
-                  Du betaler med Vipps når du melder deg på. Plassen din er
-                  sikret når betalingen er mottatt.
+                  {vippsAktiv
+                    ? "Du betaler med Vipps når du melder deg på."
+                    : `Du betaler med Vipps til nummer #${info.vippsNummer} når du har meldt deg på.`}{" "}
+                  Plassen din er sikret når betalingen er mottatt.
                 </p>
                 <p>
                   Påmeldingen er bindende og kan bare trekkes med
