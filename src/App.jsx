@@ -17,12 +17,8 @@ const AdminStats = lazy(() => import("./AdminStats.jsx"))
 const AdminLogin = lazy(() => import("./AdminLogin.jsx"))
 const LegalPage = lazy(() => import("./LegalPage.jsx"))
 
-// WebP i to størrelser, med JPEG som reserve for eldre nettlesere
-const IMAGES = [
-  { navn: "kumi", jpg: "images/kumi.jpeg" },
-  { navn: "munch", jpg: "images/munch.jpg" },
-]
-const BILDE_SIZES = "(max-width: 768px) 100vw, 600px"
+// Bildene i full kvalitet
+const IMAGES = ["images/kumi.jpeg", "images/munch.jpg"]
 
 // Teksten i FAQ-en «Blir det underholdning?»
 const UNDERHOLDNING = "[Underholdning: fyll inn hva som skjer i løpet av kvelden]"
@@ -234,8 +230,9 @@ export default function App() {
 
   const bindendeBoks = (
     <div className="binding-box">
-      <b>Bindende påmelding.</b> Påmeldingen kan bare trekkes med
-      legeerklæring. Se <a href="#vilkar">salgsvilkårene</a>.
+      Påmeldingen er bindende og kan bare trekkes med legeerklæring. Under 48
+      timer før arrangementet beholder vi {formatPrice(info.noshow)} til KUMIs
+      no-show-gebyr. Se <a href="#vilkar">salgsvilkårene</a>.
     </div>
   )
 
@@ -245,26 +242,17 @@ export default function App() {
         <div className="container">
           {/* Bilde med fade */}
           <div className="booking-image">
-            {IMAGES.map((bilde, index) => (
-              <picture key={bilde.navn}>
-                <source
-                  type="image/webp"
-                  srcSet={`images/${bilde.navn}-600.webp 600w, images/${bilde.navn}-1000.webp 1000w`}
-                  sizes={BILDE_SIZES}
-                />
-                <img
-                  className={`booking-img ${
-                    index === currentImageIndex ? "active" : ""
-                  }`}
-                  src={bilde.jpg}
-                  alt="Juletreff på KUMI"
-                  width="1000"
-                  height="666"
-                  decoding="async"
-                  fetchPriority={index === 0 ? "high" : "low"}
-                  loading={index === 0 ? undefined : "lazy"}
-                />
-              </picture>
+            {IMAGES.map((src, index) => (
+              <img
+                key={src}
+                className={`booking-img ${
+                  index === currentImageIndex ? "active" : ""
+                }`}
+                src={src}
+                alt="Juletreff på KUMI"
+                decoding="async"
+                fetchPriority={index === 0 ? "high" : "low"}
+              />
             ))}
           </div>
 
@@ -282,7 +270,6 @@ export default function App() {
                 <ul className="included">
                   <li>Vegansk julemeny med seks retter</li>
                   <li>KUMI i Oslobukta for oss selv</li>
-                  <li>Cocktails på Kranen, MUNCH etterpå</li>
                 </ul>
                 <div className="price-note">
                   {info.fullt
@@ -491,7 +478,7 @@ export default function App() {
                 <label className="binding-check">
                   <input type="checkbox" name="Bindende" value="ja" required />
                   <span>
-                    Jeg forstår at påmeldingen er <b>bindende</b> og bare kan
+                    Jeg forstår at påmeldingen er bindende og bare kan
                     trekkes med legeerklæring, og jeg godtar{" "}
                     <a href="#vilkar">salgsvilkårene</a>. Les også{" "}
                     <a href="#personvern">personvernerklæringen</a>.
@@ -617,11 +604,18 @@ export default function App() {
               <div className="faq-body">
                 <p>
                   Menyen serveres i sharing-stil, med seks utvalgte retter til{" "}
-                  <b>{formatPrice(info.pris)} per person.</b>
+                  {formatPrice(info.pris)} per person.
                 </p>
                 <p>
-                  Du betaler med <b>Vipps</b> når du melder deg på. Plassen din
-                  er sikret når betalingen er mottatt.
+                  Du betaler med Vipps når du melder deg på. Plassen din er
+                  sikret når betalingen er mottatt.
+                </p>
+                <p>
+                  Påmeldingen er bindende og kan bare trekkes med
+                  legeerklæring. Trekker du deg mer enn 48 timer før, får du
+                  hele beløpet tilbake. Senere enn det beholder vi{" "}
+                  {formatPrice(info.noshow)} til KUMIs no-show-gebyr. Les mer i{" "}
+                  <a href="#vilkar">salgsvilkårene</a>.
                 </p>
                 <p>
                   Ønsker du vin, øl, eller annen drikke på KUMI kommer dette i
@@ -654,35 +648,6 @@ export default function App() {
               </div>
             </details>
 
-            <details>
-              <summary className="faq">
-                <span>Kan jeg melde meg av?</span>
-                <span className="icon">+</span>
-              </summary>
-
-              <div className="faq-body">
-                <p>
-                  <b>Påmeldingen er bindende.</b> Vi bestiller mat og bord hos
-                  KUMI ut fra antall påmeldte, så du kan ikke melde deg av og få
-                  pengene tilbake fordi planene endrer seg.
-                </p>
-                <p>
-                  Blir du syk, kan du trekke påmeldingen med{" "}
-                  <b>legeerklæring.</b> Send den til oss
-                  {KONTAKT_EPOST && (
-                    <>
-                      {" "}
-                      på <a href={`mailto:${KONTAKT_EPOST}`}>{KONTAKT_EPOST}</a>
-                    </>
-                  )}{" "}
-                  så snart du kan, og senest tre dager etter arrangementet. Da
-                  får du hele beløpet tilbake.
-                </p>
-                <p>
-                  Les mer i <a href="#vilkar">salgsvilkårene</a>.
-                </p>
-              </div>
-            </details>
           </div>
         </div>
       </div>

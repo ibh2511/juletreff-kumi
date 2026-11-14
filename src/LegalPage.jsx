@@ -32,7 +32,7 @@ function Vilkar({ info }) {
       <h2>Hva du kjøper</h2>
       <p>
         En plass på juletreffet på KUMI i Oslobukta, {info.dato}. Prisen er{" "}
-        <b>{formatPrice(info.pris)} per person</b> og gjelder en vegansk
+        {formatPrice(info.pris)} per person og gjelder en vegansk
         julemeny med seks retter i sharing-stil. Drikke på KUMI og Kranen
         kommer i tillegg og betales direkte der.
       </p>
@@ -48,15 +48,28 @@ function Vilkar({ info }) {
 
       <h2>Bindende påmelding</h2>
       <p>
-        <b>Påmeldingen er bindende.</b> Vi bestiller mat og bord hos KUMI ut
+        Påmeldingen er bindende. Vi bestiller mat og bord hos KUMI ut
         fra antall påmeldte, så du kan ikke avbestille og få pengene tilbake
         fordi planene dine endrer seg, og du får ikke pengene tilbake hvis du
         ikke møter opp.
       </p>
       <p>
-        Påmeldingen kan <b>bare trekkes med legeerklæring</b>. Send
-        legeerklæringen til <Epost /> så snart du kan, og senest tre dager
-        etter arrangementet. Da får du hele beløpet tilbake til Vipps.
+        Påmeldingen kan bare trekkes med legeerklæring, som du sender til{" "}
+        <Epost /> så snart du kan.
+      </p>
+      <ul>
+        <li>
+          Trekker du deg mer enn 48 timer før arrangementet starter, får du
+          hele beløpet tilbake.
+        </li>
+        <li>
+          Trekker du deg senere enn det, får du{" "}
+          {formatPrice(Math.max(0, info.pris - info.noshow))} tilbake. Vi
+          beholder {formatPrice(info.noshow)} for å dekke KUMIs
+          no-show-gebyr.
+        </li>
+      </ul>
+      <p>Pengene betales tilbake til Vipps.
       </p>
 
       <h2>Angrerett</h2>
@@ -104,18 +117,18 @@ function Personvern() {
       <h2>Hva vi samler inn og hvorfor</h2>
       <ul>
         <li>
-          <b>Ved påmelding:</b> navn, e-post, telefonnummer og det du skriver i
+          Ved påmelding: navn, e-post, telefonnummer og det du skriver i
           kommentarfeltet, samt tidspunkt og at du har godtatt at påmeldingen er
           bindende. Vi bruker dette til å holde oversikt over hvem som kommer,
           sende bekreftelse og ta kontakt hvis noe endrer seg. Grunnlaget er
           avtalen med deg (personvernforordningen art. 6 nr. 1 b).
         </li>
         <li>
-          <b>Betaling:</b> beløp, betalingsstatus og påmeldings-ID. Vi ser ikke
+          Betaling: beløp, betalingsstatus og påmeldings-ID. Vi ser ikke
           kortnummer eller kontoopplysninger.
         </li>
         <li>
-          <b>Allergier og legeerklæring:</b> skriver du allergier i
+          Allergier og legeerklæring: skriver du allergier i
           kommentarfeltet, eller sender oss legeerklæring for å trekke
           påmeldingen, er dette helseopplysninger. Vi bruker dem bare til
           formålet, deler dem ikke med flere enn nødvendig, og sletter
@@ -123,7 +136,7 @@ function Personvern() {
           selv gir oss opplysningene for dette formålet (art. 9 nr. 2 a).
         </li>
         <li>
-          <b>Besøksstatistikk:</b> hvilken nettside du kom fra, om du brukte
+          Besøksstatistikk: hvilken nettside du kom fra, om du brukte
           mobil eller PC, og en tilfeldig kode som byttes hver dag. Vi bruker
           ikke informasjonskapsler, lagrer ikke IP-adresse og kan ikke knytte
           statistikken til deg.
@@ -139,7 +152,7 @@ function Personvern() {
 
       <h2>Hvem som får opplysningene</h2>
       <p>
-        Betalingen skjer med <b>Vipps</b> (Vipps MobilePay AS), som behandler
+        Betalingen skjer med Vipps (Vipps MobilePay AS), som behandler
         betalingen etter sine egne vilkår. Vi gir KUMI antall deltakere og
         eventuelle allergier, men ikke kontaktopplysningene dine. Vi selger
         eller deler aldri opplysningene dine med andre.

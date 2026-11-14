@@ -21,7 +21,7 @@ var STANDARD_FACEBOOK_URL = 'https://www.facebook.com/events/664624256515915';
 var PAMELDING_ARK = 'Påmeldinger';
 var BESOK_ARK = 'Besøk';
 var KOLONNER = ['id', 'opprettet', 'status', 'fornavn', 'etternavn', 'epost', 'telefon', 'kommentar',
-  'belop', 'betaling', 'nokkel', 'betalt', 'epost_sendt', 'bindende_godtatt', 'trukket', 'refundert', 'notat', 'kilde'];
+  'belop', 'betaling', 'nokkel', 'betalt', 'epost_sendt', 'bindende_godtatt', 'trukket', 'refundert', 'notat', 'kilde', 'refusjon'];
 var BESOK_KOLONNER = ['tid', 'besokende', 'kilde', 'enhet'];
 
 // Statuser:
@@ -55,6 +55,9 @@ function arrangement_() {
     frist: new Date(cfg_('PAMELDINGSFRIST', '2026-12-15T23:59:59+01:00')),
     fristTekst: cfg_('FRIST_TEKST', 'tirsdag 15. desember'),
     kapasitet: Number(cfg_('KAPASITET', '30')),
+    // Trekk med legeerklæring under 48 timer før start: vi beholder no-show-gebyret til KUMI
+    start: new Date(cfg_('ARR_START', '2026-12-18T19:00:00+01:00')),
+    noshow: Number(cfg_('NOSHOW_GEBYR', '300')),
     vippsNummer: cfg_('VIPPS_NUMMER', '76192'),
     vippsAktiv: !!cfg_('VIPPS_CLIENT_ID', '')
   };
@@ -125,7 +128,7 @@ function info_() {
     ok: true, pris: a.pris, dato: a.dato, sted: a.sted, fristTekst: a.fristTekst,
     stengt: Date.now() > a.frist.getTime(),
     ledige: Math.max(0, a.kapasitet - opptatt), fullt: opptatt >= a.kapasitet,
-    vippsAktiv: a.vippsAktiv, vippsNummer: a.vippsNummer
+    vippsAktiv: a.vippsAktiv, vippsNummer: a.vippsNummer, noshow: a.noshow, start: a.start.toISOString()
   };
 }
 
@@ -317,8 +320,12 @@ function avbrytVipps_(id) {
 /* E-post                                                              */
 /* ------------------------------------------------------------------ */
 
-var BINDENDE_TEKST = 'Påmeldingen er bindende. Den kan bare trekkes med legeerklæring. ' +
-  'Send legeerklæringen til oss så snart du kan, senest tre dager etter arrangementet, så får du hele beløpet tilbake.';
+function bindendeTekst_(belop) {
+  var a = arrangement_();
+  return 'Påmeldingen er bindende og kan bare trekkes med legeerklæring. Trekker du deg mer enn 48 timer før ' +
+    'arrangementet, får du hele beløpet tilbake. Trekker du deg senere, får du ' + Math.max(0, belop - a.noshow) +
+    ' kr tilbake, fordi vi beholder ' + a.noshow + ' kr til KUMIs no-show-gebyr.';
+}
 
 function sendBekreftelse_(r) {
   if (!r.epost) return;
@@ -345,7 +352,7 @@ function sendBekreftelse_(r) {
     '<p style="margin:18px 0 0;padding:12px 14px;border-radius:8px;background:' + (betalt ? '#1f3326' : '#3a2416') + '">' +
     escapeHtml_(betalingTekst) + '</p>' +
     '<p style="margin:18px 0 0;padding:12px 14px;border-radius:8px;border:1px solid #edb77d;color:#fff">' +
-    '<b>Bindende påmelding.</b> ' + escapeHtml_(BINDENDE_TEKST.replace('Påmeldingen er bindende. ', '')) + '</p>' +
+    escapeHtml_(bindendeTekst_(r.belop)) + '</p>' +
     '<p style="margin:22px 0 0;text-align:center"><a href="' + fb + '" style="display:inline-block;padding:12px 22px;' +
     'border-radius:8px;background:#1877f2;color:#fff;font-weight:bold;text-decoration:none">Trykk «Skal» på Facebook-eventet 📅</a></p>' +
     '<p style="margin:18px 0 0;font-size:13px;color:#bdb3a8">Spørsmål eller legeerklæring? Svar på denne e-posten. ' +
@@ -357,7 +364,7 @@ function sendBekreftelse_(r) {
     'Hei ' + r.fornavn + '!\n\n' +
     (betalt ? 'Du er påmeldt juletreffet på KUMI.' : 'Takk for påmeldingen til juletreffet på KUMI.') + '\n\n' +
     'Når: ' + a.dato + '\nHvor: ' + a.sted + '\nPris: ' + r.belop + ' kr\nPåmeldings-ID: ' + r.id + '\n\n' +
-    betalingTekst + '\n\n' + BINDENDE_TEKST + '\n\n' +
+    betalingTekst + '\n\n' + bindendeTekst_(r.belop) + '\n\n' +
     'Trykk «Skal» på Facebook-eventet: ' + fb + '\n\n' +
     'Salgsvilkår: ' + site + '/#vilkar\nPersonvern: ' + site + '/#personvern\n\n' +
     'Har du spørsmål, kan du svare på denne e-posten.\n\nGod jul!';
@@ -436,7 +443,7 @@ function adminOversikt_(okt) {
   rader.forEach(function (r) {
     antall[r.status] = (antall[r.status] || 0) + 1;
     if (r.betalt) innbetalt += Number(r.belop) || 0;
-    if (r.refundert) refundert += Number(r.belop) || 0;
+    if (r.refundert) refundert += r.refusjon === '' || r.refusjon == null ? Number(r.belop) || 0 : Number(r.refusjon) || 0;
   });
 
   var tz = Session.getScriptTimeZone();
@@ -457,7 +464,8 @@ function adminOversikt_(okt) {
 
   return {
     ok: true,
-    arrangement: { dato: a.dato, pris: a.pris, kapasitet: a.kapasitet, fristTekst: a.fristTekst, vippsAktiv: a.vippsAktiv },
+    arrangement: { dato: a.dato, pris: a.pris, kapasitet: a.kapasitet, fristTekst: a.fristTekst, vippsAktiv: a.vippsAktiv,
+      start: a.start.toISOString(), noshow: a.noshow },
     antall: antall,
     ledige: Math.max(0, a.kapasitet - opptatte_(rader)),
     innbetalt: innbetalt, refundert: refundert,
@@ -470,7 +478,7 @@ function adminOversikt_(okt) {
     deltakere: rader.slice().reverse().map(function (r) {
       return { id: r.id, opprettet: r.opprettet, status: r.status, navn: r.fornavn + ' ' + r.etternavn, epost: r.epost,
         telefon: r.telefon, kommentar: r.kommentar, belop: r.belop, betaling: r.betaling, betalt: r.betalt,
-        trukket: r.trukket, refundert: r.refundert, notat: r.notat };
+        trukket: r.trukket, refundert: r.refundert, refusjon: r.refusjon, notat: r.notat };
     })
   };
 }
@@ -478,7 +486,8 @@ function adminOversikt_(okt) {
 /**
  * Endringer fra adminsiden:
  *  betalt     markerer en manuell Vipps-betaling som mottatt (og sender bekreftelse)
- *  trekk      trekker påmeldingen (legeerklæring), og refunderer i Vipps hvis den ble betalt der
+ *  trekk      trekker påmeldingen (legeerklæring), og refunderer i Vipps hvis den ble betalt der.
+ *             Under 48 timer før start (sent=true) beholdes no-show-gebyret, ellers refunderes alt.
  *  refundert  markerer at pengene er sendt tilbake manuelt
  *  tilbud     gir en plass fra ventelisten: settes til UBETALT, eller får Vipps-lenke på e-post
  */
@@ -505,13 +514,23 @@ function adminEndre_(p) {
       if (['BETALT', 'UBETALT', 'VENTELISTE'].indexOf(o.status) < 0) return { ok: false, error: 'Påmeldingen kan ikke trekkes' };
       var felt = { status: 'TRUKKET', trukket: new Date(), notat: nyttNotat('Trukket' + (notat ? ': ' + notat : '')) };
       var melding = 'Påmeldingen er trukket.';
-      if (o.status === 'BETALT' && o.betaling === 'vipps' && (p.refunder === true || p.refunder === 'true')) {
-        vipps_('post', '/epayment/v1/payments/' + encodeURIComponent(o.id) + '/refund',
-          { modificationAmount: { currency: 'NOK', value: Math.round(Number(o.belop) * 100) } }, 'refund-' + o.id);
-        felt.refundert = new Date();
-        melding += ' ' + o.belop + ' kr er refundert i Vipps.';
-      } else if (o.status === 'BETALT') {
-        melding += ' Husk å betale tilbake ' + o.belop + ' kr, og marker som refundert.';
+      if (o.status === 'BETALT') {
+        var aa = arrangement_();
+        var sent = p.sent === true || p.sent === 'true' ||
+          (p.sent === undefined && Date.now() > aa.start.getTime() - 48 * 36e5);
+        var tilbake = sent ? Math.max(0, Number(o.belop) - aa.noshow) : Number(o.belop);
+        felt.refusjon = tilbake;
+        felt.notat = nyttNotat('Trukket ' + (sent ? 'under' : 'mer enn') + ' 48 t før, refusjon ' + tilbake + ' kr' + (notat ? ': ' + notat : ''));
+        if (tilbake > 0 && o.betaling === 'vipps' && (p.refunder === true || p.refunder === 'true')) {
+          vipps_('post', '/epayment/v1/payments/' + encodeURIComponent(o.id) + '/refund',
+            { modificationAmount: { currency: 'NOK', value: Math.round(tilbake * 100) } }, 'refund-' + o.id);
+          felt.refundert = new Date();
+          melding += ' ' + tilbake + ' kr er refundert i Vipps.';
+        } else if (tilbake > 0) {
+          melding += ' Husk å betale tilbake ' + tilbake + ' kr, og marker som refundert.';
+        } else {
+          melding += ' Ingenting skal betales tilbake.';
+        }
       }
       oppdater_(o._rad, felt);
       return { ok: true, melding: melding };

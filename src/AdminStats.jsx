@@ -55,6 +55,7 @@ export default function AdminStats({ okt, onLogout }) {
   const [aapen, setAapen] = useState(null) // { id, handling }
   const [notat, setNotat] = useState("")
   const [refunder, setRefunder] = useState(true)
+  const [sent, setSent] = useState(false) // trukket under 48 timer før start
   const [jobber, setJobber] = useState(false)
   const [melding, setMelding] = useState("")
 
@@ -95,6 +96,9 @@ export default function AdminStats({ okt, onLogout }) {
     setAapen({ id, handling })
     setNotat("")
     setRefunder(true)
+    // Standard: under 48 timer hvis det er mindre enn 48 timer igjen nå
+    const start = data?.arrangement?.start
+    setSent(!!start && Date.now() > new Date(start).getTime() - 48 * 36e5)
     setMelding("")
   }
 
@@ -108,6 +112,7 @@ export default function AdminStats({ okt, onLogout }) {
         handling: aapen.handling,
         notat,
         refunder,
+        sent,
       })
       if (d.utlogget) return onLogout()
       if (!d.ok) throw new Error(d.error)
@@ -131,6 +136,7 @@ export default function AdminStats({ okt, onLogout }) {
   }
 
   const a = data.antall
+  const noshow = data.arrangement.noshow ?? 300
   const arr = data.arrangement
   const opptatt = a.BETALT + a.UBETALT
 
@@ -299,7 +305,11 @@ export default function AdminStats({ okt, onLogout }) {
                           {formatPrice(r.belop)}
                           {r.betaling === "vipps" ? " · Vipps" : ""}
                           {r.betaling === "manuell" ? " · Vipps-nr." : ""}
-                          {r.refundert ? " · refundert" : ""}
+                          {r.refundert
+                            ? ` · refundert ${formatPrice(r.refusjon === "" || r.refusjon == null ? r.belop : r.refusjon)}`
+                            : r.status === "TRUKKET" && r.betalt
+                              ? ` · skal ha ${formatPrice(r.refusjon === "" || r.refusjon == null ? r.belop : r.refusjon)} tilbake`
+                              : ""}
                         </div>
                       </td>
                       <td className="liten">{dato(r.opprettet)}</td>
@@ -333,6 +343,30 @@ export default function AdminStats({ okt, onLogout }) {
                               </p>
                             )}
                             {aapen.handling === "trekk" &&
+                              r.status === "BETALT" && (
+                                <div className="valg">
+                                  <label className="sjekk">
+                                    <input
+                                      type="radio"
+                                      checked={!sent}
+                                      onChange={() => setSent(false)}
+                                    />
+                                    Mer enn 48 timer før: hele{" "}
+                                    {formatPrice(r.belop)} tilbake
+                                  </label>
+                                  <label className="sjekk">
+                                    <input
+                                      type="radio"
+                                      checked={sent}
+                                      onChange={() => setSent(true)}
+                                    />
+                                    Under 48 timer før:{" "}
+                                    {formatPrice(Math.max(0, r.belop - noshow))}{" "}
+                                    tilbake, {formatPrice(noshow)} beholdes
+                                  </label>
+                                </div>
+                              )}
+                            {aapen.handling === "trekk" &&
                               r.status === "BETALT" &&
                               r.betaling === "vipps" && (
                                 <label className="sjekk">
@@ -343,7 +377,11 @@ export default function AdminStats({ okt, onLogout }) {
                                       setRefunder(e.target.checked)
                                     }
                                   />
-                                  Refunder {formatPrice(r.belop)} i Vipps nå
+                                  Refunder{" "}
+                                  {formatPrice(
+                                    sent ? Math.max(0, r.belop - noshow) : r.belop
+                                  )}{" "}
+                                  i Vipps nå
                                 </label>
                               )}
                             {aapen.handling === "trekk" &&
@@ -351,7 +389,10 @@ export default function AdminStats({ okt, onLogout }) {
                               r.betaling !== "vipps" && (
                                 <p>
                                   Betalt til Vipps-nummeret: send{" "}
-                                  {formatPrice(r.belop)} tilbake selv, og
+                                  {formatPrice(
+                                    sent ? Math.max(0, r.belop - noshow) : r.belop
+                                  )}{" "}
+                                  tilbake selv, og
                                   marker som refundert etterpå.
                                 </p>
                               )}
