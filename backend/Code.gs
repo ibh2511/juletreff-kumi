@@ -659,7 +659,7 @@ function sendProgramEpost_(r) {
   sendEpost_(r.epost, (erTest_(r) ? '[TEST] ' : '') + '✨ Snart juletreff på KUMI 🥂 Her er programmet',
     'Hei ' + r.fornavn + '!\n\nSnart er det juletreff: ' + a.dato + ' på ' + a.sted + '.\n\nProgram:\n' + linjer.join('\n') +
     (ubetalt ? '\n\nVi har ikke registrert betalingen din ennå. Betal ' + r.belop + ' kr med Vipps' + (a.vippsNummer ? ' til #' + a.vippsNummer : '') + '.' : '') +
-    '\n\nKart: ' + kart + '\nMUNCH bar: ' + MUNCH_BAR_URL + '\nDrikkemeny på MUNCH bar: ' + MUNCH_MENY_URL +
+    '\n\nKart: ' + kart + '\nMUNCH bar (20 års aldersgrense): ' + MUNCH_BAR_URL + '\nDrikkemeny på MUNCH bar: ' + MUNCH_MENY_URL +
     (tlf ? '\n\nFinner du ikke fram på dagen? Ring ' + tlf + '.' : '') +
     '\nFacebook-eventet: ' + facebookUrl_() + '\n\nVi gleder oss til å se deg!',
     epostHei_(r.fornavn, 'Snart er det juletreff 🥂') +
@@ -669,7 +669,7 @@ function sendProgramEpost_(r) {
     (ubetalt ? vippsBoks_(r, 'Vi har ikke registrert betalingen din ennå.') : '') +
     epostKnapp_(kart, 'Finn veien til KUMI 📍') +
     (tlf ? epostAvsnitt_('Finner du ikke fram på dagen? Ring <a href="tel:+47' + tlf.replace(/\D/g, '') + '" style="color: #edb77d;"><b>' + e(tlf) + '</b></a>.') : '') +
-    epostAvsnitt_('Etterpå går vi videre til <a href="' + MUNCH_BAR_URL + '" style="color: #edb77d;">MUNCH bar</a> i 13. etasje på MUNCH. ' +
+    epostAvsnitt_('Etterpå går vi videre til <a href="' + MUNCH_BAR_URL + '" style="color: #edb77d;">MUNCH bar</a> i 13. etasje på MUNCH (20 års aldersgrense). ' +
       'Drikkemenyen finner du <a href="' + MUNCH_MENY_URL + '" style="color: #edb77d;">her</a>.') +
     epostAvsnitt_('Følg med på <a href="' + facebookUrl_() + '" style="color: #edb77d;">Facebook-eventet</a> for siste nytt. Vi gleder oss til å se deg!'),
     'Kan du ikke komme likevel? Svar på denne e-posten.');
