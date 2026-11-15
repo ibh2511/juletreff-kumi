@@ -373,17 +373,6 @@
   .innstillinger {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
-  .innstilling:last-child {
-    grid-column: 1 / -1;
-  }
-}
-@media (min-width: 1000px) {
-  .innstillinger {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.4fr);
-  }
-  .innstilling:last-child {
-    grid-column: auto;
-  }
 }
 .innstilling {
   display: grid;
@@ -603,4 +592,93 @@
     border: 0;
   }
   .handling { max-width: none; }
+}
+
+/* Varsel til ventelisten */
+.venteliste-varsel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border: 1px solid #c9d6e6;
+  border-left: 3px solid #23466e;
+  border-radius: 10px;
+  background: #f3f7fc;
+  font-size: 14px;
+}
+.venteliste-varsel > div:first-child {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+.venteliste-varsel .mini {
+  margin: 0;
+  padding: 8px 14px;
+}
+.venteliste-varsel .mini.ok:disabled {
+  background: #9fb3a5;
+  border-color: #9fb3a5;
+  cursor: not-allowed;
+}
+.varsel-knapper {
+  display: flex;
+  gap: 6px;
+}
+
+/* Faresone: nullstilling */
+.faresone {
+  border: 1px solid #f0b4ae;
+}
+.faresone h2 {
+  color: #b3261e;
+}
+.faresone > .liten {
+  margin: 0 0 12px;
+  max-width: 640px;
+}
+.nullstill-bekreft {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+.nullstill-bekreft input {
+  font: inherit;
+  font-size: 14px;
+  padding: 7px 10px;
+  border: 1px solid #e3a29c;
+  border-radius: 8px;
+  min-width: 0;
+  flex: 0 1 200px;
+  background: #fff;
+  color: #111;
+}
+.nullstill-bekreft .mini,
+.faresone > .mini {
+  margin: 0;
+  padding: 8px 14px;
+}
+.nullstill-bekreft .mini.bekreft {
+  color: #fff;
+  background: #b3261e;
+  border-color: transparent;
+}
+.nullstill-bekreft .mini.bekreft:disabled {
+  background: #d9a29d;
+  cursor: not-allowed;
+}
+
+.purring-boks {
+  border-color: #f1d3a8;
+  border-left-color: #c06a00;
+  background: #fff8ee;
+}
+.handling-velger.h-purring { border-color: #c06a00; }
+.handling.h-purring { border-left-color: #c06a00; }
+.handling-knapper .mini.bekreft.h-purring { background: #c06a00; }
+.purring-boks .mini.ok {
+  background: #c06a00;
+  border-color: #c06a00;
 }

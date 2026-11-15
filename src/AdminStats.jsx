@@ -62,6 +62,9 @@ export default function AdminStats({ okt, onLogout }) {
   const [plasser, setPlasser] = useState("")
   const [test, setTest] = useState({ fornavn: "Test", etternavn: "Testesen", epost: "" })
   const [testLenke, setTestLenke] = useState("")
+  const [bekreftVarsel, setBekreftVarsel] = useState(false)
+  const [bekreftPurring, setBekreftPurring] = useState(false)
+  const [nullstill, setNullstill] = useState(null) // null = lukket, ellers teksten som er skrevet
 
   const last = useCallback(async () => {
     try {
@@ -177,6 +180,7 @@ export default function AdminStats({ okt, onLogout }) {
 
   const handlingTekst = {
     betalt: "Marker som betalt",
+    purring: "Send purring",
     tilbud: "Gi plass fra ventelisten",
     refundert: "Marker som refundert",
     trekk: "Trekk påmeldingen",
@@ -185,6 +189,7 @@ export default function AdminStats({ okt, onLogout }) {
   // Fargekoder: grønn = betaling inn, blå = plass, gul = penger ut, rød = fjerner påmeldingen
   const handlingIkon = {
     betalt: "🟢",
+    purring: "🟠",
     tilbud: "🔵",
     refundert: "🟡",
     trekk: "🔴",
@@ -374,6 +379,25 @@ export default function AdminStats({ okt, onLogout }) {
               deltakerlisten. Slett den når du er ferdig.
             </div>
           </div>
+
+          <div className="innstilling">
+            <div className="innstilling-tittel">Daglig statusmail</div>
+            <div className="liten">
+              {arr.rapportTil
+                ? `Sendes kl. 08 til ${arr.rapportTil} når noe er nytt siden i går, eller når noe må følges opp (ubetalte, refusjoner, ledig plass med venteliste).`
+                : "Legg inn ADMIN_EPOST i Skriptegenskaper for å få en statusmail hver morgen."}
+            </div>
+            <div className="innstilling-rad">
+              <button
+                className="mini ok"
+                disabled={jobber || !arr.rapportTil}
+                onClick={() => send({ action: "rapport" }, "rapport")}
+              >
+                Send statusmail nå
+              </button>
+            </div>
+            {vis("rapport")}
+          </div>
         </div>
       </section>
 
@@ -420,6 +444,88 @@ export default function AdminStats({ okt, onLogout }) {
           })}
         </div>
 
+        {a.UBETALT > 0 && (
+          <div className="venteliste-varsel purring-boks">
+            <div>
+              <b>
+                {a.UBETALT} har ikke betalt
+              </b>
+              <div className="liten">
+                Send en påminnelse med Vipps-info til alle som ikke har betalt.
+                De som fikk purring det siste døgnet, hoppes over.
+              </div>
+            </div>
+            {bekreftPurring ? (
+              <div className="varsel-knapper">
+                <button
+                  className="mini ok"
+                  disabled={jobber}
+                  onClick={() =>
+                    send({ action: "purring" }, "purring", () =>
+                      setBekreftPurring(false)
+                    )
+                  }
+                >
+                  {jobber ? "Sender …" : `Send til ${a.UBETALT}`}
+                </button>
+                <button className="mini" onClick={() => setBekreftPurring(false)}>
+                  Avbryt
+                </button>
+              </div>
+            ) : (
+              <button
+                className="mini ok"
+                disabled={jobber}
+                onClick={() => setBekreftPurring(true)}
+              >
+                ✉️ Send purring
+              </button>
+            )}
+          </div>
+        )}
+        {vis("purring")}
+        {a.VENTELISTE > 0 && (
+          <div className="venteliste-varsel">
+            <div>
+              <b>
+                {a.VENTELISTE} på ventelisten · {data.ledige}{" "}
+                {data.ledige === 1 ? "ledig plass" : "ledige plasser"}
+              </b>
+              <div className="liten">
+                {data.ledige > 0
+                  ? "Send e-post til alle på ventelisten om at det er ledig plass. Den som melder seg på først, får plassen."
+                  : "Knappen blir aktiv når noen trekker seg, eller når du øker antall plasser."}
+              </div>
+            </div>
+            {bekreftVarsel ? (
+              <div className="varsel-knapper">
+                <button
+                  className="mini ok"
+                  disabled={jobber}
+                  onClick={() =>
+                    send({ action: "varsleventeliste" }, "venteliste", () =>
+                      setBekreftVarsel(false)
+                    )
+                  }
+                >
+                  {jobber ? "Sender …" : `Send til ${a.VENTELISTE}`}
+                </button>
+                <button className="mini" onClick={() => setBekreftVarsel(false)}>
+                  Avbryt
+                </button>
+              </div>
+            ) : (
+              <button
+                className="mini ok"
+                disabled={jobber || data.ledige <= 0}
+                onClick={() => setBekreftVarsel(true)}
+              >
+                ✉️ Varsle om ledig plass
+              </button>
+            )}
+          </div>
+        )}
+        {vis("venteliste")}
         {vis("liste")}
 
         {deltakere.length === 0 ? (
@@ -441,7 +547,7 @@ export default function AdminStats({ okt, onLogout }) {
                 {deltakere.map((r) => {
                   const s = STATUS[r.status] || { tekst: r.status, klasse: "" }
                   const valg = []
-                  if (r.status === "UBETALT") valg.push("betalt")
+                  if (r.status === "UBETALT") valg.push("betalt", "purring")
                   if (r.status === "VENTELISTE") valg.push("tilbud")
                   if (["BETALT", "UBETALT", "VENTELISTE"].includes(r.status))
                     valg.push("trekk")
@@ -477,6 +583,12 @@ export default function AdminStats({ okt, onLogout }) {
                       <td className="kommentar c-kommentar">
                         {r.kommentar}
                         {r.notat && <div className="liten">📝 {r.notat}</div>}
+                        {r.purret && r.status === "UBETALT" && (
+                          <div className="liten">✉️ Purret {dato(r.purret)}</div>
+                        )}
+                        {r.varslet && r.status === "VENTELISTE" && (
+                          <div className="liten">✉️ Varslet om ledig plass {dato(r.varslet)}</div>
+                        )}
                       </td>
                       <td className="handlinger">
                         {valg.length > 0 && (
@@ -507,6 +619,13 @@ export default function AdminStats({ okt, onLogout }) {
                             <b>
                               {handlingTekst[aapen.handling]}: {r.navn}
                             </b>
+                            {aapen.handling === "purring" && (
+                              <p>
+                                Sender en vennlig påminnelse til {r.epost} med
+                                Vipps-nummer, beløp og hva som skal stå i
+                                meldingen.
+                              </p>
+                            )}
                             {aapen.handling === "trekk" && (
                               <p>
                                 Påmeldingen er bindende og skal bare trekkes
@@ -652,6 +771,54 @@ export default function AdminStats({ okt, onLogout }) {
           )}
         </section>
       </div>
+
+      <section className="panel faresone">
+        <h2>Nullstill før lansering</h2>
+        <p className="liten">
+          Fjerner alle påmeldinger (også tester) og besøksstatistikken, og neste
+          påmelding får JT-1001. En kopi lagres i «Arkiv»-faner i regnearket.
+          Antall plasser, Vipps-innstilling og passord beholdes.
+        </p>
+        {a.BETALT > 0 ? (
+          <p className="liten">
+            🔒 Låst fordi det finnes {a.BETALT} betalte påmeldinger.
+          </p>
+        ) : nullstill === null ? (
+          <button className="mini fare" onClick={() => setNullstill("")}>
+            Nullstill alt …
+          </button>
+        ) : (
+          <div className="nullstill-bekreft">
+            <input
+              type="text"
+              placeholder="Skriv NULLSTILL"
+              value={nullstill}
+              autoCapitalize="characters"
+              onChange={(e) => setNullstill(e.target.value)}
+            />
+            <button
+              className="mini bekreft h-trekk"
+              disabled={jobber || nullstill.trim().toUpperCase() !== "NULLSTILL"}
+              onClick={() =>
+                send(
+                  { action: "nullstill", bekreft: "NULLSTILL" },
+                  "nullstill",
+                  () => {
+                    setNullstill(null)
+                    setFilter("aktive")
+                  }
+                )
+              }
+            >
+              {jobber ? "Nullstiller …" : "Nullstill nå"}
+            </button>
+            <button className="mini" onClick={() => setNullstill(null)}>
+              Avbryt
+            </button>
+          </div>
+        )}
+        {vis("nullstill")}
+      </section>
     </div>
   )
 }
