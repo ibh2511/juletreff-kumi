@@ -685,7 +685,18 @@
 }
 
 .liten.varsel { color: #b3261e; font-weight: 500; }
-.innstilling-rad input.bred { flex: 1 1 220px; min-width: 0; }
 .handling-velger.h-bekreftelse { border-color: #23466e; }
 .handling.h-bekreftelse { border-left-color: #23466e; }
 .handling-knapper .mini.bekreft.h-bekreftelse { background: #23466e; }
+.innstilling select {
+  font: inherit;
+  font-size: 14px;
+  padding: 7px 10px;
+  border: 1px solid #d9cbb8;
+  border-radius: 8px;
+  background: #fff;
+  color: #111;
+  min-width: 0;
+  width: 0;
+  flex: 1 1 0;
+}

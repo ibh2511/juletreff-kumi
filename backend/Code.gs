@@ -128,7 +128,7 @@ function route_(e, body) {
     if (!body && p.action && GET_HANDLINGER.indexOf(p.action) < 0) return json_({ ok: false, error: 'Ugyldig forespørsel' });
     switch (p.action) {
       case 'info':      begrens_('info', 300); return json_(info_());
-      case 'pamelding': begrens_('pamelding', 30); return json_(pamelding_(p));
+      case 'pamelding': begrens_('pamelding', 60); return json_(pamelding_(p));
       case 'status':    begrens_('status', 120); return json_(sjekkBetaling_(p.id, p.k));
       case 'hit':       begrens_('hit', 300); return json_(hit_(p));
       case 'admin':     return json_(adminLogin_(p.passord));
@@ -299,6 +299,14 @@ function sjekkBetaling_(id, nokkel, fraUtloser) {
       oppdater_(o._rad, { status: 'AVBRUTT', notat: 'Vipps: ' + pay.state });
       return svar('AVBRUTT');
     }
+    // Betalt etter at reservasjonen på 30 minutter gikk ut, og plassen er gitt til en annen:
+    // reservasjonen i Vipps oppheves, så ingenting trekkes.
+    if (!erTest_(o) && new Date(o.opprettet).getTime() <= Date.now() - VENTER_MINUTTER * 60000 &&
+        opptatte_(alle_()) >= arrangement_().kapasitet) {
+      avbrytVipps_(id);
+      oppdater_(o._rad, { status: 'AVBRUTT', notat: 'Betalte for sent, det var fullt. Beløpet er ikke trukket.' });
+      return svar('AVBRUTT');
+    }
     // Plassen er reservert, så beløpet trekkes med en gang.
     vipps_('post', '/epayment/v1/payments/' + encodeURIComponent(id) + '/capture',
       { modificationAmount: { currency: 'NOK', value: pay.amount.value } }, 'capture-' + id);
@@ -447,7 +455,8 @@ function sendBekreftelse_(r) {
       { htmlBody: html, name: cfg_('AVSENDER_NAVN', 'Juletreff på KUMI'), replyTo: cfg_('SVAR_EPOST', '') || undefined });
     var o = finn_('id', r.id);
     if (o) oppdater_(o._rad, { epost_sendt: new Date() });
-  } catch (err) { console.error('E-post feilet for ' + r.id + ': ' + err); }
+    return true;
+  } catch (err) { console.error('E-post feilet for ' + r.id + ': ' + err); return false; }
 }
 
 /** Felles ramme for e-postene: fersken bakgrunn, bilde øverst, mørkt kort og mørk bunntekst. */
@@ -494,7 +503,7 @@ function sendLedigPlassEpost_(r, ledige) {
   var tekst = 'Hei ' + r.fornavn + '!\n\nNå er det ' + plasser + ' på Juletreff på KUMI (' + a.dato + ').\n' +
     'Du står på ventelisten, og vi sier fra til alle på listen samtidig. Den som melder seg på først, får plassen.\n\n' +
     'Meld deg på her: ' + site + '/\n\nPåmeldingsfristen er ' + a.fristTekst + '.\n\nGod jul!';
-  MailApp.sendEmail(r.epost, '✨ Ledig plass på Juletreff på KUMI 🥂', tekst, {
+  MailApp.sendEmail(r.epost, (erTest_(r) ? '[TEST] ' : '') + '✨ Ledig plass på Juletreff på KUMI 🥂', tekst, {
     htmlBody: epostRamme_(kropp, 'Spørsmål? Svar på denne e-posten.'),
     name: cfg_('AVSENDER_NAVN', 'Juletreff på KUMI'), replyTo: cfg_('SVAR_EPOST', '') || undefined
   });
@@ -941,6 +950,8 @@ function adminPurring_(p) {
 function adminTestpamelding_(p) {
   if (!sjekkOkt_(p.okt)) return { ok: false, utlogget: true, error: 'Logg inn på nytt' };
   begrens_('endre', 60);
+  var type = p.type || 'pamelding';
+  if (type !== 'pamelding') return testEpost_(type, p);
   var res = pamelding_({
     fornavn: p.fornavn || 'Test', etternavn: p.etternavn || 'Testesen',
     epost: p.epost, telefon: p.telefon || '12345678', kommentar: p.kommentar || 'Testpåmelding'
@@ -950,6 +961,43 @@ function adminTestpamelding_(p) {
     ? 'Testpåmeldingen ' + res.id + ' er laget. Åpne Vipps-lenken for å teste betalingen.'
     : 'Testpåmeldingen ' + res.id + ' er laget, og bekreftelsen er sendt til ' + String(p.epost) + '.';
   return res;
+}
+
+/**
+ * Sender én av e-postene som test, uten å lage en påmelding. Innholdet er det samme som
+ * deltakerne får, med [TEST] i emnet og eksempelverdier for navn og påmeldings-ID.
+ */
+var TEST_EPOSTER = {
+  ubetalt: 'Bekreftelse med betalingsinfo',
+  betalt: 'Bekreftelse når betalingen er mottatt',
+  venteliste: 'Du står på ventelisten',
+  ledig: 'Det er ledig plass (til ventelisten)',
+  purring: 'Påminnelse om betaling',
+  rapport: 'Daglig statusmail til admin'
+};
+function testEpost_(type, p) {
+  if (!TEST_EPOSTER[type]) return { ok: false, error: 'Ukjent e-posttype' };
+  if (type === 'rapport') return adminRapport_(p);
+  var epost = tekst_(p.epost, 120).toLowerCase();
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(epost)) return { ok: false, error: 'Skriv inn en gyldig e-postadresse' };
+  var a = arrangement_();
+  var r = { id: 'JT-TEST', test: 'ja', fornavn: tekst_(p.fornavn, 60) || 'Test', etternavn: tekst_(p.etternavn, 60) || 'Testesen',
+    epost: epost, telefon: '123 45 678', kommentar: 'Testpåmelding', belop: a.pris, betaling: 'manuell',
+    status: type === 'betalt' ? 'BETALT' : type === 'venteliste' || type === 'ledig' ? 'VENTELISTE' : 'UBETALT' };
+  var sendt = true;
+  try {
+    if (type === 'ubetalt' || type === 'betalt') sendt = sendBekreftelse_(r);
+    else if (type === 'ledig') sendLedigPlassEpost_(r, 1);
+    else if (type === 'purring') sendPurring_(r);
+    else if (type === 'venteliste') {
+      var for_ = epostKvote_();
+      sendVentelisteEpost_(r);
+      var etter = epostKvote_();
+      if (for_ !== null && etter !== null && etter >= for_) sendt = false;
+    }
+  } catch (err) { console.error('Test-e-post feilet: ' + err); sendt = false; }
+  if (!sendt) return { ok: false, error: 'E-posten ble ikke sendt. Sjekk adressen, og at dagens e-postkvote ikke er brukt opp.' };
+  return { ok: true, melding: '«' + TEST_EPOSTER[type] + '» er sendt som test til ' + epost + '. Ingen påmelding ble laget.' };
 }
 
 /* ------------------------------------------------------------------ */
@@ -985,6 +1033,9 @@ function dagligRapport(tvungen) {
   var a = arrangement_();
   var props = PropertiesService.getScriptProperties();
   var sist = Number(props.getProperty('RAPPORT_SIST') || 0);
+  // Tidspunktet tas før radene leses, så noe som skjer mens rapporten lages kommer med neste gang.
+  var naa = Date.now();
+  var siden = function (d) { var t = new Date(d).getTime(); return t > sist && t <= naa; };
   var rader = alle_().filter(function (r) { return !erTest_(r); });
   var tz = Session.getScriptTimeZone();
   var dato = function (d) { return d ? Utilities.formatDate(new Date(d), tz, 'dd.MM HH:mm') : ''; };
@@ -992,9 +1043,9 @@ function dagligRapport(tvungen) {
 
   var antall = {}; rader.forEach(function (r) { antall[r.status] = (antall[r.status] || 0) + 1; });
   var opptatt = opptatte_(rader), ledige = Math.max(0, a.kapasitet - opptatt);
-  var nye = rader.filter(function (r) { return new Date(r.opprettet).getTime() > sist; });
-  var nyeBetalt = rader.filter(function (r) { return r.betalt && new Date(r.betalt).getTime() > sist; });
-  var nyeTrukket = rader.filter(function (r) { return r.trukket && new Date(r.trukket).getTime() > sist; });
+  var nye = rader.filter(function (r) { return siden(r.opprettet); });
+  var nyeBetalt = rader.filter(function (r) { return r.betalt && siden(r.betalt); });
+  var nyeTrukket = rader.filter(function (r) { return r.trukket && siden(r.trukket); });
 
   var dogn = 24 * 36e5;
   var ubetalte = rader.filter(function (r) { return r.status === 'UBETALT' && Date.now() - new Date(r.opprettet).getTime() > 2 * dogn; });
@@ -1007,7 +1058,7 @@ function dagligRapport(tvungen) {
   var harOppfolging = ubetalte.length || refusjon.length || venteliste || utenEpost.length;
   // En tidsstyrt utløser sender med et hendelsesobjekt, så bare en ekte «true» teller som tvungen.
   if (tvungen !== true && !harNytt && !harOppfolging) {
-    props.setProperty('RAPPORT_SIST', String(Date.now()));
+    props.setProperty('RAPPORT_SIST', String(naa));
     return { sendt: false, grunn: 'ingenting' };
   }
 
@@ -1040,7 +1091,7 @@ function dagligRapport(tvungen) {
     (harNytt ? nye.length + ' nye påmeldinger, ' + nyeBetalt.length + ' nye betalinger, ' + nyeTrukket.length + ' trukket siden sist.\n' : '') +
     (harOppfolging ? 'Noe må følges opp. ' : '') + 'Åpne admin: ' + site + '/#admin';
   sendEpost_(til, 'Juletreff KUMI: ' + (harOppfolging ? 'status og ting å følge opp' : 'status'), tekst, kropp, 'Sendes hver morgen når noe er nytt eller må følges opp.');
-  props.setProperty('RAPPORT_SIST', String(Date.now()));
+  props.setProperty('RAPPORT_SIST', String(naa));
   return { sendt: true };
 }
 
@@ -1063,7 +1114,11 @@ function alle_() {
   var ut = [];
   for (var i = 1; i < vals.length; i++) {
     var r = { _rad: i + 1 };
-    KOLONNER.forEach(function (k, j) { r[k] = vals[i][j]; });
+    // celle_ setter en apostrof foran tekst som ligner en formel. Den fjernes igjen her.
+    KOLONNER.forEach(function (k, j) {
+      var v = vals[i][j];
+      r[k] = (typeof v === 'string' && /^'[=+\-@\t\r]/.test(v)) ? v.slice(1) : v;
+    });
     r.epost = String(r.epost || '').toLowerCase();
     ut.push(r);
   }

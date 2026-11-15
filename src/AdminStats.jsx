@@ -66,6 +66,7 @@ export default function AdminStats({ okt, onLogout }) {
   const [plasser, setPlasser] = useState("")
   const [fb, setFb] = useState(null) // null = ikke endret
   const [test, setTest] = useState({ fornavn: "Test", etternavn: "Testesen", epost: "" })
+  const [testType, setTestType] = useState("pamelding")
   const [testLenke, setTestLenke] = useState("")
   const [bekreftVarsel, setBekreftVarsel] = useState(false)
   const [bekreftPurring, setBekreftPurring] = useState(false)
@@ -343,6 +344,22 @@ export default function AdminStats({ okt, onLogout }) {
           <div className="innstilling">
             <div className="innstilling-tittel">Testpåmelding</div>
             <div className="innstilling-rad">
+              <select
+                className="bred"
+                aria-label="Hva skal testes"
+                value={testType}
+                onChange={(e) => setTestType(e.target.value)}
+              >
+                <option value="pamelding">Hel testpåmelding (lager en rad)</option>
+                <option value="ubetalt">E-post: bekreftelse med betalingsinfo</option>
+                <option value="betalt">E-post: bekreftelse når betalingen er mottatt</option>
+                <option value="venteliste">E-post: du står på ventelisten</option>
+                <option value="ledig">E-post: det er ledig plass</option>
+                <option value="purring">E-post: påminnelse om betaling</option>
+                <option value="rapport">E-post: daglig statusmail til admin</option>
+              </select>
+            </div>
+            <div className="innstilling-rad">
               <input
                 type="text"
                 placeholder="Fornavn"
@@ -365,15 +382,15 @@ export default function AdminStats({ okt, onLogout }) {
               />
               <button
                 className="mini ok"
-                disabled={jobber || !test.epost.includes("@")}
+                disabled={jobber || (testType !== "rapport" && !test.epost.includes("@"))}
                 onClick={() =>
-                  send({ action: "testpamelding", ...test }, "test", (d) => {
+                  send({ action: "testpamelding", type: testType, ...test }, "test", (d) => {
                     setTestLenke(d.redirectUrl || "")
-                    setFilter("test")
+                    if (testType === "pamelding") setFilter("test")
                   })
                 }
               >
-                Lag test
+                {testType === "pamelding" ? "Lag test" : "Send test"}
               </button>
             </div>
             {vis("test")}
@@ -385,9 +402,11 @@ export default function AdminStats({ okt, onLogout }) {
               </div>
             )}
             <div className="liten">
-              Går gjennom det samme som en ekte påmelding, med e-post merket
-              [TEST]. Den tar ikke plass, telles ikke og er ikke med i
-              deltakerlisten. Slett den når du er ferdig.
+              {testType === "pamelding"
+                ? "Går gjennom det samme som en ekte påmelding, med e-post merket [TEST]. Den tar ikke plass, telles ikke og er ikke med i deltakerlisten. Slett den når du er ferdig."
+                : testType === "rapport"
+                  ? `Sendes til ${arr.rapportTil || "adressen i ADMIN_EPOST"}, med tallene slik de er nå.`
+                  : "Sender bare denne e-posten, merket [TEST], til adressen over. Ingen påmelding lages."}
             </div>
           </div>
 
