@@ -543,7 +543,7 @@ export default function App() {
                     MUNCH bar
                   </a>{" "}
                   i 13. etasje på <b>MUNCH,</b> ca. 200 meter unna (
-                  <i>23 års aldersgrense</i>).
+                  <i>20 års aldersgrense</i>).
                 </p>
                 <p>
                   Ønsker du å bli med? Meld deg på via skjemaet over innen{" "}
