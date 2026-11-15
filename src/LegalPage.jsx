@@ -114,10 +114,10 @@ function Personvern({ info }) {
 
       <h2>Behandlingsansvarlig</h2>
       <p>
-        {MOTTAKER}, org.nr. {ORGNR}, {ADRESSE}, er ansvarlig for
-        personopplysningene som
-        samles inn ved påmelding til juletreffet. Kontaktperson for personvern
-        er {KONTAKTPERSON}, <Epost info={info} />.
+        Oslo vegansamfunn v/ {KONTAKTPERSON}, org.nr. 929 119 819,
+        Ensjøveien 29 C, 0661 Oslo, er ansvarlig for personopplysningene som
+        samles inn ved påmelding til juletreffet. Kontakt:{" "}
+        <Epost info={info} />.
       </p>
 
       <h2>Hva vi samler inn og hvorfor</h2>
@@ -159,7 +159,8 @@ function Personvern({ info }) {
       <h2>Hvem som får opplysningene</h2>
       <p>
         Betalingen skjer med Vipps (Vipps MobilePay AS), som behandler
-        betalingen etter sine egne vilkår. Vi gir KUMI antall deltakere og
+        betalingen etter sine egne vilkår. {MOTTAKER}, org.nr. {ORGNR}, tar
+        imot betalingen og ser derfor navnet ditt og beløpet. Vi gir KUMI antall deltakere og
         eventuelle allergier, men ikke kontaktopplysningene dine. Vi selger
         eller deler aldri opplysningene dine med andre.
       </p>
