@@ -8,9 +8,11 @@ const ADRESSE = "Bruddveien 4, 2016 Frogner"
 const KONTAKTPERSON = "[Kontaktperson]"
 const OPPDATERT = "[dato]"
 
-function Epost() {
-  return KONTAKT_EPOST ? (
-    <a href={`mailto:${KONTAKT_EPOST}`}>{KONTAKT_EPOST}</a>
+// Kontaktadressen kommer fra backend (SVAR_EPOST), med .env som reserve
+function Epost({ info }) {
+  const epost = info?.kontaktEpost || KONTAKT_EPOST
+  return epost ? (
+    <a href={`mailto:${epost}`}>{epost}</a>
   ) : (
     <span>[kontakt-e-post]</span>
   )
@@ -26,7 +28,7 @@ function Vilkar({ info }) {
       <p>
         Arrangør: {ARRANGOR}. Betalingen tas imot av {MOTTAKER}, org.nr.{" "}
         {ORGNR}, {ADRESSE}. Kontakt: {KONTAKTPERSON},{" "}
-        <Epost />.
+        <Epost info={info} />.
       </p>
 
       <h2>Hva du kjøper</h2>
@@ -58,7 +60,7 @@ function Vilkar({ info }) {
       </p>
       <p>
         Påmeldingen kan bare trekkes med legeerklæring, som du sender til{" "}
-        <Epost /> så snart du kan.
+        <Epost info={info} /> så snart du kan.
       </p>
       <ul>
         <li>
@@ -95,7 +97,7 @@ function Vilkar({ info }) {
 
       <h2>Spørsmål og klager</h2>
       <p>
-        Ta kontakt med oss på <Epost /> først. Kommer vi ikke til enighet, kan
+        Ta kontakt med oss på <Epost info={info} /> først. Kommer vi ikke til enighet, kan
         du klage til Forbrukertilsynet og Forbrukerklageutvalget
         (forbrukertilsynet.no).
       </p>
@@ -103,7 +105,7 @@ function Vilkar({ info }) {
   )
 }
 
-function Personvern() {
+function Personvern({ info }) {
   return (
     <>
       <h1>Personvernerklæring</h1>
@@ -114,7 +116,7 @@ function Personvern() {
         {MOTTAKER}, org.nr. {ORGNR}, {ADRESSE}, er ansvarlig for
         personopplysningene som
         samles inn ved påmelding til juletreffet. Kontaktperson for personvern
-        er {KONTAKTPERSON}, <Epost />.
+        er {KONTAKTPERSON}, <Epost info={info} />.
       </p>
 
       <h2>Hva vi samler inn og hvorfor</h2>
@@ -172,7 +174,7 @@ function Personvern() {
       <h2>Dine rettigheter</h2>
       <p>
         Du kan be om innsyn, retting eller sletting, og protestere mot
-        behandlingen. Skriv til <Epost />. Du kan også klage til Datatilsynet
+        behandlingen. Skriv til <Epost info={info} />. Du kan også klage til Datatilsynet
         (datatilsynet.no).
       </p>
     </>
@@ -186,7 +188,7 @@ export default function LegalPage({ page, info }) {
         <a className="legal-back" href="#">
           ← Tilbake til påmeldingen
         </a>
-        {page === "vilkar" ? <Vilkar info={info} /> : <Personvern />}
+        {page === "vilkar" ? <Vilkar info={info} /> : <Personvern info={info} />}
       </main>
       <footer className="site-footer">
         <a href="#">Påmelding</a>

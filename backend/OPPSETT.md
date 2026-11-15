@@ -32,8 +32,8 @@ Løsningen virker på to måter:
 | `KAPASITET` | `30` |
 | `VIPPS_NUMMER` | Vipps-nummeret (brukes uten Vipps-avtale, og når noen får plass fra ventelisten) |
 | `AVSENDER_NAVN` | `Juletreff på KUMI` |
-| `SVAR_EPOST` | e-posten deltakerne svarer til (spørsmål og legeerklæring) |
-| `FACEBOOK_URL` | lenken til årets Facebook-event (knappen i bekreftelses-e-posten) |
+| `SVAR_EPOST` | e-posten deltakerne svarer til (spørsmål og legeerklæring). Vises også som kontaktadresse på nettsiden |
+| `FACEBOOK_URL` | lenken til årets Facebook-event. Settes enklest i adminsiden under Innstillinger |
 
 Med Vipps-avtale legger du også til (hentes fra portal.vippsmobilepay.com → Utvikler):
 
@@ -54,8 +54,9 @@ Så lenge `VIPPS_CLIENT_ID` er tom, brukes Vipps-nummeret.
 
 1. **Implementer → Ny implementering → Nettapp**. «Kjør som»: **Meg**. «Hvem har tilgang»: **Alle**.
 2. Kopier adressen som slutter på `/exec`.
-3. Kopier `.env.example` til `.env` i repoet og sett `VITE_API_URL` til adressen, `VITE_KONTAKT_EPOST` til kontakt-e-posten, og eventuelt `VITE_VIPPS_NUMBER`.
-4. `npm run deploy`.
+3. Adressen ligger allerede i `src/config.js`. Bytter du til en ny implementering med ny adresse, må den oppdateres der.
+
+Nettsiden publiseres av seg selv når noe merges til `main`. Kontakt-e-posten på siden og i vilkårene hentes fra `SVAR_EPOST` i Skriptegenskaper, og Facebook-lenken settes i adminsiden.
 
 Når du endrer koden senere: **Implementer → Administrer implementeringer → ✏️ → Ny versjon**, så beholder du adressen.
 

@@ -399,14 +399,6 @@ textarea {
   margin-bottom: 20px;
 }
 
-.faq-section .faq-body .munch-skewed {
-  display: inline-block;
-  transform: skewX(12deg);
-  transform-origin: bottom left;
-  will-change: transform;
-  font-weight: bold;
-  color: var(--accent);
-}
 
 .faq-section .icon {
   background: #444;
@@ -632,30 +624,6 @@ textarea {
   font-size: 14px;
   font-weight: 300;
 }
-.vipps-button {
-  display: block;
-  padding: 14px 0;
-  margin-bottom: 18px;
-  border-radius: 8px;
-  background: #ff5b24;
-  color: #fff;
-  font-weight: 500;
-  text-decoration: none;
-  transition: background 0.2s;
-}
-.vipps-button:hover {
-  background: #e64a15;
-  color: #fff;
-}
-.vipps-qr {
-  display: block;
-  width: 180px;
-  max-width: 100%;
-  margin: 0 auto 18px;
-  border-radius: 8px;
-  background: #fff;
-  padding: 8px;
-}
 .vipps-steps {
   text-align: left;
   margin: 0 auto;
@@ -816,3 +784,6 @@ textarea {
     padding: 24px 18px;
   }
 }
+
+/* Felle for roboter: usynlig for mennesker, fylles ut av skript */
+.felle { position: absolute; left: -9999px; width: 1px; height: 1px; overflow: hidden; }

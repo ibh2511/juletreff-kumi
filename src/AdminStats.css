@@ -395,6 +395,7 @@
 }
 .innstilling input[type="number"],
 .innstilling input[type="text"],
+.innstilling input[type="url"],
 .innstilling input[type="email"] {
   font: inherit;
   font-size: 14px;
@@ -682,3 +683,9 @@
   background: #c06a00;
   border-color: #c06a00;
 }
+
+.liten.varsel { color: #b3261e; font-weight: 500; }
+.innstilling-rad input.bred { flex: 1 1 220px; min-width: 0; }
+.handling-velger.h-bekreftelse { border-color: #23466e; }
+.handling.h-bekreftelse { border-left-color: #23466e; }
+.handling-knapper .mini.bekreft.h-bekreftelse { background: #23466e; }

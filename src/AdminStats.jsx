@@ -34,7 +34,11 @@ const dato = (v) =>
 
 function lastNedCsv(rader) {
   const kol = ["id", "navn", "telefon", "epost", "status", "belop", "kommentar"]
-  const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`
+  // Tekst som starter med = + - @ tolkes som formel i Excel og Sheets, så den får en apostrof foran
+  const esc = (v) => {
+    const t = String(v ?? "")
+    return `"${(/^[=+\-@\t\r]/.test(t) ? "'" + t : t).replace(/"/g, '""')}"`
+  }
   const csv = [kol.join(";")]
     .concat(rader.map((r) => kol.map((k) => esc(r[k])).join(";")))
     .join("\n")
@@ -60,6 +64,7 @@ export default function AdminStats({ okt, onLogout }) {
   const [jobber, setJobber] = useState(false)
   const [melding, setMelding] = useState(null) // { tekst, sted, feil }
   const [plasser, setPlasser] = useState("")
+  const [fb, setFb] = useState(null) // null = ikke endret
   const [test, setTest] = useState({ fornavn: "Test", etternavn: "Testesen", epost: "" })
   const [testLenke, setTestLenke] = useState("")
   const [bekreftVarsel, setBekreftVarsel] = useState(false)
@@ -177,10 +182,15 @@ export default function AdminStats({ okt, onLogout }) {
   const noshow = data.arrangement.noshow ?? 300
   const arr = data.arrangement
   const opptatt = a.BETALT + a.UBETALT
+  // Samme regel som backend: nullstilling er låst når en ekte påmelding har registrert betaling
+  const medBetaling = data.deltakere.filter(
+    (r) => !r.test && (r.status === "BETALT" || r.betalt)
+  ).length
 
   const handlingTekst = {
     betalt: "Marker som betalt",
     purring: "Send purring",
+    bekreftelse: "Send bekreftelsen på nytt",
     tilbud: "Gi plass fra ventelisten",
     refundert: "Marker som refundert",
     trekk: "Trekk påmeldingen",
@@ -190,6 +200,7 @@ export default function AdminStats({ okt, onLogout }) {
   const handlingIkon = {
     betalt: "🟢",
     purring: "🟠",
+    bekreftelse: "✉️",
     tilbud: "🔵",
     refundert: "🟡",
     trekk: "🔴",
@@ -381,6 +392,39 @@ export default function AdminStats({ okt, onLogout }) {
           </div>
 
           <div className="innstilling">
+            <div className="innstilling-tittel">Facebook-event</div>
+            <div className="innstilling-rad">
+              <input
+                type="url"
+                className="bred"
+                placeholder="https://www.facebook.com/events/…"
+                value={fb === null ? arr.facebookUrl || "" : fb}
+                onChange={(e) => setFb(e.target.value)}
+              />
+              <button
+                className="mini ok"
+                disabled={jobber || fb === null || fb.trim() === (arr.facebookUrl || "")}
+                onClick={() =>
+                  send({ action: "innstillinger", facebookUrl: fb.trim() }, "facebook", () =>
+                    setFb(null)
+                  )
+                }
+              >
+                Lagre
+              </button>
+            </div>
+            <div className="liten">
+              Lenken brukes i bekreftelsen, ventelistemailen og på nettsiden.{" "}
+              {arr.facebookUrl && (
+                <a href={arr.facebookUrl} target="_blank" rel="noreferrer">
+                  Åpne eventet
+                </a>
+              )}
+            </div>
+            {vis("facebook")}
+          </div>
+
+          <div className="innstilling">
             <div className="innstilling-tittel">Daglig statusmail</div>
             <div className="liten">
               {arr.rapportTil
@@ -397,6 +441,12 @@ export default function AdminStats({ okt, onLogout }) {
               </button>
             </div>
             {vis("rapport")}
+            {arr.epostKvote != null && (
+              <div className={`liten ${arr.epostKvote < 20 ? "varsel" : ""}`}>
+                {arr.epostKvote < 20 ? "⚠️ " : ""}
+                {arr.epostKvote} e-poster igjen av dagens kvote hos Google.
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -548,6 +598,7 @@ export default function AdminStats({ okt, onLogout }) {
                   const s = STATUS[r.status] || { tekst: r.status, klasse: "" }
                   const valg = []
                   if (r.status === "UBETALT") valg.push("betalt", "purring")
+                  if (["BETALT", "UBETALT"].includes(r.status)) valg.push("bekreftelse")
                   if (r.status === "VENTELISTE") valg.push("tilbud")
                   if (["BETALT", "UBETALT", "VENTELISTE"].includes(r.status))
                     valg.push("trekk")
@@ -583,6 +634,11 @@ export default function AdminStats({ okt, onLogout }) {
                       <td className="kommentar c-kommentar">
                         {r.kommentar}
                         {r.notat && <div className="liten">📝 {r.notat}</div>}
+                        {r.utenEpost && (
+                          <div className="liten varsel">
+                            ⚠️ Fikk ikke bekreftelsen på e-post. Send den på nytt.
+                          </div>
+                        )}
                         {r.purret && r.status === "UBETALT" && (
                           <div className="liten">✉️ Purret {dato(r.purret)}</div>
                         )}
@@ -779,9 +835,9 @@ export default function AdminStats({ okt, onLogout }) {
           påmelding får JT-1001. En kopi lagres i «Arkiv»-faner i regnearket.
           Antall plasser, Vipps-innstilling og passord beholdes.
         </p>
-        {a.BETALT > 0 ? (
+        {medBetaling > 0 ? (
           <p className="liten">
-            🔒 Låst fordi det finnes {a.BETALT} betalte påmeldinger.
+            🔒 Låst fordi det finnes {medBetaling} påmeldinger med registrert betaling.
           </p>
         ) : nullstill === null ? (
           <button className="mini fare" onClick={() => setNullstill("")}>
