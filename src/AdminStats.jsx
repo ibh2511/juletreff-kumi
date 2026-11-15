@@ -62,6 +62,7 @@ export default function AdminStats({ okt, onLogout }) {
   const [plasser, setPlasser] = useState("")
   const [test, setTest] = useState({ fornavn: "Test", etternavn: "Testesen", epost: "" })
   const [testLenke, setTestLenke] = useState("")
+  const [bekreftVarsel, setBekreftVarsel] = useState(false)
 
   const last = useCallback(async () => {
     try {
@@ -420,6 +421,48 @@ export default function AdminStats({ okt, onLogout }) {
           })}
         </div>
 
+        {a.VENTELISTE > 0 && (
+          <div className="venteliste-varsel">
+            <div>
+              <b>
+                {a.VENTELISTE} på ventelisten · {data.ledige}{" "}
+                {data.ledige === 1 ? "ledig plass" : "ledige plasser"}
+              </b>
+              <div className="liten">
+                {data.ledige > 0
+                  ? "Send e-post til alle på ventelisten om at det er ledig plass. Den som melder seg på først, får plassen."
+                  : "Knappen blir aktiv når noen trekker seg, eller når du øker antall plasser."}
+              </div>
+            </div>
+            {bekreftVarsel ? (
+              <div className="varsel-knapper">
+                <button
+                  className="mini ok"
+                  disabled={jobber}
+                  onClick={() =>
+                    send({ action: "varsleventeliste" }, "venteliste", () =>
+                      setBekreftVarsel(false)
+                    )
+                  }
+                >
+                  {jobber ? "Sender …" : `Send til ${a.VENTELISTE}`}
+                </button>
+                <button className="mini" onClick={() => setBekreftVarsel(false)}>
+                  Avbryt
+                </button>
+              </div>
+            ) : (
+              <button
+                className="mini ok"
+                disabled={jobber || data.ledige <= 0}
+                onClick={() => setBekreftVarsel(true)}
+              >
+                ✉️ Varsle om ledig plass
+              </button>
+            )}
+          </div>
+        )}
+        {vis("venteliste")}
         {vis("liste")}
 
         {deltakere.length === 0 ? (
@@ -477,6 +520,9 @@ export default function AdminStats({ okt, onLogout }) {
                       <td className="kommentar c-kommentar">
                         {r.kommentar}
                         {r.notat && <div className="liten">📝 {r.notat}</div>}
+                        {r.varslet && r.status === "VENTELISTE" && (
+                          <div className="liten">✉️ Varslet om ledig plass {dato(r.varslet)}</div>
+                        )}
                       </td>
                       <td className="handlinger">
                         {valg.length > 0 && (

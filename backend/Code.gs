@@ -21,7 +21,7 @@ var STANDARD_FACEBOOK_URL = 'https://www.facebook.com/events/664624256515915';
 var PAMELDING_ARK = 'Påmeldinger';
 var BESOK_ARK = 'Besøk';
 var KOLONNER = ['id', 'opprettet', 'status', 'fornavn', 'etternavn', 'epost', 'telefon', 'kommentar',
-  'belop', 'betaling', 'nokkel', 'betalt', 'epost_sendt', 'bindende_godtatt', 'trukket', 'refundert', 'notat', 'kilde', 'refusjon', 'test'];
+  'belop', 'betaling', 'nokkel', 'betalt', 'epost_sendt', 'bindende_godtatt', 'trukket', 'refundert', 'notat', 'kilde', 'refusjon', 'test', 'varslet'];
 var BESOK_KOLONNER = ['tid', 'besokende', 'kilde', 'enhet'];
 
 // Statuser:
@@ -119,6 +119,7 @@ function route_(e, body) {
       case 'endre':     return json_(adminEndre_(p));
       case 'innstillinger': return json_(adminInnstillinger_(p));
       case 'testpamelding': return json_(adminTestpamelding_(p));
+      case 'varsleventeliste': return json_(adminVarsleVenteliste_(p));
       default:          return json_({ ok: true, info: 'Juletreff KUMI API' });
     }
   } catch (err) {
@@ -212,6 +213,11 @@ function pamelding_(p, test) {
     rad.status = fullt ? 'VENTELISTE' : a.vippsAktiv ? 'VENTER' : 'UBETALT';
     rad.betaling = fullt ? '' : a.vippsAktiv ? 'vipps' : 'manuell';
     sheet_(PAMELDING_ARK).appendRow(KOLONNER.map(function (k) { return celle_(rad[k]); }));
+    if (rad.status !== 'VENTELISTE') {
+      tidligere.forEach(function (r) {
+        if (r.status === 'VENTELISTE') oppdater_(r._rad, { status: 'AVBRUTT', notat: [r.notat, 'Meldte seg på igjen og fikk plass (' + rad.id + ')'].filter(String).join(' | ') });
+      });
+    }
   } finally { lock.releaseLock(); }
 
   if (rad.status === 'VENTELISTE') {
@@ -352,7 +358,6 @@ function sendBekreftelse_(r) {
   var site = cfg_('SITE_URL', 'https://ibh2511.github.io/juletreff-kumi').replace(/\/$/, '');
   var betalt = r.status === 'BETALT';
   var fb = cfg_('FACEBOOK_URL', STANDARD_FACEBOOK_URL);
-  var bilde = cfg_('EPOST_BILDE', site + '/images/kumi.jpeg');
   var kart = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent('KUMI Operagata 71B Oslo');
   var e = escapeHtml_;
   var fornavn = e(r.fornavn), etternavn = e(r.etternavn);
@@ -382,19 +387,7 @@ function sendBekreftelse_(r) {
         rad('Melding:', '<b>' + e(melding) + '</b>', true, '#edb77d')) +
       '</div>';
 
-  var html =
-    '<!DOCTYPE html><html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">' +
-    '<meta name="color-scheme" content="light only"><style>@media only screen and (max-width: 600px) {' +
-    '.ytre { padding: 10px !important; } .indre { padding: 14px !important; }' +
-    '.knapp { font-size: .8rem !important; padding: 8px 15px !important; } }</style></head><body style="margin: 0;">' +
-    '<table align="center" width="100%" cellpadding="0" cellspacing="0" class="ytre" style="background-color: #ffd9b0; ' +
-    "font-family: 'Poppins', Arial, sans-serif; color: #333; max-width: 600px; margin: auto; padding: 30px;\" bgcolor=\"#ffd9b0\">" +
-
-    '<tr><td style="padding: 0; border-radius: 15px 15px 0 0; overflow: hidden;" bgcolor="#ffd9b0">' +
-    '<img src="' + bilde + '" alt="Juletreff på KUMI" style="width: 100%; height: 175px; object-fit: cover; display: block; border-radius: 15px 15px 0 0;">' +
-    '</td></tr>' +
-
-    '<tr><td class="indre" style="background-color: #333; color: #F4EADF; padding: 30px;" bgcolor="#333">' +
+  var html = epostRamme_(
     '<h2 style="color: #edb77d; font-size: 1.5rem; margin-top: 0; text-align: center;">Hei ' + fornavn + ',</h2>' +
     '<p style="font-weight: bold; font-size: 1.1rem; margin: 20px 0 0 0; letter-spacing: 0.5px; text-align: center;">' +
     (betalt ? 'Du er påmeldt Juletreff på KUMI 🌿' : 'Takk for din påmelding til Juletreff på KUMI 🌿') + '</p>' +
@@ -421,14 +414,8 @@ function sendBekreftelse_(r) {
       (r.kommentar ? rad('Melding:', e(r.kommentar), true) : '')) +
 
     '<p style="font-size: .85rem; line-height: 1.5; margin: 30px 0 0 0; color: #bdb3a8; text-align: center;">' +
-    e(bindendeTekst_(r.belop)) + '</p>' +
-    '</td></tr>' +
-
-    '<tr><td style="background-color: #111; padding: 20px; text-align: center; color: #777; border-radius: 0 0 15px 15px;" bgcolor="#111">' +
-    '<p style="font-size: .8rem; margin: 0 0 6px 0;">Spørsmål, eller må du melde deg av med legeerklæring? Svar på denne e-posten.</p>' +
-    '<p style="font-size: .8rem; margin: 0;"><a href="' + site + '/#vilkar" style="color: #999;">Salgsvilkår</a> · ' +
-    '<a href="' + site + '/#personvern" style="color: #999;">Personvern</a></p>' +
-    '</td></tr></table></body></html>';
+    e(bindendeTekst_(r.belop)) + '</p>',
+    'Spørsmål, eller må du melde deg av med legeerklæring? Svar på denne e-posten.');
 
   var tekst =
     'Hei ' + r.fornavn + '!\n\n' +
@@ -451,6 +438,58 @@ function sendBekreftelse_(r) {
     var o = finn_('id', r.id);
     if (o) oppdater_(o._rad, { epost_sendt: new Date() });
   } catch (err) { console.error('E-post feilet for ' + r.id + ': ' + err); }
+}
+
+/** Felles ramme for e-postene: fersken bakgrunn, bilde øverst, mørkt kort og mørk bunntekst. */
+function epostRamme_(kropp, bunntekst) {
+  var site = cfg_('SITE_URL', 'https://ibh2511.github.io/juletreff-kumi').replace(/\/$/, '');
+  var bilde = cfg_('EPOST_BILDE', site + '/images/kumi.jpeg');
+  return '<!DOCTYPE html><html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">' +
+    '<meta name="color-scheme" content="light only"><style>@media only screen and (max-width: 600px) {' +
+    '.ytre { padding: 10px !important; } .indre { padding: 14px !important; } }' +
+    '@media only screen and (max-width: 420px) { .knapp { font-size: .85rem !important; padding: 8px 15px !important; } }</style></head><body style="margin: 0;">' +
+    '<table align="center" width="100%" cellpadding="0" cellspacing="0" class="ytre" style="background-color: #ffd9b0; ' +
+    "font-family: 'Poppins', Arial, sans-serif; color: #333; max-width: 600px; margin: auto; padding: 30px;\" bgcolor=\"#ffd9b0\">" +
+    '<tr><td style="padding: 0; border-radius: 15px 15px 0 0; overflow: hidden;" bgcolor="#ffd9b0">' +
+    '<img src="' + bilde + '" alt="Juletreff på KUMI" style="width: 100%; height: 175px; object-fit: cover; display: block; border-radius: 15px 15px 0 0;">' +
+    '</td></tr>' +
+    '<tr><td class="indre" style="background-color: #333; color: #F4EADF; padding: 30px;" bgcolor="#333">' + kropp + '</td></tr>' +
+    '<tr><td style="background-color: #111; padding: 20px; text-align: center; color: #777; border-radius: 0 0 15px 15px;" bgcolor="#111">' +
+    '<p style="font-size: .8rem; margin: 0 0 6px 0;">' + bunntekst + '</p>' +
+    '<p style="font-size: .8rem; margin: 0;"><a href="' + site + '/#vilkar" style="color: #999;">Salgsvilkår</a> · ' +
+    '<a href="' + site + '/#personvern" style="color: #999;">Personvern</a></p>' +
+    '</td></tr></table></body></html>';
+}
+
+/** «Det er ledig plass»: sendes fra admin til alle på ventelisten. Først til mølla. */
+function sendLedigPlassEpost_(r, ledige) {
+  var a = arrangement_();
+  var site = cfg_('SITE_URL', 'https://ibh2511.github.io/juletreff-kumi').replace(/\/$/, '');
+  var plasser = ledige === 1 ? 'en ledig plass' : ledige + ' ledige plasser';
+  var kropp =
+    '<h2 style="color: #edb77d; font-size: 1.5rem; margin-top: 0; text-align: center;">Hei ' + escapeHtml_(r.fornavn) + ',</h2>' +
+    '<p style="font-weight: bold; font-size: 1.1rem; margin: 20px 0 0 0; letter-spacing: 0.5px; text-align: center;">' +
+    'Nå er det ' + plasser + ' på Juletreff på KUMI 🌿</p>' +
+    '<p style="font-size: 1rem; line-height: 1.5; margin: 20px 0 0 0; text-align: center;">' +
+    'Du står på ventelisten, og vi sier fra til alle på listen samtidig. Den som melder seg på først, får plassen.</p>' +
+    '<p style="margin: 34px 0; text-align: center;"><a href="' + site + '/" class="knapp" style="display: inline-block; ' +
+    'background-color: #edb77d; padding: 12px 24px; border-radius: 8px; color: #333; font-size: 1.1rem; font-weight: bold; ' +
+    'text-decoration: none; border: 2px dashed #333;">Meld meg på nå ✨</a></p>' +
+    '<table width="100%" cellpadding="0" cellspacing="0" style="color: #F4EADF; font-size: 1rem; text-align: left;">' +
+    '<tr><td style="padding: 8px; border-bottom: 1px solid #555; width: 110px;"><b>Tid:</b></td>' +
+    '<td style="padding: 8px; border-bottom: 1px solid #555;">' + escapeHtml_(a.dato) + '</td></tr>' +
+    '<tr><td style="padding: 8px; border-bottom: 1px solid #555;"><b>Sted:</b></td>' +
+    '<td style="padding: 8px; border-bottom: 1px solid #555;">' + escapeHtml_(a.sted) + '</td></tr>' +
+    '<tr><td style="padding: 8px;"><b>Pris:</b></td><td style="padding: 8px;">' + a.pris + ' kr</td></tr></table>' +
+    '<p style="font-size: .85rem; line-height: 1.5; margin: 26px 0 0 0; color: #bdb3a8; text-align: center;">' +
+    'Påmeldingsfristen er ' + escapeHtml_(a.fristTekst) + '. Vil du ikke lenger stå på ventelisten, kan du bare svare på denne e-posten.</p>';
+  var tekst = 'Hei ' + r.fornavn + '!\n\nNå er det ' + plasser + ' på Juletreff på KUMI (' + a.dato + ').\n' +
+    'Du står på ventelisten, og vi sier fra til alle på listen samtidig. Den som melder seg på først, får plassen.\n\n' +
+    'Meld deg på her: ' + site + '/\n\nPåmeldingsfristen er ' + a.fristTekst + '.\n\nGod jul!';
+  MailApp.sendEmail(r.epost, '✨ Ledig plass på Juletreff på KUMI 🥂', tekst, {
+    htmlBody: epostRamme_(kropp, 'Spørsmål? Svar på denne e-posten.'),
+    name: cfg_('AVSENDER_NAVN', 'Juletreff på KUMI'), replyTo: cfg_('SVAR_EPOST', '') || undefined
+  });
 }
 
 function sendVentelisteEpost_(r) {
@@ -574,7 +613,7 @@ function adminOversikt_(okt) {
     deltakere: rader.slice().reverse().map(function (r) {
       return { id: r.id, opprettet: r.opprettet, status: r.status, navn: r.fornavn + ' ' + r.etternavn, epost: r.epost,
         telefon: r.telefon, kommentar: r.kommentar, belop: r.belop, betaling: r.betaling, betalt: r.betalt,
-        trukket: r.trukket, refundert: r.refundert, refusjon: r.refusjon, notat: r.notat, test: erTest_(r) };
+        trukket: r.trukket, refundert: r.refundert, refusjon: r.refusjon, notat: r.notat, test: erTest_(r), varslet: r.varslet };
     })
   };
 }
@@ -698,6 +737,29 @@ function adminInnstillinger_(p) {
     }
   } finally { lock.releaseLock(); }
   return { ok: true, melding: meldinger.join(' ') || 'Ingen endringer.' };
+}
+
+/**
+ * Sender «ledig plass» til alle på ventelisten. Kan bare brukes når det er ledige plasser
+ * og fristen ikke har gått ut. Den som melder seg på først, får plassen.
+ */
+function adminVarsleVenteliste_(p) {
+  if (!sjekkOkt_(p.okt)) return { ok: false, utlogget: true, error: 'Logg inn på nytt' };
+  begrens_('endre', 60);
+  var a = arrangement_();
+  if (Date.now() > a.frist.getTime()) return { ok: false, error: 'Påmeldingsfristen har gått ut. Gi plass direkte fra ventelisten i stedet.' };
+  var rader = alle_();
+  var ledige = a.kapasitet - opptatte_(rader);
+  if (ledige <= 0) return { ok: false, error: 'Det er ingen ledige plasser. Knappen virker når antallet påmeldte er under ' + a.kapasitet + '.' };
+  var venter = rader.filter(function (r) { return r.status === 'VENTELISTE' && !erTest_(r); });
+  if (!venter.length) return { ok: false, error: 'Ingen står på ventelisten.' };
+  var sendt = 0;
+  venter.forEach(function (r) {
+    try { sendLedigPlassEpost_(r, ledige); oppdater_(r._rad, { varslet: new Date() }); sendt++; }
+    catch (err) { console.error('Ventelistevarsel feilet for ' + r.id + ': ' + err); }
+  });
+  return { ok: true, melding: 'E-post om ' + (ledige === 1 ? 'en ledig plass' : ledige + ' ledige plasser') + ' er sendt til ' +
+    sendt + ' på ventelisten. Den som melder seg på først, får plassen.' };
 }
 
 /** Testpåmelding fra adminsiden: går gjennom samme løp som en ekte påmelding, men teller ikke. */

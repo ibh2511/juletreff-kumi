@@ -604,3 +604,36 @@
   }
   .handling { max-width: none; }
 }
+
+/* Varsel til ventelisten */
+.venteliste-varsel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+  margin: 0 0 12px;
+  padding: 12px 14px;
+  border: 1px solid #c9d6e6;
+  border-left: 3px solid #23466e;
+  border-radius: 10px;
+  background: #f3f7fc;
+  font-size: 14px;
+}
+.venteliste-varsel > div:first-child {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+.venteliste-varsel .mini {
+  margin: 0;
+  padding: 8px 14px;
+}
+.venteliste-varsel .mini.ok:disabled {
+  background: #9fb3a5;
+  border-color: #9fb3a5;
+  cursor: not-allowed;
+}
+.varsel-knapper {
+  display: flex;
+  gap: 6px;
+}
