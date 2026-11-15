@@ -24,9 +24,10 @@ function Vilkar({ info }) {
       <h1>Salgsvilkår</h1>
       <p className="legal-updated">Sist oppdatert: {OPPDATERT}</p>
 
-      <h2>Arrangør</h2>
+      <h2>Arrangører</h2>
       <p>
-        Arrangør: {ARRANGOR}. Betalingen tas imot av {MOTTAKER}, org.nr.{" "}
+        Arrangører: {ARRANGOR}, Vegan Norway og Oslo vegansamfunn (org.nr.{" "}
+        929 119 819, Ensjøveien 29 C, 0661 Oslo). Betalingen tas imot av {MOTTAKER}, org.nr.{" "}
         {ORGNR}, {ADRESSE}. Kontakt: {KONTAKTPERSON},{" "}
         <Epost info={info} />.
       </p>
