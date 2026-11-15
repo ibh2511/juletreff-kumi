@@ -34,7 +34,11 @@ const dato = (v) =>
 
 function lastNedCsv(rader) {
   const kol = ["id", "navn", "telefon", "epost", "status", "belop", "kommentar"]
-  const esc = (v) => `"${String(v ?? "").replace(/"/g, '""')}"`
+  // Tekst som starter med = + - @ tolkes som formel i Excel og Sheets, så den får en apostrof foran
+  const esc = (v) => {
+    const t = String(v ?? "")
+    return `"${(/^[=+\-@\t\r]/.test(t) ? "'" + t : t).replace(/"/g, '""')}"`
+  }
   const csv = [kol.join(";")]
     .concat(rader.map((r) => kol.map((k) => esc(r[k])).join(";")))
     .join("\n")
@@ -60,7 +64,20 @@ export default function AdminStats({ okt, onLogout }) {
   const [jobber, setJobber] = useState(false)
   const [melding, setMelding] = useState(null) // { tekst, sted, feil }
   const [plasser, setPlasser] = useState("")
+  const [fb, setFb] = useState(null) // null = ikke endret
   const [test, setTest] = useState({ fornavn: "Test", etternavn: "Testesen", epost: "" })
+  const [testType, setTestType] = useState("pamelding")
+  const [svar, setSvar] = useState(null)
+  const [tlf, setTlf] = useState(null)
+  const [program, setProgram] = useState(null)
+  const [takk, setTakk] = useState(null)
+  const [medUbetalte, setMedUbetalte] = useState(false)
+  const [bekreftProgram, setBekreftProgram] = useState(false)
+  const [bekreftTakk, setBekreftTakk] = useState(false)
+  const [slett, setSlett] = useState(null) // null = lukket, ellers teksten som er skrevet
+  const [varsle, setVarsle] = useState(true) // send e-post til deltakeren ved trekk og refusjon
+  const [innsjekk, setInnsjekk] = useState(false)
+  const [innsjekkSok, setInnsjekkSok] = useState("")
   const [testLenke, setTestLenke] = useState("")
   const [bekreftVarsel, setBekreftVarsel] = useState(false)
   const [bekreftPurring, setBekreftPurring] = useState(false)
@@ -104,6 +121,7 @@ export default function AdminStats({ okt, onLogout }) {
     setAapen({ id, handling })
     setNotat("")
     setRefunder(true)
+    setVarsle(true)
     // Standard: under 48 timer hvis det er mindre enn 48 timer igjen nå
     const start = data?.arrangement?.start
     setSent(!!start && Date.now() > new Date(start).getTime() - 48 * 36e5)
@@ -121,6 +139,7 @@ export default function AdminStats({ okt, onLogout }) {
         notat,
         refunder,
         sent,
+        varsle,
       })
       if (d.utlogget) return onLogout()
       if (!d.ok) throw new Error(d.error)
@@ -154,6 +173,22 @@ export default function AdminStats({ okt, onLogout }) {
     setJobber(false)
   }
 
+  // Innsjekk på kvelden: ett trykk, og meldingen vises i innsjekk-boksen
+  const sjekkInn = async (r, mott) => {
+    setJobber(true)
+    try {
+      const d = await apiPost({ action: "endre", okt, id: r.id, handling: mott ? "mott" : "ikkemott" })
+      if (d.utlogget) return onLogout()
+      if (!d.ok) throw new Error(d.error)
+      setMelding({ tekst: d.melding, sted: "innsjekk", feil: /OBS/.test(d.melding) })
+      if (mott) setInnsjekkSok("")
+      await last()
+    } catch (err) {
+      setMelding({ tekst: err.message, sted: "innsjekk", feil: true })
+    }
+    setJobber(false)
+  }
+
   // Meldingen vises ved funksjonen som ga den
   const vis = (sted) =>
     melding?.sted === sted && (
@@ -177,10 +212,34 @@ export default function AdminStats({ okt, onLogout }) {
   const noshow = data.arrangement.noshow ?? 300
   const arr = data.arrangement
   const opptatt = a.BETALT + a.UBETALT
+  // Samme regel som backend: nullstilling er låst når en ekte påmelding har registrert betaling
+  const medBetaling = data.deltakere.filter(
+    (r) => !r.test && (r.status === "BETALT" || r.betalt)
+  ).length
+
+  const maksPurringer = arr.maksPurringer || 3
+  const startet = Date.now() > new Date(arr.start).getTime()
+  const ekte = data.deltakere.filter((r) => !r.test)
+  const utenProgram = ekte.filter((r) => r.status === "BETALT" && !r.program).length
+  const ubetalteUtenProgram = ekte.filter((r) => r.status === "UBETALT" && !r.program).length
+  const paameldte = ekte.filter((r) => ["BETALT", "UBETALT"].includes(r.status))
+  const mott = paameldte.filter((r) => r.mott).length
+  const siffer = (v) => String(v || "").replace(/\D/g, "")
+  const iq = innsjekkSok.trim().toLowerCase()
+  const innsjekkListe = paameldte
+    .filter(
+      (r) =>
+        !iq ||
+        [r.navn, r.epost, r.id].join(" ").toLowerCase().includes(iq) ||
+        (siffer(iq).length >= 3 && siffer(r.telefon).includes(siffer(iq)))
+    )
+    .sort((x, y) => !!x.mott - !!y.mott || x.navn.localeCompare(y.navn, "nb"))
 
   const handlingTekst = {
     betalt: "Marker som betalt",
     purring: "Send purring",
+    frigi: "Frigi plassen (ikke betalt)",
+    bekreftelse: "Send bekreftelsen på nytt",
     tilbud: "Gi plass fra ventelisten",
     refundert: "Marker som refundert",
     trekk: "Trekk påmeldingen",
@@ -190,6 +249,8 @@ export default function AdminStats({ okt, onLogout }) {
   const handlingIkon = {
     betalt: "🟢",
     purring: "🟠",
+    frigi: "🔴",
+    bekreftelse: "✉️",
     tilbud: "🔵",
     refundert: "🟡",
     trekk: "🔴",
@@ -332,6 +393,28 @@ export default function AdminStats({ okt, onLogout }) {
           <div className="innstilling">
             <div className="innstilling-tittel">Testpåmelding</div>
             <div className="innstilling-rad">
+              <select
+                className="bred"
+                aria-label="Hva skal testes"
+                value={testType}
+                onChange={(e) => setTestType(e.target.value)}
+              >
+                <option value="pamelding">Hel testpåmelding (lager en rad)</option>
+                <option value="ubetalt">E-post: bekreftelse med betalingsinfo</option>
+                <option value="betalt">E-post: bekreftelse når betalingen er mottatt</option>
+                <option value="venteliste">E-post: du står på ventelisten</option>
+                <option value="ledig">E-post: det er ledig plass</option>
+                <option value="purring">E-post: påminnelse om betaling</option>
+                <option value="sistepurring">E-post: siste påminnelse (nr. 3)</option>
+                <option value="frigitt">E-post: plassen er frigitt</option>
+                <option value="trukket">E-post: påmeldingen er trukket</option>
+                <option value="refundert">E-post: pengene er betalt tilbake</option>
+                <option value="program">E-post: fellesmail med program</option>
+                <option value="takk">E-post: takkemail</option>
+                <option value="rapport">E-post: daglig statusmail til admin</option>
+              </select>
+            </div>
+            <div className="innstilling-rad">
               <input
                 type="text"
                 placeholder="Fornavn"
@@ -354,15 +437,15 @@ export default function AdminStats({ okt, onLogout }) {
               />
               <button
                 className="mini ok"
-                disabled={jobber || !test.epost.includes("@")}
+                disabled={jobber || (testType !== "rapport" && !test.epost.includes("@"))}
                 onClick={() =>
-                  send({ action: "testpamelding", ...test }, "test", (d) => {
+                  send({ action: "testpamelding", type: testType, ...test }, "test", (d) => {
                     setTestLenke(d.redirectUrl || "")
-                    setFilter("test")
+                    if (testType === "pamelding") setFilter("test")
                   })
                 }
               >
-                Lag test
+                {testType === "pamelding" ? "Lag test" : "Send test"}
               </button>
             </div>
             {vis("test")}
@@ -374,10 +457,92 @@ export default function AdminStats({ okt, onLogout }) {
               </div>
             )}
             <div className="liten">
-              Går gjennom det samme som en ekte påmelding, med e-post merket
-              [TEST]. Den tar ikke plass, telles ikke og er ikke med i
-              deltakerlisten. Slett den når du er ferdig.
+              {testType === "pamelding"
+                ? "Går gjennom det samme som en ekte påmelding, med e-post merket [TEST]. Den tar ikke plass, telles ikke og er ikke med i deltakerlisten. Slett den når du er ferdig."
+                : testType === "rapport"
+                  ? `Sendes til ${arr.rapportTil || "adressen i ADMIN_EPOST"}, med tallene slik de er nå.`
+                  : "Sender bare denne e-posten, merket [TEST], til adressen over. Ingen påmelding lages."}
             </div>
+          </div>
+
+          <div className="innstilling">
+            <div className="innstilling-tittel">Kontakt</div>
+            <div className="innstilling-rad">
+              <input
+                type="email"
+                aria-label="Svaradresse"
+                placeholder="Svaradresse (e-post)"
+                value={svar === null ? arr.svarEpost || "" : svar}
+                onChange={(e) => setSvar(e.target.value)}
+              />
+              <button
+                className="mini ok"
+                disabled={jobber || svar === null || svar.trim() === (arr.svarEpost || "")}
+                onClick={() =>
+                  send({ action: "innstillinger", svarEpost: svar.trim() }, "kontakt", () => setSvar(null))
+                }
+              >
+                Lagre
+              </button>
+            </div>
+            <div className="innstilling-rad">
+              <input
+                type="text"
+                inputMode="tel"
+                aria-label="Telefon på dagen"
+                placeholder="Telefon på dagen"
+                value={tlf === null ? arr.telefon || "" : tlf}
+                onChange={(e) => setTlf(e.target.value)}
+              />
+              <button
+                className="mini ok"
+                disabled={jobber || tlf === null || tlf.trim() === (arr.telefon || "")}
+                onClick={() =>
+                  send({ action: "innstillinger", telefon: tlf.trim() }, "kontakt", () => setTlf(null))
+                }
+              >
+                Lagre
+              </button>
+            </div>
+            <div className="liten">
+              Deltakerne svarer til e-postadressen, og den vises på nettsiden
+              og i vilkårene. Telefonnummeret står bare i fellesmailen med
+              programmet.
+            </div>
+            {vis("kontakt")}
+          </div>
+
+          <div className="innstilling">
+            <div className="innstilling-tittel">Facebook-event</div>
+            <div className="innstilling-rad">
+              <input
+                type="url"
+                className="bred"
+                placeholder="https://www.facebook.com/events/…"
+                value={fb === null ? arr.facebookUrl || "" : fb}
+                onChange={(e) => setFb(e.target.value)}
+              />
+              <button
+                className="mini ok"
+                disabled={jobber || fb === null || fb.trim() === (arr.facebookUrl || "")}
+                onClick={() =>
+                  send({ action: "innstillinger", facebookUrl: fb.trim() }, "facebook", () =>
+                    setFb(null)
+                  )
+                }
+              >
+                Lagre
+              </button>
+            </div>
+            <div className="liten">
+              Lenken brukes i bekreftelsen, ventelistemailen og på nettsiden.{" "}
+              {arr.facebookUrl && (
+                <a href={arr.facebookUrl} target="_blank" rel="noreferrer">
+                  Åpne eventet
+                </a>
+              )}
+            </div>
+            {vis("facebook")}
           </div>
 
           <div className="innstilling">
@@ -397,8 +562,205 @@ export default function AdminStats({ okt, onLogout }) {
               </button>
             </div>
             {vis("rapport")}
+            {arr.epostKvote != null && (
+              <div className={`liten ${arr.epostKvote < 20 ? "varsel" : ""}`}>
+                {arr.epostKvote < 20 ? "⚠️ " : ""}
+                {arr.epostKvote} e-poster igjen av dagens kvote hos Google.
+              </div>
+            )}
           </div>
         </div>
+      </section>
+
+      <section className="panel">
+        <h2>Utsendelser</h2>
+        <div className="innstillinger">
+          <div className="innstilling">
+            <div className="innstilling-tittel">Fellesmail med program</div>
+            <textarea
+              rows={6}
+              aria-label="Program"
+              value={program === null ? arr.program || "" : program}
+              onChange={(e) => setProgram(e.target.value)}
+            />
+            <div className="liten">
+              Én linje per punkt, med klokkeslett først. Sendes én gang per
+              person, så du kan trykke på nytt når flere har betalt.
+              E-posten har også kart, Facebook-lenke, MUNCH bar og
+              telefonnummeret ditt.
+            </div>
+            {ubetalteUtenProgram > 0 && (
+              <label className="sjekk">
+                <input
+                  type="checkbox"
+                  checked={medUbetalte}
+                  onChange={(e) => setMedUbetalte(e.target.checked)}
+                />
+                Ta også med {ubetalteUtenProgram} som ikke har betalt (de får
+                betalingsinfo i samme e-post)
+              </label>
+            )}
+            <div className="innstilling-rad">
+              <button
+                className="mini ok"
+                disabled={jobber || program === null || program.trim() === (arr.program || "")}
+                onClick={() =>
+                  send({ action: "innstillinger", program }, "program", () => setProgram(null))
+                }
+              >
+                Lagre programmet
+              </button>
+              {bekreftProgram ? (
+                <>
+                  <button
+                    className="mini ok"
+                    disabled={jobber}
+                    onClick={() =>
+                      send({ action: "fellesmail", medUbetalte }, "program", () =>
+                        setBekreftProgram(false)
+                      )
+                    }
+                  >
+                    {jobber ? "Sender …" : `Ja, send til ${utenProgram + (medUbetalte ? ubetalteUtenProgram : 0)}`}
+                  </button>
+                  <button className="mini" onClick={() => setBekreftProgram(false)}>
+                    Avbryt
+                  </button>
+                </>
+              ) : (
+                <button
+                  className="mini ok"
+                  disabled={
+                    jobber ||
+                    program !== null ||
+                    utenProgram + (medUbetalte ? ubetalteUtenProgram : 0) === 0
+                  }
+                  onClick={() => setBekreftProgram(true)}
+                >
+                  ✉️ Send programmet
+                </button>
+              )}
+            </div>
+            <div className="liten">
+              {utenProgram === 0
+                ? "Alle som har betalt har fått programmet."
+                : `${utenProgram} som har betalt har ikke fått programmet ennå.`}{" "}
+              Du får en påminnelse i statusmailen 36 timer før.
+            </div>
+            {vis("program")}
+          </div>
+
+          <div className="innstilling">
+            <div className="innstilling-tittel">Takkemail</div>
+            <textarea
+              rows={6}
+              aria-label="Takketekst"
+              value={takk === null ? arr.takk || "" : takk}
+              onChange={(e) => setTakk(e.target.value)}
+            />
+            <div className="liten">
+              Sendes etter arrangementet til de som ble sjekket inn. Har du
+              ikke brukt innsjekk, går den til alle som har betalt.
+            </div>
+            <div className="innstilling-rad">
+              <button
+                className="mini ok"
+                disabled={jobber || takk === null || takk.trim() === (arr.takk || "")}
+                onClick={() =>
+                  send({ action: "innstillinger", takk }, "takk", () => setTakk(null))
+                }
+              >
+                Lagre teksten
+              </button>
+              {bekreftTakk ? (
+                <>
+                  <button
+                    className="mini ok"
+                    disabled={jobber}
+                    onClick={() =>
+                      send({ action: "takkemail" }, "takk", () => setBekreftTakk(false))
+                    }
+                  >
+                    {jobber ? "Sender …" : "Ja, send takkemailen"}
+                  </button>
+                  <button className="mini" onClick={() => setBekreftTakk(false)}>
+                    Avbryt
+                  </button>
+                </>
+              ) : (
+                <button
+                  className="mini ok"
+                  disabled={jobber || !startet || takk !== null}
+                  onClick={() => setBekreftTakk(true)}
+                >
+                  ✉️ Send takkemail
+                </button>
+              )}
+            </div>
+            {!startet && (
+              <div className="liten">🔒 Kan sendes når arrangementet har startet.</div>
+            )}
+            {vis("takk")}
+          </div>
+        </div>
+      </section>
+
+      <section className="panel innsjekk">
+        <div className="panel-head">
+          <h2>
+            Innsjekk{" "}
+            <small>
+              {mott} av {paameldte.length} møtt
+            </small>
+          </h2>
+          <div className="panel-tools">
+            <button className="back-btn" onClick={() => setInnsjekk(!innsjekk)}>
+              {innsjekk ? "Lukk innsjekk" : "🎟 Åpne innsjekk"}
+            </button>
+          </div>
+        </div>
+        {innsjekk && (
+          <>
+            <input
+              type="search"
+              className="innsjekk-sok"
+              autoFocus
+              placeholder="Navn, telefon, e-post eller JT-nummer"
+              value={innsjekkSok}
+              onChange={(e) => setInnsjekkSok(e.target.value)}
+            />
+            {vis("innsjekk")}
+            {innsjekkListe.length === 0 ? (
+              <div className="tom">Ingen påmeldte passer med søket.</div>
+            ) : (
+              <ul className="innsjekk-liste">
+                {innsjekkListe.map((r) => (
+                  <li key={r.id} className={r.mott ? "er-mott" : ""}>
+                    <div>
+                      <b>{r.navn}</b>
+                      <div className="liten">
+                        {r.id} · {r.telefon}
+                        {r.status === "UBETALT" && (
+                          <span className="badge warn">Ikke betalt</span>
+                        )}
+                      </div>
+                      {r.kommentar && <div className="liten">💬 {r.kommentar}</div>}
+                    </div>
+                    {r.mott ? (
+                      <button className="mini" disabled={jobber} onClick={() => sjekkInn(r, false)}>
+                        ✓ Møtt {dato(r.mott).slice(-5)} · angre
+                      </button>
+                    ) : (
+                      <button className="mini ok" disabled={jobber} onClick={() => sjekkInn(r, true)}>
+                        Sjekk inn
+                      </button>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
+        )}
       </section>
 
       <section className="panel">
@@ -547,7 +909,11 @@ export default function AdminStats({ okt, onLogout }) {
                 {deltakere.map((r) => {
                   const s = STATUS[r.status] || { tekst: r.status, klasse: "" }
                   const valg = []
-                  if (r.status === "UBETALT") valg.push("betalt", "purring")
+                  if (r.status === "UBETALT") {
+                    valg.push("betalt")
+                    valg.push(r.purringer >= maksPurringer ? "frigi" : "purring")
+                  }
+                  if (["BETALT", "UBETALT"].includes(r.status)) valg.push("bekreftelse")
                   if (r.status === "VENTELISTE") valg.push("tilbud")
                   if (["BETALT", "UBETALT", "VENTELISTE"].includes(r.status))
                     valg.push("trekk")
@@ -583,9 +949,20 @@ export default function AdminStats({ okt, onLogout }) {
                       <td className="kommentar c-kommentar">
                         {r.kommentar}
                         {r.notat && <div className="liten">📝 {r.notat}</div>}
-                        {r.purret && r.status === "UBETALT" && (
-                          <div className="liten">✉️ Purret {dato(r.purret)}</div>
+                        {r.utenEpost && (
+                          <div className="liten varsel">
+                            ⚠️ Fikk ikke bekreftelsen på e-post. Send den på nytt.
+                          </div>
                         )}
+                        {r.purringer > 0 && r.status === "UBETALT" && (
+                          <div className={`liten ${r.purringer >= maksPurringer ? "varsel" : ""}`}>
+                            {r.purringer >= maksPurringer
+                              ? `🔴 Purret ${r.purringer} ganger, sist ${dato(r.purret)}. Kan miste plassen.`
+                              : `✉️ Purret ${r.purringer} av ${maksPurringer}, sist ${dato(r.purret)}`}
+                          </div>
+                        )}
+                        {r.program && <div className="liten">✉️ Program sendt {dato(r.program)}</div>}
+                        {r.mott && <div className="liten mott">✓ Møtt {dato(r.mott)}</div>}
                         {r.varslet && r.status === "VENTELISTE" && (
                           <div className="liten">✉️ Varslet om ledig plass {dato(r.varslet)}</div>
                         )}
@@ -619,6 +996,23 @@ export default function AdminStats({ okt, onLogout }) {
                             <b>
                               {handlingTekst[aapen.handling]}: {r.navn}
                             </b>
+                            {aapen.handling === "frigi" && (
+                              <p>
+                                {r.navn} har fått {r.purringer} purringer uten
+                                å betale. Påmeldingen trekkes, og plassen blir
+                                ledig for ventelisten.
+                              </p>
+                            )}
+                            {["trekk", "refundert", "frigi"].includes(aapen.handling) && (
+                              <label className="sjekk">
+                                <input
+                                  type="checkbox"
+                                  checked={varsle}
+                                  onChange={(e) => setVarsle(e.target.checked)}
+                                />
+                                Send e-post til {r.epost} om dette
+                              </label>
+                            )}
                             {aapen.handling === "purring" && (
                               <p>
                                 Sender en vennlig påminnelse til {r.epost} med
@@ -779,9 +1173,9 @@ export default function AdminStats({ okt, onLogout }) {
           påmelding får JT-1001. En kopi lagres i «Arkiv»-faner i regnearket.
           Antall plasser, Vipps-innstilling og passord beholdes.
         </p>
-        {a.BETALT > 0 ? (
+        {medBetaling > 0 ? (
           <p className="liten">
-            🔒 Låst fordi det finnes {a.BETALT} betalte påmeldinger.
+            🔒 Låst fordi det finnes {medBetaling} påmeldinger med registrert betaling.
           </p>
         ) : nullstill === null ? (
           <button className="mini fare" onClick={() => setNullstill("")}>
@@ -818,6 +1212,44 @@ export default function AdminStats({ okt, onLogout }) {
           </div>
         )}
         {vis("nullstill")}
+
+        <h2 className="faresone-neste">Slett persondata etter arrangementet</h2>
+        <p className="liten">
+          Sletter alle påmeldinger, besøksstatistikken og «Arkiv»-fanene, uten
+          kopi. Personvernerklæringen lover sletting senest tre måneder etter
+          arrangementet, og du får en påminnelse i statusmailen når tiden er
+          inne. Last ned deltakerlisten først hvis regnskapet trenger den.
+        </p>
+        {!startet ? (
+          <p className="liten">🔒 Låst til arrangementet har vært.</p>
+        ) : slett === null ? (
+          <button className="mini fare" onClick={() => setSlett("")}>
+            Slett persondata …
+          </button>
+        ) : (
+          <div className="nullstill-bekreft">
+            <input
+              type="text"
+              placeholder="Skriv SLETT"
+              value={slett}
+              autoCapitalize="characters"
+              onChange={(e) => setSlett(e.target.value)}
+            />
+            <button
+              className="mini bekreft h-trekk"
+              disabled={jobber || slett.trim().toUpperCase() !== "SLETT"}
+              onClick={() =>
+                send({ action: "slettdata", bekreft: "SLETT" }, "slett", () => setSlett(null))
+              }
+            >
+              {jobber ? "Sletter …" : "Slett nå"}
+            </button>
+            <button className="mini" onClick={() => setSlett(null)}>
+              Avbryt
+            </button>
+          </div>
+        )}
+        {vis("slett")}
       </section>
     </div>
   )

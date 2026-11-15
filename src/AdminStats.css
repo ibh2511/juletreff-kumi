@@ -395,6 +395,7 @@
 }
 .innstilling input[type="number"],
 .innstilling input[type="text"],
+.innstilling input[type="url"],
 .innstilling input[type="email"] {
   font: inherit;
   font-size: 14px;
@@ -682,3 +683,70 @@
   background: #c06a00;
   border-color: #c06a00;
 }
+
+.liten.varsel { color: #b3261e; font-weight: 500; }
+.handling-velger.h-bekreftelse { border-color: #23466e; }
+.handling.h-bekreftelse { border-left-color: #23466e; }
+.handling-knapper .mini.bekreft.h-bekreftelse { background: #23466e; }
+.innstilling select {
+  font: inherit;
+  font-size: 14px;
+  padding: 7px 10px;
+  border: 1px solid #d9cbb8;
+  border-radius: 8px;
+  background: #fff;
+  color: #111;
+  min-width: 0;
+  width: 0;
+  flex: 1 1 0;
+}
+
+/* Utsendelser */
+.innstilling textarea {
+  font: inherit;
+  font-size: 14px;
+  line-height: 1.45;
+  padding: 8px 10px;
+  border: 1px solid #d9cbb8;
+  border-radius: 8px;
+  background: #fff;
+  color: #111;
+  width: 100%;
+  box-sizing: border-box;
+  resize: vertical;
+}
+.innstilling .sjekk { font-size: 13px; }
+.innstilling-rad { flex-wrap: wrap; }
+.handling-velger.h-frigi { border-color: #b3261e; }
+.handling.h-frigi { border-left-color: #b3261e; }
+.handling-knapper .mini.bekreft.h-frigi { background: #b3261e; }
+.liten.mott { color: #1f6f3d; font-weight: 500; }
+
+/* Innsjekk på kvelden */
+.innsjekk h2 small { font-size: 14px; font-weight: 400; color: #7a6a58; margin-left: 6px; }
+.innsjekk-sok {
+  font: inherit;
+  font-size: 18px;
+  padding: 12px 14px;
+  border: 2px solid #1f6f3d;
+  border-radius: 10px;
+  width: 100%;
+  box-sizing: border-box;
+  background: #fff;
+  color: #111;
+  margin: 0 0 10px;
+}
+.innsjekk-liste { list-style: none; margin: 0; padding: 0; }
+.innsjekk-liste li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 2px;
+  border-bottom: 1px solid #efe6d8;
+}
+.innsjekk-liste li > div { min-width: 0; overflow-wrap: anywhere; }
+.innsjekk-liste li.er-mott b { color: #7a6a58; font-weight: 500; }
+.innsjekk-liste .mini { margin: 0; padding: 10px 16px; font-size: 14px; flex: none; }
+.innsjekk-liste .badge { margin-left: 6px; }
+.faresone-neste { margin-top: 28px; }

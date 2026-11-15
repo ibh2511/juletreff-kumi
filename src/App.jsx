@@ -165,6 +165,7 @@ export default function App() {
         kommentar: f.get("Message"),
         bindende: f.get("Bindende") === "ja",
         kilde: kilde(),
+        nettside: f.get("Nettside"), // felle for roboter, skal være tom
       })
       if (d.duplicate) return setStatus("duplicate")
       if (d.waitlist) return setStatus("waitlist")
@@ -226,6 +227,7 @@ export default function App() {
     )
   }
 
+  const kontakt = info.kontaktEpost || KONTAKT_EPOST
   const pris = formatPrice(detaljer?.belop || info.pris)
   const vippsAktiv = !!info.vippsAktiv
   const knappTekst = info.fullt
@@ -379,10 +381,10 @@ export default function App() {
               <div className="msg wait">
                 <h3>Påmeldingen er stengt</h3>
                 <p>Fristen for å melde seg på har gått ut.</p>
-                {KONTAKT_EPOST && (
+                {kontakt && (
                   <p>
                     Spørsmål? Skriv til{" "}
-                    <a href={`mailto:${KONTAKT_EPOST}`}>{KONTAKT_EPOST}</a>
+                    <a href={`mailto:${kontakt}`}>{kontakt}</a>
                   </p>
                 )}
               </div>
@@ -392,17 +394,15 @@ export default function App() {
               <div className="msg error">
                 <h3>⚠️ E-post allerede påmeldt!</h3>
                 <p>Det ser ut til at denne e-posten er registrert.</p>
-                <p>
-                  Har du trykket{" "}
-                  <a
-                    href="https://www.facebook.com/events/664624256515915"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    «Skal»
-                  </a>{" "}
-                  på Facebook-eventet? 📅
-                </p>
+                {info.facebookUrl && (
+                  <p>
+                    Har du trykket{" "}
+                    <a href={info.facebookUrl} target="_blank" rel="noreferrer">
+                      «Skal»
+                    </a>{" "}
+                    på Facebook-eventet? 📅
+                  </p>
+                )}
               </div>
             )}
 
@@ -480,6 +480,11 @@ export default function App() {
                   </label>
                 </div>
 
+                <div className="felle" aria-hidden="true">
+                  <label htmlFor="nettside">Nettside (la stå tom)</label>
+                  <input type="text" name="Nettside" id="nettside" tabIndex={-1} autoComplete="off" />
+                </div>
+
                 <label className="binding-check">
                   <input type="checkbox" name="Bindende" value="ja" required />
                   <span>
@@ -531,13 +536,13 @@ export default function App() {
                 <p>
                   Etterpå går vi videre til{" "}
                   <a
-                    href="https://www.tolvteogkranen.no/kranen"
+                    href="https://www.munch.no/mat-drikke-MUNCH/munch-bar/"
                     target="_blank"
                     rel="noreferrer"
                   >
-                    Kranen
+                    MUNCH bar
                   </a>{" "}
-                  Cocktailbar i 13. etasje på <b>MUNCH,</b> ca. 200 meter unna (
+                  i 13. etasje på <b>MUNCH,</b> ca. 200 meter unna (
                   <i>23 års aldersgrense</i>).
                 </p>
                 <p>
@@ -627,8 +632,12 @@ export default function App() {
                   tillegg, snakk med personalet 🍷🍾
                 </p>
                 <p>
-                  Du kjøper det du ønsker på Kranen, drikkemeny finner du{" "}
-                  <a href="https://drive.google.com/file/d/1ZhKilxdVjzNH5u9K0xigndzo7pTYUKle/view?usp=sharing">
+                  Du kjøper det du ønsker på MUNCH bar, drikkemeny finner du{" "}
+                  <a
+                    href="https://www.munch.no/globalassets/foto-munch/mat-og-drikke/menyer/munch-bar-13th-17.10.pdf"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
                     her
                   </a>
                 </p>
@@ -661,10 +670,10 @@ export default function App() {
         <a href="#vilkar">Salgsvilkår</a>
         <span>·</span>
         <a href="#personvern">Personvern</a>
-        {KONTAKT_EPOST && (
+        {kontakt && (
           <>
             <span>·</span>
-            <a href={`mailto:${KONTAKT_EPOST}`}>Kontakt</a>
+            <a href={`mailto:${kontakt}`}>Kontakt</a>
           </>
         )}
       </footer>
