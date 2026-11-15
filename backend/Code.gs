@@ -120,6 +120,7 @@ function route_(e, body) {
       case 'innstillinger': return json_(adminInnstillinger_(p));
       case 'testpamelding': return json_(adminTestpamelding_(p));
       case 'varsleventeliste': return json_(adminVarsleVenteliste_(p));
+      case 'nullstill': return json_(adminNullstill_(p));
       default:          return json_({ ok: true, info: 'Juletreff KUMI API' });
     }
   } catch (err) {
@@ -473,8 +474,9 @@ function sendLedigPlassEpost_(r, ledige) {
     '<p style="font-size: 1rem; line-height: 1.5; margin: 20px 0 0 0; text-align: center;">' +
     'Du står på ventelisten, og vi sier fra til alle på listen samtidig. Den som melder seg på først, får plassen.</p>' +
     '<p style="margin: 34px 0; text-align: center;"><a href="' + site + '/" class="knapp" style="display: inline-block; ' +
-    'background-color: #edb77d; padding: 12px 24px; border-radius: 8px; color: #333; font-size: 1.1rem; font-weight: bold; ' +
-    'text-decoration: none; border: 2px dashed #333;">Meld meg på nå ✨</a></p>' +
+    'background-color: #edb77d; background-image: linear-gradient(180deg, #f3c992 0%, #e3a865 100%); padding: 14px 36px; ' +
+    'border-radius: 999px; color: #1b1b1b; font-size: 1.05rem; font-weight: bold; letter-spacing: 0.5px; text-decoration: none; ' +
+    'box-shadow: 0 4px 14px rgba(237, 183, 125, 0.35);">Meld meg på nå</a></p>' +
     '<table width="100%" cellpadding="0" cellspacing="0" style="color: #F4EADF; font-size: 1rem; text-align: left;">' +
     '<tr><td style="padding: 8px; border-bottom: 1px solid #555; width: 110px;"><b>Tid:</b></td>' +
     '<td style="padding: 8px; border-bottom: 1px solid #555;">' + escapeHtml_(a.dato) + '</td></tr>' +
@@ -760,6 +762,37 @@ function adminVarsleVenteliste_(p) {
   });
   return { ok: true, melding: 'E-post om ' + (ledige === 1 ? 'en ledig plass' : ledige + ' ledige plasser') + ' er sendt til ' +
     sendt + ' på ventelisten. Den som melder seg på først, får plassen.' };
+}
+
+/**
+ * Nullstiller før lansering: tømmer påmeldinger og besøksstatistikk og starter ID-ene på JT-1001 igjen.
+ * Begge arkene kopieres først til «Arkiv …»-faner i regnearket, så ingenting går tapt.
+ * Stopper hvis det finnes ekte betalte påmeldinger. Innstillinger og passord beholdes.
+ */
+function adminNullstill_(p) {
+  if (!sjekkOkt_(p.okt)) return { ok: false, utlogget: true, error: 'Logg inn på nytt' };
+  if (p.bekreft !== 'NULLSTILL') return { ok: false, error: 'Skriv NULLSTILL for å bekrefte.' };
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    var rader = alle_();
+    var betalte = rader.filter(function (r) { return r.status === 'BETALT' && !erTest_(r); }).length;
+    if (betalte) return { ok: false, error: 'Det finnes ' + betalte + ' betalte påmeldinger. Nullstilling er bare ment for bruk før lansering.' };
+    var stempel = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH.mm');
+    var tomt = 0;
+    [PAMELDING_ARK, BESOK_ARK].forEach(function (navn) {
+      var sh = sheet_(navn);
+      var sist = sh.getLastRow();
+      if (sist > 1) {
+        sh.copyTo(sh.getParent()).setName('Arkiv ' + navn.toLowerCase() + ' ' + stempel);
+        sh.deleteRows(2, sist - 1);
+        tomt += sist - 1;
+      }
+    });
+    PropertiesService.getScriptProperties().setProperty('NESTE_ID', '1001');
+    return { ok: true, melding: 'Alt er nullstilt: ' + rader.length + ' påmeldinger og ' + (tomt - rader.length) +
+      ' besøk er fjernet, og neste påmelding får JT-1001. En kopi ligger i «Arkiv»-faner i regnearket.' };
+  } finally { lock.releaseLock(); }
 }
 
 /** Testpåmelding fra adminsiden: går gjennom samme løp som en ekte påmelding, men teller ikke. */

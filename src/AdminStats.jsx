@@ -63,6 +63,7 @@ export default function AdminStats({ okt, onLogout }) {
   const [test, setTest] = useState({ fornavn: "Test", etternavn: "Testesen", epost: "" })
   const [testLenke, setTestLenke] = useState("")
   const [bekreftVarsel, setBekreftVarsel] = useState(false)
+  const [nullstill, setNullstill] = useState(null) // null = lukket, ellers teksten som er skrevet
 
   const last = useCallback(async () => {
     try {
@@ -698,6 +699,54 @@ export default function AdminStats({ okt, onLogout }) {
           )}
         </section>
       </div>
+
+      <section className="panel faresone">
+        <h2>Nullstill før lansering</h2>
+        <p className="liten">
+          Fjerner alle påmeldinger (også tester) og besøksstatistikken, og neste
+          påmelding får JT-1001. En kopi lagres i «Arkiv»-faner i regnearket.
+          Antall plasser, Vipps-innstilling og passord beholdes.
+        </p>
+        {a.BETALT > 0 ? (
+          <p className="liten">
+            🔒 Låst fordi det finnes {a.BETALT} betalte påmeldinger.
+          </p>
+        ) : nullstill === null ? (
+          <button className="mini fare" onClick={() => setNullstill("")}>
+            Nullstill alt …
+          </button>
+        ) : (
+          <div className="nullstill-bekreft">
+            <input
+              type="text"
+              placeholder="Skriv NULLSTILL"
+              value={nullstill}
+              autoCapitalize="characters"
+              onChange={(e) => setNullstill(e.target.value)}
+            />
+            <button
+              className="mini bekreft h-trekk"
+              disabled={jobber || nullstill.trim().toUpperCase() !== "NULLSTILL"}
+              onClick={() =>
+                send(
+                  { action: "nullstill", bekreft: "NULLSTILL" },
+                  "nullstill",
+                  () => {
+                    setNullstill(null)
+                    setFilter("aktive")
+                  }
+                )
+              }
+            >
+              {jobber ? "Nullstiller …" : "Nullstill nå"}
+            </button>
+            <button className="mini" onClick={() => setNullstill(null)}>
+              Avbryt
+            </button>
+          </div>
+        )}
+        {vis("nullstill")}
+      </section>
     </div>
   )
 }
