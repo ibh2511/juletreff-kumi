@@ -5,8 +5,8 @@ const ARRANGOR = "Nordisk vegan"
 const MOTTAKER = "Elstad Media"
 const ORGNR = "938 529 205"
 const ADRESSE = "Bruddveien 4, 2016 Frogner"
-const KONTAKTPERSON = "[Kontaktperson]"
-const OPPDATERT = "[dato]"
+const KONTAKTPERSON = "Isabelle Haugan"
+const OPPDATERT = "15. november 2026"
 
 // Kontaktadressen kommer fra backend (SVAR_EPOST), med .env som reserve
 function Epost({ info }) {
@@ -35,7 +35,7 @@ function Vilkar({ info }) {
       <p>
         En plass på juletreffet på KUMI i Oslobukta, {info.dato}. Prisen er{" "}
         {formatPrice(info.pris)} per person og gjelder en vegansk
-        julemeny med seks retter i sharing-stil og underholdning. Drikke på KUMI og Kranen
+        julemeny med seks retter i sharing-stil og underholdning. Drikke på KUMI og MUNCH bar
         kommer i tillegg og betales direkte der.
       </p>
 

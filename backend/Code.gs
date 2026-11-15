@@ -21,7 +21,7 @@ var STANDARD_FACEBOOK_URL = 'https://www.facebook.com/events/664624256515915';
 var PAMELDING_ARK = 'Påmeldinger';
 var BESOK_ARK = 'Besøk';
 var KOLONNER = ['id', 'opprettet', 'status', 'fornavn', 'etternavn', 'epost', 'telefon', 'kommentar',
-  'belop', 'betaling', 'nokkel', 'betalt', 'epost_sendt', 'bindende_godtatt', 'trukket', 'refundert', 'notat', 'kilde', 'refusjon', 'test', 'varslet', 'purret'];
+  'belop', 'betaling', 'nokkel', 'betalt', 'epost_sendt', 'bindende_godtatt', 'trukket', 'refundert', 'notat', 'kilde', 'refusjon', 'test', 'varslet', 'purret', 'program', 'purringer', 'mott', 'takket'];
 var BESOK_KOLONNER = ['tid', 'besokende', 'kilde', 'enhet'];
 
 // Statuser:
@@ -141,6 +141,9 @@ function route_(e, body) {
       case 'nullstill': return json_(adminNullstill_(p));
       case 'purring': return json_(adminPurring_(p));
       case 'rapport': return json_(adminRapport_(p));
+      case 'fellesmail': return json_(adminFellesmail_(p));
+      case 'takkemail': return json_(adminTakkemail_(p));
+      case 'slettdata': return json_(adminSlettData_(p));
       default:          return json_({ ok: true, info: 'Juletreff KUMI API' });
     }
   } catch (err) {
@@ -578,21 +581,109 @@ function sendVentelisteEpost_(r) {
 /** Purring på manglende betaling (manuell Vipps). */
 function sendPurring_(r) {
   var a = arrangement_();
+  var nr = Math.min(MAKS_PURRINGER, antallPurringer_(r) + 1), siste = nr >= MAKS_PURRINGER;
+  var sisteTekst = 'Dette er siste påminnelse. Betaler du ikke innen 24 timer, går plassen videre til ventelisten.';
   var site = cfg_('SITE_URL', 'https://ibh2511.github.io/juletreff-kumi').replace(/\/$/, '');
-  sendEpost_(r.epost, (erTest_(r) ? '[TEST] ' : '') + 'Påminnelse: betaling for Juletreff på KUMI',
+  sendEpost_(r.epost, (erTest_(r) ? '[TEST] ' : '') + (siste ? 'Siste påminnelse' : 'Påminnelse') + ': betaling for Juletreff på KUMI',
     'Hei ' + r.fornavn + '!\n\nVi har ikke registrert betalingen for påmeldingen din (' + r.id + ') ennå.\n\n' +
     'Betal ' + r.belop + ' kr med Vipps' + (a.vippsNummer ? ' til #' + a.vippsNummer : '') +
     ' og skriv «Juletreff ' + r.fornavn + ' ' + r.etternavn + '» i meldingen.\n\n' +
+    (siste ? sisteTekst + '\n\n' : '') +
     'Har du betalt de siste dagene, kan du se bort fra denne e-posten.\n\n' +
     'Påmeldingen er bindende. Salgsvilkår: ' + site + '/#vilkar\n\nGod jul!',
-    epostHei_(r.fornavn, 'En liten påminnelse om betaling 🌿') +
+    epostHei_(r.fornavn, siste ? 'Siste påminnelse om betaling' : 'En liten påminnelse om betaling 🌿') +
     epostAvsnitt_('Vi har ikke registrert betalingen for påmeldingen din til juletreffet ' +
       escapeHtml_(a.dato.charAt(0).toLowerCase() + a.dato.slice(1)) + ' ennå.') +
     vippsBoks_(r, 'Plassen din er sikret når betalingen er mottatt.') +
+    (siste ? epostAvsnitt_('<b>' + sisteTekst + '</b>') : '') +
     epostAvsnitt_('Har du betalt de siste dagene, kan du se bort fra denne e-posten.') +
     epostKnapp_(site + '/#vilkar', 'Les salgsvilkårene') +
     epostAvsnitt_('Påmeldingen er bindende. Påmeldings-ID: ' + r.id + '.', true),
     'Spørsmål om betalingen? Svar på denne e-posten.');
+}
+
+/** Sendes når admin trekker en påmelding. Sier hva som skjer med pengene. */
+function sendTrukketEpost_(r, tilbake, refundertNaa, ikkeBetalt) {
+  var a = arrangement_();
+  var betalt = !!r.betalt || r.status === 'BETALT';
+  var penger = !betalt ? ''
+    : tilbake <= 0 ? 'Ingenting betales tilbake, i tråd med salgsvilkårene.'
+    : refundertNaa ? tilbake + ' kr er betalt tilbake til Vipps-kontoen din.'
+    : 'Du får ' + tilbake + ' kr tilbake på Vipps i løpet av noen dager.';
+  var gebyr = betalt && tilbake > 0 && tilbake < Number(r.belop)
+    ? ' ' + (Number(r.belop) - tilbake) + ' kr dekker KUMIs no-show-gebyr, siden avmeldingen kom under 48 timer før.' : '';
+  sendEpost_(r.epost, (erTest_(r) ? '[TEST] ' : '') + 'Du er meldt av Juletreff på KUMI',
+    'Hei ' + r.fornavn + '!\n\nPåmeldingen din (' + r.id + ') til juletreffet ' + a.dato + ' er trukket.' +
+    (ikkeBetalt ? '\n\nVi har ikke mottatt betalingen etter ' + MAKS_PURRINGER + ' påminnelser, så plassen går videre til ventelisten.' : '') +
+    (penger ? '\n\n' + penger + gebyr : '') + '\n\nStemmer ikke dette? Svar på denne e-posten.\n\nGod jul!',
+    epostHei_(r.fornavn, 'Påmeldingen din er trukket') +
+    (ikkeBetalt ? epostAvsnitt_('Vi har ikke mottatt betalingen etter ' + MAKS_PURRINGER + ' påminnelser, så plassen går videre til ventelisten.') : '') +
+    epostAvsnitt_('Du er meldt av juletreffet ' + escapeHtml_(a.dato.charAt(0).toLowerCase() + a.dato.slice(1)) + '.') +
+    (penger ? epostAvsnitt_('<b>' + penger + '</b>' + gebyr) : '') +
+    epostAvsnitt_('Stemmer ikke dette? Svar på denne e-posten. Påmeldings-ID: ' + r.id + '.', true),
+    'Spørsmål? Svar på denne e-posten.');
+}
+
+/** Sendes når admin markerer en tilbakebetaling som gjennomført. */
+function sendRefundertEpost_(r, belop) {
+  sendEpost_(r.epost, (erTest_(r) ? '[TEST] ' : '') + 'Pengene er betalt tilbake: Juletreff på KUMI',
+    'Hei ' + r.fornavn + '!\n\nVi har betalt tilbake ' + belop + ' kr for påmeldingen din (' + r.id + ') på Vipps.\n\n' +
+    'Ser du ikke pengene i løpet av et par dager? Svar på denne e-posten.\n\nGod jul!',
+    epostHei_(r.fornavn, belop + ' kr er betalt tilbake 🌿') +
+    epostAvsnitt_('Vi har betalt tilbake ' + belop + ' kr for påmeldingen din på Vipps.') +
+    epostAvsnitt_('Ser du ikke pengene i løpet av et par dager? Svar på denne e-posten. Påmeldings-ID: ' + r.id + '.', true),
+    'Spørsmål? Svar på denne e-posten.');
+}
+
+var STANDARD_PROGRAM = '18.30 Ankomst på KUMI\n19.00 Middag serveres\n19.30 Birger\n20.45 Vi går videre til MUNCH bar';
+var STANDARD_TAKK = 'Tusen takk for at du var med på juletreffet på KUMI! Vi håper du koste deg like mye som oss.\n\nGod jul og godt nytt år!';
+var MUNCH_BAR_URL = 'https://www.munch.no/mat-drikke-MUNCH/munch-bar/';
+var MUNCH_MENY_URL = 'https://www.munch.no/globalassets/foto-munch/mat-og-drikke/menyer/munch-bar-13th-17.10.pdf';
+var MAKS_PURRINGER = 3;
+function takk_() { return cfg_('TAKK_TEKST', STANDARD_TAKK); }
+function antallPurringer_(r) { return Number(r.purringer) || (r.purret ? 1 : 0); }
+function program_() { return cfg_('PROGRAM_TEKST', STANDARD_PROGRAM); }
+
+/** Fellesmail før arrangementet: kort program og praktisk info. */
+function sendProgramEpost_(r) {
+  var a = arrangement_(), e = escapeHtml_;
+  var linjer = program_().split('\n').map(function (l) { return l.trim(); }).filter(String);
+  var rader = linjer.map(function (l, i) {
+    var m = l.match(/^(\d{1,2}[.:]\d{2})\s*[-–:]?\s*(.+)$/);
+    return m ? epostRad_(e(m[1]), e(m[2]), i === linjer.length - 1)
+      : '<tr><td colspan="2" style="padding: 8px; color: #F4EADF;" bgcolor="#333">' + e(l) + '</td></tr>';
+  }).join('');
+  var kart = 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent('KUMI Operagata 71B Oslo');
+  var ubetalt = r.status === 'UBETALT';
+  var tlf = cfg_('KONTAKT_TELEFON', '');
+  sendEpost_(r.epost, (erTest_(r) ? '[TEST] ' : '') + '✨ Snart juletreff på KUMI 🥂 Her er programmet',
+    'Hei ' + r.fornavn + '!\n\nSnart er det juletreff: ' + a.dato + ' på ' + a.sted + '.\n\nProgram:\n' + linjer.join('\n') +
+    (ubetalt ? '\n\nVi har ikke registrert betalingen din ennå. Betal ' + r.belop + ' kr med Vipps' + (a.vippsNummer ? ' til #' + a.vippsNummer : '') + '.' : '') +
+    '\n\nKart: ' + kart + '\nMUNCH bar: ' + MUNCH_BAR_URL + '\nDrikkemeny på MUNCH bar: ' + MUNCH_MENY_URL +
+    (tlf ? '\n\nFinner du ikke fram på dagen? Ring ' + tlf + '.' : '') +
+    '\nFacebook-eventet: ' + facebookUrl_() + '\n\nVi gleder oss til å se deg!',
+    epostHei_(r.fornavn, 'Snart er det juletreff 🥂') +
+    epostAvsnitt_(e(a.dato) + '<br>' + e(a.sted)) +
+    '<h3 style="color: #edb77d; font-size: 1.1rem; margin: 30px 0 10px 0; text-align: center;">Program</h3>' +
+    epostTabell_(rader) +
+    (ubetalt ? vippsBoks_(r, 'Vi har ikke registrert betalingen din ennå.') : '') +
+    epostKnapp_(kart, 'Finn veien til KUMI 📍') +
+    (tlf ? epostAvsnitt_('Finner du ikke fram på dagen? Ring <a href="tel:+47' + tlf.replace(/\D/g, '') + '" style="color: #edb77d;"><b>' + e(tlf) + '</b></a>.') : '') +
+    epostAvsnitt_('Etterpå går vi videre til <a href="' + MUNCH_BAR_URL + '" style="color: #edb77d;">MUNCH bar</a> i 13. etasje på MUNCH. ' +
+      'Drikkemenyen finner du <a href="' + MUNCH_MENY_URL + '" style="color: #edb77d;">her</a>.') +
+    epostAvsnitt_('Følg med på <a href="' + facebookUrl_() + '" style="color: #edb77d;">Facebook-eventet</a> for siste nytt. Vi gleder oss til å se deg!'),
+    'Kan du ikke komme likevel? Svar på denne e-posten.');
+}
+
+/** Takk for sist. Sendes manuelt fra admin etter arrangementet. */
+function sendTakkEpost_(r) {
+  var avsnitt = takk_().split(/\n\s*\n/).map(function (t) { return t.trim(); }).filter(String);
+  sendEpost_(r.epost, (erTest_(r) ? '[TEST] ' : '') + '✨ Takk for sist! Juletreff på KUMI',
+    'Hei ' + r.fornavn + '!\n\n' + avsnitt.join('\n\n'),
+    epostHei_(r.fornavn, 'Takk for sist 🥂') +
+    avsnitt.map(function (t) { return epostAvsnitt_(escapeHtml_(t).replace(/\n/g, '<br>')); }).join('') +
+    epostKnapp_(facebookUrl_(), 'Del bilder i Facebook-eventet 📸'),
+    'Vi sletter opplysningene dine senest tre måneder etter arrangementet.');
 }
 
 /* ------------------------------------------------------------------ */
@@ -696,7 +787,9 @@ function adminOversikt_(okt) {
     arrangement: { dato: a.dato, pris: a.pris, kapasitet: a.kapasitet, fristTekst: a.fristTekst, vippsAktiv: a.vippsAktiv,
       vippsModus: a.vippsModus, harVippsNokler: harVippsNokler_(), vippsMiljo: cfg_('VIPPS_ENV', 'test'),
       vippsNummer: a.vippsNummer, start: a.start.toISOString(), noshow: a.noshow, rapportTil: rapportMottaker_(),
-      facebookUrl: facebookUrl_(), epostKvote: epostKvote_() },
+      facebookUrl: facebookUrl_(), epostKvote: epostKvote_(), svarEpost: cfg_('SVAR_EPOST', ''), program: program_(), takk: takk_(), telefon: cfg_('KONTAKT_TELEFON', ''),
+      maksPurringer: MAKS_PURRINGER,
+      frist: a.frist.toISOString() },
     antall: antall, tester: tester,
     ledige: Math.max(0, a.kapasitet - opptatte_(rader)),
     innbetalt: innbetalt, refundert: refundert,
@@ -710,6 +803,7 @@ function adminOversikt_(okt) {
       return { id: r.id, opprettet: r.opprettet, status: r.status, navn: r.fornavn + ' ' + r.etternavn, epost: r.epost,
         telefon: r.telefon, kommentar: r.kommentar, belop: r.belop, betaling: r.betaling, betalt: r.betalt,
         trukket: r.trukket, refundert: r.refundert, refusjon: r.refusjon, notat: r.notat, test: erTest_(r), varslet: r.varslet, purret: r.purret,
+        program: r.program, purringer: antallPurringer_(r), mott: r.mott, takket: r.takket,
         utenEpost: HOLDER_PLASS.indexOf(r.status) >= 0 && !r.epost_sendt };
     })
   };
@@ -734,13 +828,14 @@ function adminEndre_(p) {
     var notat = tekst_(p.notat, 200);
     var stempel = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd.MM HH:mm');
     var nyttNotat = function (t) { return [o.notat, stempel + ' ' + t].filter(String).join(' | ').slice(-500); };
+    var varsle = !(p.varsle === false || p.varsle === 'false');
 
     if (p.handling === 'betalt') {
       if (o.status !== 'UBETALT') return { ok: false, error: 'Bare ubetalte påmeldinger kan markeres som betalt' };
       oppdater_(o._rad, { status: 'BETALT', betalt: new Date(), notat: nyttNotat('Markert betalt' + (notat ? ': ' + notat : '')) });
       o.status = 'BETALT';
-      sendBekreftelse_(o);
-      return { ok: true };
+      var kvittert = sendBekreftelse_(o);
+      return { ok: true, melding: 'Markert som betalt.' + (kvittert ? ' ' + o.fornavn + ' har fått bekreftelse på e-post.' : ' Bekreftelsen ble ikke sendt, prøv «Send bekreftelsen på nytt» senere.') };
     }
     if (p.handling === 'trekk') {
       if (['BETALT', 'UBETALT', 'VENTELISTE'].indexOf(o.status) < 0) return { ok: false, error: 'Påmeldingen kan ikke trekkes' };
@@ -765,12 +860,25 @@ function adminEndre_(p) {
         }
       }
       oppdater_(o._rad, felt);
+      if (varsle) {
+        try {
+          sendTrukketEpost_(o, o.status === 'BETALT' ? felt.refusjon : 0, !!felt.refundert);
+          melding += ' ' + o.fornavn + ' har fått e-post om det.';
+        } catch (err) { console.error('E-post om trekk feilet for ' + o.id + ': ' + err); melding += ' E-posten til deltakeren ble ikke sendt.'; }
+      }
       return { ok: true, melding: melding };
     }
     if (p.handling === 'refundert') {
       if (o.status !== 'TRUKKET' || !o.betalt) return { ok: false, error: 'Bare trukne, betalte påmeldinger kan markeres som refundert' };
+      if (o.refundert) return { ok: false, error: 'Påmeldingen er allerede markert som refundert' };
       oppdater_(o._rad, { refundert: new Date(), notat: nyttNotat('Refundert manuelt') });
-      return { ok: true };
+      var belopTilbake = o.refusjon === '' || o.refusjon == null ? Number(o.belop) : Number(o.refusjon);
+      var refMelding = 'Markert som refundert.';
+      if (varsle) {
+        try { sendRefundertEpost_(o, belopTilbake); refMelding += ' ' + o.fornavn + ' har fått e-post om at ' + belopTilbake + ' kr er betalt tilbake.'; }
+        catch (err) { console.error('E-post om refusjon feilet for ' + o.id + ': ' + err); refMelding += ' E-posten til deltakeren ble ikke sendt.'; }
+      }
+      return { ok: true, melding: refMelding };
     }
     if (p.handling === 'tilbud') {
       if (o.status !== 'VENTELISTE') return { ok: false, error: 'Bare påmeldinger på ventelisten kan få plass' };
@@ -794,9 +902,30 @@ function adminEndre_(p) {
     }
     if (p.handling === 'purring') {
       if (o.status !== 'UBETALT') return { ok: false, error: 'Bare ubetalte påmeldinger kan purres' };
+      var np = antallPurringer_(o);
+      if (np >= MAKS_PURRINGER) return { ok: false, error: o.fornavn + ' har fått ' + MAKS_PURRINGER + ' purringer. Velg «Frigi plassen» hvis betalingen ikke kommer.' };
       sendPurring_(o);
-      oppdater_(o._rad, { purret: new Date(), notat: nyttNotat('Purret' + (notat ? ': ' + notat : '')) });
-      return { ok: true, melding: 'Purring sendt til ' + o.fornavn + ' ' + o.etternavn + '.' };
+      oppdater_(o._rad, { purret: new Date(), purringer: np + 1, notat: nyttNotat('Purring ' + (np + 1) + (notat ? ': ' + notat : '')) });
+      return { ok: true, melding: 'Purring ' + (np + 1) + ' av ' + MAKS_PURRINGER + ' er sendt til ' + o.fornavn + ' ' + o.etternavn + '.' +
+        (np + 1 >= MAKS_PURRINGER ? ' Det var den siste. Kommer ikke betalingen, kan du frigi plassen.' : '') };
+    }
+    if (p.handling === 'frigi') {
+      if (o.status !== 'UBETALT') return { ok: false, error: 'Bare ubetalte påmeldinger kan miste plassen' };
+      if (antallPurringer_(o) < MAKS_PURRINGER) return { ok: false, error: 'Plassen kan frigis etter ' + MAKS_PURRINGER + ' purringer. ' + o.fornavn + ' har fått ' + antallPurringer_(o) + '.' };
+      oppdater_(o._rad, { status: 'TRUKKET', trukket: new Date(), notat: nyttNotat('Mistet plassen: ikke betalt etter ' + MAKS_PURRINGER + ' purringer' + (notat ? ': ' + notat : '')) });
+      var fm = 'Plassen til ' + o.fornavn + ' er frigitt.';
+      if (varsle) {
+        try { sendTrukketEpost_(o, 0, false, true); fm += ' ' + o.fornavn + ' har fått e-post om det.'; }
+        catch (err) { console.error('E-post om frigitt plass feilet for ' + o.id + ': ' + err); fm += ' E-posten til deltakeren ble ikke sendt.'; }
+      }
+      return { ok: true, melding: fm };
+    }
+    if (p.handling === 'mott' || p.handling === 'ikkemott') {
+      if (HOLDER_PLASS.indexOf(o.status) < 0) return { ok: false, error: 'Bare påmeldte kan sjekkes inn' };
+      oppdater_(o._rad, { mott: p.handling === 'mott' ? new Date() : '' });
+      return { ok: true, melding: p.handling === 'mott'
+        ? o.fornavn + ' ' + o.etternavn + ' er sjekket inn.' + (o.status === 'UBETALT' ? ' OBS: har ikke betalt.' : '')
+        : 'Innsjekkingen av ' + o.fornavn + ' ' + o.etternavn + ' er angret.' };
     }
     if (p.handling === 'slett') {
       if (!erTest_(o)) return { ok: false, error: 'Bare testpåmeldinger kan slettes' };
@@ -835,6 +964,30 @@ function adminInnstillinger_(p) {
       if (k < opptatt) meldinger.push(opptatt + ' har allerede plass. Ingen blir fjernet, men nye påmeldinger havner på ventelisten.');
       var venter = rader.filter(function (r) { return r.status === 'VENTELISTE' && !erTest_(r); }).length;
       if (k > opptatt && venter) meldinger.push(venter + ' står på ventelisten. Gi dem plass fra listen under hvis de skal få de nye plassene.');
+    }
+    if (p.svarEpost !== undefined) {
+      var se = tekst_(p.svarEpost, 120).toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(se)) return { ok: false, error: 'Skriv inn en gyldig e-postadresse' };
+      props.setProperty('SVAR_EPOST', se);
+      meldinger.push('Svaradressen er lagret. Den brukes i e-postene, på nettsiden og i vilkårene.');
+    }
+    if (p.telefon !== undefined) {
+      var tl = tekst_(p.telefon, 20);
+      if (tl && tl.replace(/\D/g, '').length < 8) return { ok: false, error: 'Skriv inn et gyldig telefonnummer, eller la feltet stå tomt' };
+      if (tl) props.setProperty('KONTAKT_TELEFON', tl); else props.deleteProperty('KONTAKT_TELEFON');
+      meldinger.push(tl ? 'Telefonnummeret er lagret. Det står i fellesmailen med programmet.' : 'Telefonnummeret er fjernet.');
+    }
+    if (p.takk !== undefined) {
+      var tt = String(p.takk == null ? '' : p.takk).replace(/\r/g, '').replace(/[\u0000-\u0009\u000b-\u001f]/g, ' ').trim().slice(0, 1500);
+      if (!tt) return { ok: false, error: 'Takketeksten kan ikke være tom' };
+      props.setProperty('TAKK_TEKST', tt);
+      meldinger.push('Takketeksten er lagret.');
+    }
+    if (p.program !== undefined) {
+      var pt = String(p.program == null ? '' : p.program).replace(/\r/g, '').replace(/[\u0000-\u0009\u000b-\u001f]/g, ' ').trim().slice(0, 1500);
+      if (!pt) return { ok: false, error: 'Programmet kan ikke være tomt' };
+      props.setProperty('PROGRAM_TEKST', pt);
+      meldinger.push('Programmet er lagret.');
     }
     if (p.facebookUrl !== undefined) {
       var fbu = tekst_(p.facebookUrl, 320).split('#')[0];
@@ -925,25 +1078,112 @@ function adminPurring_(p) {
   if (!sjekkOkt_(p.okt)) return { ok: false, utlogget: true, error: 'Logg inn på nytt' };
   begrens_('endre', 60);
   var grense = Date.now() - 20 * 36e5;
-  var sendt = 0, hoppet = 0, feilet = 0;
+  var sendt = 0, hoppet = 0, feilet = 0, ferdig = 0;
   var lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
     var ubetalte = alle_().filter(function (r) { return r.status === 'UBETALT' && !erTest_(r); });
     if (!ubetalte.length) return { ok: false, error: 'Alle har betalt.' };
     ubetalte.forEach(function (r) {
+      if (antallPurringer_(r) >= MAKS_PURRINGER) { ferdig++; return; }
       if (r.purret && new Date(r.purret).getTime() > grense) { hoppet++; return; }
       try {
         sendPurring_(r);
-        oppdater_(r._rad, { purret: new Date() });
+        oppdater_(r._rad, { purret: new Date(), purringer: antallPurringer_(r) + 1 });
         sendt++;
       } catch (err) { feilet++; console.error('Purring feilet for ' + r.id + ': ' + err); }
     });
   } finally { lock.releaseLock(); }
   if (feilet && !sendt) return { ok: false, error: 'Ingen purringer ble sendt. Dagens e-postkvote kan være brukt opp.' };
+  if (!sendt && !hoppet && ferdig) return { ok: false, error: 'Alle ubetalte har fått ' + MAKS_PURRINGER + ' purringer. Frigi plassene deres hvis betalingen ikke kommer.' };
   return { ok: true, melding: 'Purring sendt til ' + sendt + (sendt === 1 ? ' person' : ' personer') + '.' +
     (hoppet ? ' ' + hoppet + ' ble hoppet over fordi de fikk purring det siste døgnet.' : '') +
+    (ferdig ? ' ' + ferdig + ' har fått ' + MAKS_PURRINGER + ' purringer og kan miste plassen.' : '') +
     (feilet ? ' ' + feilet + ' feilet.' : '') };
+}
+
+/** Fellesmail med program til alle som har betalt (og eventuelt de som ikke har betalt ennå). Sendes én gang per person. */
+function adminFellesmail_(p) {
+  if (!sjekkOkt_(p.okt)) return { ok: false, utlogget: true, error: 'Logg inn på nytt' };
+  begrens_('endre', 60);
+  var med = p.medUbetalte === true || p.medUbetalte === 'true';
+  var sendt = 0, feilet = 0, hadde = 0;
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    var mottakere = alle_().filter(function (r) {
+      return !erTest_(r) && (r.status === 'BETALT' || (med && r.status === 'UBETALT'));
+    });
+    if (!mottakere.length) return { ok: false, error: med ? 'Ingen er påmeldt ennå.' : 'Ingen har betalt ennå.' };
+    mottakere.forEach(function (r) {
+      if (r.program) { hadde++; return; }
+      try { sendProgramEpost_(r); oppdater_(r._rad, { program: new Date() }); sendt++; }
+      catch (err) { feilet++; console.error('Fellesmail feilet for ' + r.id + ': ' + err); }
+    });
+  } finally { lock.releaseLock(); }
+  if (!sendt && feilet) return { ok: false, error: 'Ingen e-poster ble sendt. Dagens e-postkvote kan være brukt opp. Prøv igjen i morgen.' };
+  if (!sendt) return { ok: false, error: 'Alle ' + hadde + ' har fått programmet fra før.' };
+  return { ok: true, melding: 'Programmet er sendt til ' + sendt + (sendt === 1 ? ' person' : ' personer') + '.' +
+    (hadde ? ' ' + hadde + ' hadde fått det fra før.' : '') +
+    (feilet ? ' ' + feilet + ' feilet. Trykk på nytt senere, så får bare de som mangler.' : '') };
+}
+
+/** Takkemail etter arrangementet. Går til de som ble sjekket inn, eller til alle betalte hvis innsjekk ikke ble brukt. */
+function adminTakkemail_(p) {
+  if (!sjekkOkt_(p.okt)) return { ok: false, utlogget: true, error: 'Logg inn på nytt' };
+  begrens_('endre', 60);
+  if (Date.now() < arrangement_().start.getTime()) return { ok: false, error: 'Takkemailen kan sendes når arrangementet har startet.' };
+  var sendt = 0, feilet = 0, hadde = 0;
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    var ekte = alle_().filter(function (r) { return !erTest_(r) && HOLDER_PLASS.indexOf(r.status) >= 0; });
+    var brukteInnsjekk = ekte.some(function (r) { return r.mott; });
+    var mottakere = ekte.filter(function (r) { return brukteInnsjekk ? r.mott : r.status === 'BETALT'; });
+    if (!mottakere.length) return { ok: false, error: 'Ingen å sende til.' };
+    mottakere.forEach(function (r) {
+      if (r.takket) { hadde++; return; }
+      try { sendTakkEpost_(r); oppdater_(r._rad, { takket: new Date() }); sendt++; }
+      catch (err) { feilet++; console.error('Takkemail feilet for ' + r.id + ': ' + err); }
+    });
+  } finally { lock.releaseLock(); }
+  if (!sendt && feilet) return { ok: false, error: 'Ingen e-poster ble sendt. Dagens e-postkvote kan være brukt opp. Prøv igjen i morgen.' };
+  if (!sendt) return { ok: false, error: 'Alle ' + hadde + ' har fått takkemailen fra før.' };
+  return { ok: true, melding: 'Takkemailen er sendt til ' + sendt + (sendt === 1 ? ' person' : ' personer') + '.' +
+    (hadde ? ' ' + hadde + ' hadde fått den fra før.' : '') +
+    (feilet ? ' ' + feilet + ' feilet. Trykk på nytt senere, så får bare de som mangler.' : '') };
+}
+
+/**
+ * Sletter alle persondata etter arrangementet (personvernerklæringen lover sletting innen 3 måneder):
+ * påmeldinger, besøksstatistikk og «Arkiv»-fanene. Ingen kopi lagres.
+ */
+function adminSlettData_(p) {
+  if (!sjekkOkt_(p.okt)) return { ok: false, utlogget: true, error: 'Logg inn på nytt' };
+  if (p.bekreft !== 'SLETT') return { ok: false, error: 'Skriv SLETT for å bekrefte.' };
+  var a = arrangement_();
+  if (Date.now() < a.start.getTime()) return { ok: false, error: 'Persondata kan først slettes etter arrangementet. Før lansering bruker du «Nullstill».' };
+  var lock = LockService.getScriptLock();
+  lock.waitLock(20000);
+  try {
+    var rader = alle_().filter(function (r) { return !erTest_(r); });
+    var skylder = rader.filter(function (r) {
+      var b = r.refusjon === '' || r.refusjon == null ? Number(r.belop) || 0 : Number(r.refusjon) || 0;
+      return r.status === 'TRUKKET' && r.betalt && !r.refundert && b > 0;
+    }).length;
+    if (skylder) return { ok: false, error: skylder + (skylder === 1 ? ' person' : ' personer') + ' skal fortsatt ha penger tilbake. Marker dem som refundert først.' };
+    var slettet = 0, arkiv = 0;
+    [PAMELDING_ARK, BESOK_ARK].forEach(function (navn) {
+      var sh = sheet_(navn), sist = sh.getLastRow();
+      if (sist > 1) { if (navn === PAMELDING_ARK) slettet = sist - 1; sh.deleteRows(2, sist - 1); }
+    });
+    var ss = SpreadsheetApp.openById(cfg_('SHEET_ID', STANDARD_SHEET_ID));
+    ss.getSheets().forEach(function (sh) {
+      if (/^Arkiv /.test(sh.getName())) { ss.deleteSheet(sh); arkiv++; }
+    });
+    PropertiesService.getScriptProperties().setProperty('DATA_SLETTET', String(Date.now()));
+    return { ok: true, melding: 'Slettet ' + slettet + ' påmeldinger, besøksstatistikken og ' + arkiv + ' arkivfaner. Ingen persondata ligger igjen i regnearket.' };
+  } finally { lock.releaseLock(); }
 }
 
 /** Testpåmelding fra adminsiden: går gjennom samme løp som en ekte påmelding, men teller ikke. */
@@ -973,6 +1213,12 @@ var TEST_EPOSTER = {
   venteliste: 'Du står på ventelisten',
   ledig: 'Det er ledig plass (til ventelisten)',
   purring: 'Påminnelse om betaling',
+  trukket: 'Påmeldingen er trukket',
+  refundert: 'Pengene er betalt tilbake',
+  program: 'Fellesmail med program',
+  takk: 'Takkemail etter arrangementet',
+  frigitt: 'Plassen er frigitt (ikke betalt etter tre purringer)',
+  sistepurring: 'Siste påminnelse om betaling',
   rapport: 'Daglig statusmail til admin'
 };
 function testEpost_(type, p) {
@@ -989,6 +1235,12 @@ function testEpost_(type, p) {
     if (type === 'ubetalt' || type === 'betalt') sendt = sendBekreftelse_(r);
     else if (type === 'ledig') sendLedigPlassEpost_(r, 1);
     else if (type === 'purring') sendPurring_(r);
+    else if (type === 'trukket') { r.betalt = new Date(); sendTrukketEpost_(r, Math.max(0, a.pris - a.noshow), false); }
+    else if (type === 'refundert') sendRefundertEpost_(r, a.pris);
+    else if (type === 'program') { r.status = 'BETALT'; sendProgramEpost_(r); }
+    else if (type === 'takk') sendTakkEpost_(r);
+    else if (type === 'frigitt') sendTrukketEpost_(r, 0, false, true);
+    else if (type === 'sistepurring') { r.purringer = MAKS_PURRINGER - 1; sendPurring_(r); }
     else if (type === 'venteliste') {
       var for_ = epostKvote_();
       sendVentelisteEpost_(r);
@@ -1028,6 +1280,15 @@ function sikreRapportUtloser_() {
  * eller når noe må følges opp (ubetalte, refusjoner, ledig plass med venteliste).
  */
 function dagligRapport(tvungen) {
+  // Bekreftelser som ikke gikk ut (for eksempel fordi e-postkvoten var brukt opp) prøves på nytt hver morgen.
+  var sendtPaNytt = 0;
+  if (tvungen !== true) {
+    try {
+      alle_().forEach(function (r) {
+        if (!erTest_(r) && HOLDER_PLASS.indexOf(r.status) >= 0 && !r.epost_sendt && sendBekreftelse_(r)) sendtPaNytt++;
+      });
+    } catch (err) { console.error('Nytt forsøk på bekreftelser feilet: ' + err); }
+  }
   var til = rapportMottaker_();
   if (!til) { console.log('Ingen ADMIN_EPOST eller SVAR_EPOST, statusmail sendes ikke.'); return { sendt: false, grunn: 'mottaker' }; }
   var a = arrangement_();
@@ -1054,8 +1315,18 @@ function dagligRapport(tvungen) {
   var utenEpost = rader.filter(function (r) { return HOLDER_PLASS.indexOf(r.status) >= 0 && !r.epost_sendt; });
   var venteliste = (antall.VENTELISTE || 0) > 0 && ledige > 0;
 
-  var harNytt = nye.length || nyeBetalt.length || nyeTrukket.length;
-  var harOppfolging = ubetalte.length || refusjon.length || venteliste || utenEpost.length;
+  // Etter arrangementet er det bare penger som skal tilbake og sletting av persondata som følges opp.
+  var etterArr = naa > a.start.getTime();
+  if (etterArr) { ubetalte = []; utenEpost = []; venteliste = false; }
+  var ferdigPurret = etterArr ? [] : rader.filter(function (r) {
+    return r.status === 'UBETALT' && antallPurringer_(r) >= MAKS_PURRINGER && Date.now() - new Date(r.purret).getTime() > dogn;
+  });
+  var utenProgram = rader.filter(function (r) { return r.status === 'BETALT' && !r.program; });
+  var sendProgram = !etterArr && naa > a.start.getTime() - 36 * 36e5 && utenProgram.length > 0;
+  var slettNaa = naa > a.start.getTime() + 90 * dogn && rader.length > 0;
+
+  var harNytt = nye.length || nyeBetalt.length || nyeTrukket.length || sendtPaNytt;
+  var harOppfolging = ubetalte.length || refusjon.length || venteliste || utenEpost.length || sendProgram || slettNaa || ferdigPurret.length;
   // En tidsstyrt utløser sender med et hendelsesobjekt, så bare en ekte «true» teller som tvungen.
   if (tvungen !== true && !harNytt && !harOppfolging) {
     props.setProperty('RAPPORT_SIST', String(naa));
@@ -1084,6 +1355,10 @@ function dagligRapport(tvungen) {
       ubetalte.map(function (r) { return 'Ikke betalt etter mer enn to døgn: ' + navn(r) + (r.purret ? ', purret ' + dato(r.purret) : ', ikke purret'); }),
       refusjon.map(function (r) { return 'Skal ha ' + skyldig(r) + ' kr tilbake: ' + navn(r); }),
       utenEpost.map(function (r) { return 'Fikk ikke bekreftelsen på e-post: ' + navn(r) + '. Send den på nytt fra admin.'; }),
+      ferdigPurret.map(function (r) { return 'Ikke betalt etter ' + MAKS_PURRINGER + ' purringer: ' + navn(r) + '. Frigi plassen i admin.'; }),
+      sendProgram ? ['Det er under 36 timer igjen. Send programmet til de ' + utenProgram.length + ' som har betalt, fra «Fellesmail med program» i admin.'] : [],
+      slettNaa ? ['Det er 3 måneder siden juletreffet. Slett persondataene fra «Slett persondata» nederst i admin, slik personvernerklæringen lover.'] : [],
+      sendtPaNytt ? ['Bekreftelsen ble sendt på nytt til ' + sendtPaNytt + (sendtPaNytt === 1 ? ' person' : ' personer') + ' i dag.'] : [],
       venteliste ? [ledige + (ledige === 1 ? ' ledig plass' : ' ledige plasser') + ' og ' + antall.VENTELISTE + ' på ventelisten. Varsle ventelisten eller gi plass i admin.'] : [])) +
     epostKnapp_(site + '/#admin', 'Åpne admin');
   var tekst = 'Status: ' + opptatt + ' av ' + a.kapasitet + ' plasser tatt, ' + (antall.BETALT || 0) + ' betalt, ' +

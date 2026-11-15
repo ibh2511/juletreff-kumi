@@ -536,13 +536,13 @@ export default function App() {
                 <p>
                   Etterpå går vi videre til{" "}
                   <a
-                    href="https://www.tolvteogkranen.no/kranen"
+                    href="https://www.munch.no/mat-drikke-MUNCH/munch-bar/"
                     target="_blank"
                     rel="noreferrer"
                   >
-                    Kranen
+                    MUNCH bar
                   </a>{" "}
-                  Cocktailbar i 13. etasje på <b>MUNCH,</b> ca. 200 meter unna (
+                  i 13. etasje på <b>MUNCH,</b> ca. 200 meter unna (
                   <i>23 års aldersgrense</i>).
                 </p>
                 <p>
@@ -632,8 +632,12 @@ export default function App() {
                   tillegg, snakk med personalet 🍷🍾
                 </p>
                 <p>
-                  Du kjøper det du ønsker på Kranen, drikkemeny finner du{" "}
-                  <a href="https://drive.google.com/file/d/1ZhKilxdVjzNH5u9K0xigndzo7pTYUKle/view?usp=sharing">
+                  Du kjøper det du ønsker på MUNCH bar, drikkemeny finner du{" "}
+                  <a
+                    href="https://www.munch.no/globalassets/foto-munch/mat-og-drikke/menyer/munch-bar-13th-17.10.pdf"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
                     her
                   </a>
                 </p>
