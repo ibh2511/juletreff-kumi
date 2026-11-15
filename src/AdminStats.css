@@ -7,6 +7,8 @@
   min-height: 100vh;
   color: #1b1b1b;
   align-self: flex-start;
+  min-width: 0;
+  box-sizing: border-box;
 }
 
 .admin-header {
@@ -301,7 +303,7 @@
 }
 @media (min-width: 760px) {
   .to-kol {
-    grid-template-columns: 2fr 1fr;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
   }
 }
 
@@ -367,9 +369,20 @@
   display: grid;
   gap: 14px;
 }
-@media (min-width: 760px) {
+@media (min-width: 600px) {
+  .innstillinger {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .innstilling:last-child {
+    grid-column: 1 / -1;
+  }
+}
+@media (min-width: 1000px) {
   .innstillinger {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1.4fr);
+  }
+  .innstilling:last-child {
+    grid-column: auto;
   }
 }
 .innstilling {
@@ -512,3 +525,82 @@
 .handling-knapper .mini.bekreft.h-refundert { background: #9a6d00; }
 .handling-knapper .mini.bekreft.h-trekk,
 .handling-knapper .mini.bekreft.h-slett { background: #b3261e; }
+
+/* Melding ved funksjonen som ga den */
+.admin-note.lokal {
+  margin: 4px 0 0;
+  padding: 8px 12px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+.admin-note.lokal.ok {
+  background: #e3f3e6;
+  border-color: #b9dcc1;
+  color: #1e4d2b;
+}
+.panel > .admin-note.lokal {
+  margin: 0 0 12px;
+}
+
+/* Smale skjermer: verktøy i full bredde, deltakere som kort */
+@media (max-width: 1100px) {
+  .admin-container {
+    padding: 18px 12px 48px;
+  }
+  .admin-header h1 {
+    font-size: 20px;
+  }
+  .panel {
+    padding: 14px 12px;
+  }
+  .panel-tools {
+    width: 100%;
+  }
+  .panel-tools input {
+    flex: 1 1 160px;
+  }
+  .stat-number {
+    font-size: 22px;
+  }
+
+  .tabell {
+    overflow: visible;
+  }
+  table.deltakere,
+  table.deltakere tbody {
+    display: block;
+  }
+  table.deltakere thead {
+    display: none;
+  }
+  table.deltakere tr.deltaker {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 6px 10px;
+    padding: 12px 0;
+    border-bottom: 1px solid #efe6da;
+  }
+  table.deltakere tr.deltaker td {
+    display: block;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  table.deltakere .c-navn { grid-column: 1; grid-row: 1; }
+  table.deltakere .c-status { grid-column: 2; grid-row: 1; text-align: right; }
+  table.deltakere .c-kontakt { grid-column: 1 / -1; }
+  table.deltakere .c-dato { grid-column: 1 / -1; }
+  table.deltakere .c-dato::before { content: "Påmeldt "; }
+  table.deltakere .c-kommentar { grid-column: 1 / -1; max-width: none; }
+  table.deltakere .c-kommentar:empty { display: none; }
+  table.deltakere .handlinger { grid-column: 1 / -1; }
+  table.deltakere .handling-velger { width: 100%; max-width: none; padding-top: 9px; padding-bottom: 9px; }
+  table.deltakere tr.handling-rad,
+  table.deltakere tr.handling-rad td {
+    display: block;
+    padding: 10px 0;
+    border: 0;
+  }
+  .handling { max-width: none; }
+}
