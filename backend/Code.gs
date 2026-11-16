@@ -417,6 +417,7 @@ function sendBekreftelse_(r) {
   var melding = 'Juletreff ' + r.fornavn + ' ' + r.etternavn;
 
   var rad = epostRad_, tabell = epostTabell_;
+  var bunn = betalt ? 'Spørsmål, eller må du melde deg av med legeerklæring? Svar på denne e-posten.' : 'Spørsmål? Svar på denne e-posten.';
 
   var betaling = betalt
     ? '<div style="border: 1px solid #6fbf73; border-radius: 10px; padding: 20px; margin: 30px 0;">' +
@@ -447,9 +448,10 @@ function sendBekreftelse_(r) {
         e(r.epost).replace('@', '&#8203;@').replace(/\./g, '&#8203;.') + '</span>', !r.kommentar) +
       (r.kommentar ? rad('Melding:', e(r.kommentar), true) : '')) +
 
-    '<p style="font-size: .85rem; line-height: 1.5; margin: 30px 0 0 0; color: #bdb3a8; text-align: center;">' +
-    e(bindendeTekst_(r.belop)) + '</p>',
-    'Spørsmål, eller må du melde deg av med legeerklæring? Svar på denne e-posten.');
+    // Vilkårene står bare i e-posten etter betaling. Den første skal handle om å betale.
+    (betalt ? '<p style="font-size: .85rem; line-height: 1.5; margin: 30px 0 0 0; color: #bdb3a8; text-align: center;">' +
+      e(bindendeTekst_(r.belop)) + '</p>' : ''),
+    bunn);
 
   var tekst =
     'Hei ' + r.fornavn + '!\n\n' +
@@ -459,8 +461,8 @@ function sendBekreftelse_(r) {
         ' og skriv «' + melding + '» i meldingen. Plassen din er sikret når betalingen er mottatt.') + '\n\n' +
     'Sted: ' + a.sted + '\nTid: ' + a.dato + '\nPåmelding: ' + r.id + '\n\n' +
     (betalt ? 'Trykk «Skal» på Facebook-eventet: ' + fb + '\n\n' : '') +
-    bindendeTekst_(r.belop) + '\n\n' +
-    'Spørsmål, eller må du melde deg av med legeerklæring? Svar på denne e-posten.\n' +
+    (betalt ? bindendeTekst_(r.belop) + '\n\n' : '') +
+    bunn + '\n' +
     'Salgsvilkår: ' + site + '/#vilkar\nPersonvern: ' + site + '/#personvern';
 
   var emne = (erTest_(r) ? '[TEST] ' : '') +
