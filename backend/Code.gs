@@ -507,12 +507,10 @@ function sendLedigPlassEpost_(r, ledige) {
     '<p style="font-size: 1rem; line-height: 1.5; margin: 20px 0 0 0; text-align: center;">' +
     'Du står på ventelisten, og vi sier fra til alle på listen samtidig. Den som melder seg på først, får plassen.</p>' +
     epostKnapp_(site + '/', 'Meld meg på nå') +
-    '<table width="100%" cellpadding="0" cellspacing="0" style="color: #F4EADF; font-size: 1rem; text-align: left;">' +
-    '<tr><td style="padding: 8px; border-bottom: 1px solid #555; width: 110px;"><b>Tid:</b></td>' +
-    '<td style="padding: 8px; border-bottom: 1px solid #555;">' + escapeHtml_(a.dato) + '</td></tr>' +
-    '<tr><td style="padding: 8px; border-bottom: 1px solid #555;"><b>Sted:</b></td>' +
-    '<td style="padding: 8px; border-bottom: 1px solid #555;">' + escapeHtml_(a.sted) + '</td></tr>' +
-    '<tr><td style="padding: 8px;"><b>Pris:</b></td><td style="padding: 8px;">' + a.pris + ' kr</td></tr></table>' +
+    epostTabell_(
+      epostRad_('Tid:', escapeHtml_(a.dato)) +
+      epostRad_('Sted:', escapeHtml_(a.sted)) +
+      epostRad_('Pris:', a.pris + ' kr', true)) +
     '<p style="font-size: .85rem; line-height: 1.5; margin: 26px 0 0 0; color: #bdb3a8; text-align: center;">' +
     'Påmeldingsfristen er ' + escapeHtml_(a.fristTekst) + '. Vil du ikke lenger stå på ventelisten, kan du bare svare på denne e-posten.</p>';
   var tekst = 'Hei ' + r.fornavn + '!\n\nNå er det ' + plasser + ' på Juletreff på KUMI (' + a.dato + ').\n' +
@@ -534,8 +532,9 @@ function epostKnapp_(href, tekst) {
 
 function epostRad_(k, v, sist, farge) {
   var td = 'padding: 8px; color: #F4EADF;' + (sist ? '' : ' border-bottom: 1px solid #555;');
-  return '<tr><td style="' + td + ' width: 110px;" bgcolor="#333"><b>' + k + '</b></td>' +
-    '<td style="' + td + (farge ? ' color: ' + farge + ';' : '') + '" bgcolor="#333">' + v + '</td></tr>';
+  // Første kolonne er bare så bred som den lengste etiketten, så verdien får resten av plassen.
+  return '<tr><td style="' + td + ' width: 1%; white-space: nowrap; padding-right: 18px; vertical-align: top;" bgcolor="#333"><b>' + k + '</b></td>' +
+    '<td style="' + td + ' vertical-align: top; overflow-wrap: anywhere;' + (farge ? ' color: ' + farge + ';' : '') + '" bgcolor="#333">' + v + '</td></tr>';
 }
 
 function epostTabell_(innhold, margin) {
