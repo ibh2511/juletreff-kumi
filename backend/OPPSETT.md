@@ -77,6 +77,19 @@ Her ser du plasser tatt, betalt, ikke betalt, venteliste, trukket, innbetalt bel
 2. Test med `VIPPS_ENV=test` og Vipps MT-appen, og sjekk at bekreftelsen kommer.
 3. Bytt til produksjonsnøkler, sett `VIPPS_ENV=prod` og lag en ny versjon av implementeringen.
 
+## Automatisk deploy til Apps Script (valgfritt)
+
+Når dette er satt opp, sendes `backend/Code.gs` og `appsscript.json` til Apps Script og implementeringen får en ny versjon hver gang `backend/` endres på main. Nettadressen til backenden blir den samme.
+
+1. Slå på «Google Apps Script API» på https://script.google.com/home/usersettings
+2. Kjør `npx @google/clasp@2.4.2 login` på din egen maskin og logg inn med Google-kontoen som eier skriptet. Det lager filen `~/.clasprc.json` (på Mac: `cat ~/.clasprc.json | pbcopy` kopierer innholdet).
+3. I GitHub: Settings → Secrets and variables → Actions.
+   - Under **Secrets**: lag `CLASPRC_JSON` med innholdet i `.clasprc.json`.
+   - Under **Variables**: lag `APPS_SCRIPT_ID` (Apps Script → Prosjektinnstillinger → Skript-ID) og `APPS_SCRIPT_DEPLOYMENT_ID` (Implementer → Administrer implementeringer → Implementerings-ID).
+4. Kjør workflowen «Deploy Apps Script» én gang under Actions for å teste.
+
+Merk: Secret-et gir tilgang til Apps Script-prosjektene på kontoen din. Koden i repoet overskriver det som ligger i Apps Script, så gjør endringer her og ikke i Apps Script-editoren.
+
 ## Grenser
 
 - Gmail sender 100 e-poster i døgnet fra Apps Script.
