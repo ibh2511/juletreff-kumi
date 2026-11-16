@@ -420,7 +420,7 @@ function sendBekreftelse_(r) {
   var bunn = betalt ? 'Spørsmål, eller må du melde deg av med legeerklæring? Svar på denne e-posten.' : 'Spørsmål? Svar på denne e-posten.';
 
   var betaling = betalt
-    ? '<div style="border: 1px solid #6fbf73; border-radius: 10px; padding: 20px; margin: 30px 0;">' +
+    ? '<div class="boks" style="border: 1px solid #6fbf73; border-radius: 10px; padding: 14px 12px; margin: 30px 0;">' +
       '<h3 style="font-size: 1.2rem; color: #8fd694; margin: 0 0 6px 0; text-align: center;">Betalt ' + r.belop + ' kr ✓</h3>' +
       '<p style="text-align: center; margin: 0;">Plassen din er sikret.</p></div>'
     : vippsBoks_(r, 'Plassen din er sikret når betalingen er mottatt.');
@@ -477,21 +477,24 @@ function sendBekreftelse_(r) {
   } catch (err) { console.error('E-post feilet for ' + r.id + ': ' + err); return false; }
 }
 
-/** Felles ramme for e-postene: fersken bakgrunn, bilde øverst, mørkt kort og mørk bunntekst. */
+/**
+ * Felles ramme for e-postene: fersken bakgrunn, bilde øverst, mørkt kort og mørk bunntekst.
+ * Luften er satt for mobil og økes på brede skjermer, så klienter som fjerner <style> også får plass til innholdet.
+ */
 function epostRamme_(kropp, bunntekst) {
   var site = cfg_('SITE_URL', 'https://ibh2511.github.io/juletreff-kumi').replace(/\/$/, '');
   var bilde = cfg_('EPOST_BILDE', site + '/images/kumi.jpeg');
   return '<!DOCTYPE html><html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">' +
-    '<meta name="color-scheme" content="light only"><style>@media only screen and (max-width: 600px) {' +
-    '.ytre { padding: 10px !important; } .indre { padding: 14px !important; } }' +
+    '<meta name="color-scheme" content="light only"><style>@media only screen and (min-width: 601px) {' +
+    '.ytre { padding: 30px !important; } .indre { padding: 30px !important; } .boks { padding: 20px !important; } }' +
     '@media only screen and (max-width: 420px) { .knapp { font-size: .85rem !important; padding: 8px 15px !important; } }</style></head><body style="margin: 0; padding: 0; background-color: #ffd9b0;" bgcolor="#ffd9b0">' +
     '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffd9b0;" bgcolor="#ffd9b0"><tr><td align="center" style="background-color: #ffd9b0;" bgcolor="#ffd9b0">' +
     '<table align="center" width="100%" cellpadding="0" cellspacing="0" class="ytre" style="background-color: #ffd9b0; ' +
-    "font-family: 'Poppins', Arial, sans-serif; color: #333; max-width: 600px; margin: auto; padding: 30px;\" bgcolor=\"#ffd9b0\">" +
+    "font-family: 'Poppins', Arial, sans-serif; color: #333; max-width: 600px; margin: auto; padding: 8px;\" bgcolor=\"#ffd9b0\">" +
     '<tr><td style="padding: 0; border-radius: 15px 15px 0 0; overflow: hidden;" bgcolor="#ffd9b0">' +
     '<img src="' + bilde + '" alt="Juletreff på KUMI" style="width: 100%; height: 175px; object-fit: cover; display: block; border-radius: 15px 15px 0 0;">' +
     '</td></tr>' +
-    '<tr><td class="indre" style="background-color: #333; color: #F4EADF; padding: 30px;" bgcolor="#333">' + kropp + '</td></tr>' +
+    '<tr><td class="indre" style="background-color: #333; color: #F4EADF; padding: 12px;" bgcolor="#333">' + kropp + '</td></tr>' +
     '<tr><td style="background-color: #111; padding: 20px; text-align: center; color: #777; border-radius: 0 0 15px 15px;" bgcolor="#111">' +
     '<p style="font-size: .8rem; margin: 0 0 6px 0;">' + bunntekst + '</p>' +
     '<p style="font-size: .8rem; margin: 0;"><a href="' + site + '/#vilkar" style="color: #999;">Salgsvilkår</a> · ' +
@@ -535,9 +538,10 @@ function epostKnapp_(href, tekst) {
 }
 
 function epostRad_(k, v, sist, farge) {
-  var td = 'padding: 8px; color: #F4EADF;' + (sist ? '' : ' border-bottom: 1px solid #555;');
+  // Ingen luft ytterst i radene: teksten flukter med kortet, så verdien får all bredden.
+  var td = 'padding: 8px 0; color: #F4EADF;' + (sist ? '' : ' border-bottom: 1px solid #555;');
   // Første kolonne er bare så bred som den lengste etiketten, så verdien får resten av plassen.
-  return '<tr><td style="' + td + ' width: 1%; white-space: nowrap; padding-right: 18px; vertical-align: top;" bgcolor="#333"><b>' + k + '</b></td>' +
+  return '<tr><td style="' + td + ' width: 1%; white-space: nowrap; padding-right: 12px; vertical-align: top;" bgcolor="#333"><b>' + k + '</b></td>' +
     '<td style="' + td + ' vertical-align: top; overflow-wrap: anywhere;' + (farge ? ' color: ' + farge + ';' : '') + '" bgcolor="#333">' + v + '</td></tr>';
 }
 
@@ -559,7 +563,7 @@ function epostAvsnitt_(tekst, liten) {
 /** Oransje Vipps-boks med nummer, beløp og hva som skal stå i meldingen. */
 function vippsBoks_(r, undertekst) {
   var a = arrangement_(), e = escapeHtml_;
-  return '<div style="border: 1px solid #ff5b24; border-radius: 10px; padding: 20px; margin: 30px 0;">' +
+  return '<div class="boks" style="border: 1px solid #ff5b24; border-radius: 10px; padding: 14px 12px; margin: 30px 0;">' +
     '<h3 style="font-size: 1.2rem; color: #ff5b24; margin: 0 0 10px 0; text-align: center;">Betal ' + r.belop + ' kr med Vipps</h3>' +
     '<p style="text-align: center; margin: 0 0 15px 0;">' + undertekst + '</p>' +
     epostTabell_(
