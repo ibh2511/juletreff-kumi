@@ -74,6 +74,15 @@ function Vilkar({ info }) {
       <p>Pengene betales tilbake til Vipps.
       </p>
 
+      <h2>Gi plassen til en annen</h2>
+      <p>
+        Kan du ikke komme, kan du gi plassen din til noen andre i stedet for
+        å trekke deg. Da trenger du ingen legeerklæring. Send navn, e-post og
+        telefonnummer til den nye deltakeren til <Epost info={info} /> senest
+        dagen før arrangementet, så får de en egen bekreftelse. Betalingen
+        følger plassen, og dere gjør opp pengene mellom dere.
+      </p>
+
       <h2>Angrerett</h2>
       <p>
         Det er ikke angrerett på påmeldingen, fordi den gjelder en
@@ -155,7 +164,12 @@ function Personvern({ info }) {
       <h2>Hvem som får opplysningene</h2>
       <p>
         Betalingen skjer med Vipps (Vipps MobilePay AS), som behandler
-        betalingen etter sine egne vilkår. Vi gir KUMI antall deltakere og
+        betalingen etter sine egne vilkår. Når du vipper til nummeret i
+        e-posten, ser mottakeren navnet ditt, telefonnummeret ditt, beløpet og
+        meldingen du skriver, slik det alltid er i Vipps. Vi bruker det bare
+        til å se hvem som har betalt og til å betale tilbake. Opplysningene
+        ligger i mottakerens Vipps-historikk etter Vipps sine egne regler, og
+        vi kan ikke slette dem der. Vi gir KUMI antall deltakere og
         eventuelle allergier, men ikke kontaktopplysningene dine. Vi selger
         eller deler aldri opplysningene dine med andre.
       </p>

@@ -624,7 +624,8 @@ export default function App() {
                   Påmeldingen er bindende og kan bare trekkes med
                   legeerklæring. Trekker du deg mer enn 48 timer før, får du
                   hele beløpet tilbake. Senere enn det beholder vi{" "}
-                  {formatPrice(info.noshow)} til KUMIs no-show-gebyr. Les mer i{" "}
+                  {formatPrice(info.noshow)} til KUMIs no-show-gebyr. Kan du
+                  ikke komme, kan du også gi plassen til en annen. Les mer i{" "}
                   <a href="#vilkar">salgsvilkårene</a>.
                 </p>
                 <p>
