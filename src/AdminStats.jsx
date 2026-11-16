@@ -384,7 +384,9 @@ export default function AdminStats({ okt, onLogout }) {
             <div className="liten">
               {arr.vippsAktiv
                 ? `Deltakerne sendes rett til Vipps og betaler med en gang${arr.vippsMiljo !== "prod" ? " (testmiljø)" : ""}.`
-                : `Deltakerne betaler med Vipps til ${vippsTil(arr.vippsNummer)}${arr.vippsNavn ? ` (${arr.vippsNavn})` : ""}, og du markerer betalingen som mottatt her.`}
+                : arr.vippsNummer
+                  ? `Deltakerne betaler med Vipps til ${vippsTil(arr.vippsNummer)}${arr.vippsNavn ? ` (${arr.vippsNavn})` : ""}, og du markerer betalingen som mottatt her.`
+                  : "⚠️ Legg inn Vipps-nummeret under. Uten det får deltakerne ingen betalingsinfo."}
               {!arr.harVippsNokler &&
                 " API-et kan slås på når Vipps-avtalen er på plass og nøklene er lagt inn i Apps Script."}
             </div>
@@ -423,8 +425,9 @@ export default function AdminStats({ okt, onLogout }) {
               </button>
             </div>
             <div className="liten">
-              Nummeret står i e-postene og på nettsiden. Navnet vises ved
-              siden av, så folk ser at de betaler til riktig person.
+              Nummeret vises bare til den som har meldt seg på, i e-posten
+              og på betalingssiden. Navnet står ved siden av, så folk ser at
+              de betaler til riktig person.
             </div>
             {vis("vipps")}
           </div>

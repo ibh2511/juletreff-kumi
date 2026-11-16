@@ -20,10 +20,12 @@ var STANDARD_FACEBOOK_URL = 'https://www.facebook.com/events/664624256515915';
 
 var PAMELDING_ARK = 'Påmeldinger';
 var BESOK_ARK = 'Besøk';
-// Betaling uten Vipps-avtale: et Vipps-nummer (5–6 sifre) eller et mobilnummer (8 sifre). Endres i adminsiden.
-var STANDARD_VIPPS_NUMMER = '45454642';
-var STANDARD_VIPPS_NAVN = 'Isabelle Haugan';
-/** «#12345» for Vipps-nummer, «45 45 46 42» for mobilnummer. */
+// Betaling uten Vipps-avtale: et Vipps-nummer (5–6 sifre) eller et mobilnummer (8 sifre).
+// Settes i adminsiden og lagres i Skriptegenskaper, så et privat nummer aldri ligger i koden.
+// Det vises bare til den som har meldt seg på, i e-posten og på betalingssiden.
+var STANDARD_VIPPS_NUMMER = '';
+var STANDARD_VIPPS_NAVN = '';
+/** «#12345» for Vipps-nummer, «12 34 56 78» for mobilnummer. */
 function vippsTil_(nr) {
   var d = String(nr || '').replace(/\D/g, '');
   return d.length === 8 ? d.replace(/(\d{2})(?=\d)/g, '$1 ') : '#' + d;
@@ -180,7 +182,7 @@ function info_() {
     ok: true, pris: a.pris, dato: a.dato, sted: a.sted, fristTekst: a.fristTekst, kapasitet: a.kapasitet,
     stengt: Date.now() > a.frist.getTime(),
     ledige: Math.max(0, a.kapasitet - opptatt), fullt: opptatt >= a.kapasitet,
-    vippsAktiv: a.vippsAktiv, vippsNummer: a.vippsNummer, vippsNavn: a.vippsNavn, noshow: a.noshow, start: a.start.toISOString(),
+    vippsAktiv: a.vippsAktiv, noshow: a.noshow, start: a.start.toISOString(),
     facebookUrl: facebookUrl_(),
     // Samme adresse som står som svaradresse i e-postene, så den er allerede offentlig
     kontaktEpost: cfg_('SVAR_EPOST', '')
@@ -984,7 +986,7 @@ function adminInnstillinger_(p) {
       if ([5, 6, 8].indexOf(vn.length) < 0) return { ok: false, error: 'Skriv inn et Vipps-nummer (5–6 sifre) eller et mobilnummer (8 sifre)' };
       props.setProperty('VIPPS_NUMMER', vn);
       props.setProperty('VIPPS_NAVN', tekst_(p.vippsNavn, 60));
-      meldinger.push('Nye e-poster og nettsiden viser nå Vipps til ' + vippsTil_(vn) + '. De som allerede har fått betalingsinfo, har det gamle nummeret i e-posten sin.');
+      meldinger.push('Nye e-poster og betalingssiden viser nå Vipps til ' + vippsTil_(vn) + '. De som allerede har fått betalingsinfo, har det gamle nummeret i e-posten sin.');
     }
     if (p.svarEpost !== undefined) {
       var se = tekst_(p.svarEpost, 120).toLowerCase();

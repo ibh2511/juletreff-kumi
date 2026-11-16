@@ -1,4 +1,4 @@
-import { KONTAKT_EPOST, formatPrice, vippsTil } from "./config.js"
+import { KONTAKT_EPOST, formatPrice } from "./config.js"
 
 // Fyll inn før lansering (se backend/OPPSETT.md)
 const ARRANGOR = "Nordisk vegan"
@@ -41,7 +41,7 @@ function Vilkar({ info }) {
         Du melder deg på via skjemaet på nettsiden og betaler med Vipps
         {info.vippsAktiv
           ? ", der du sendes rett til betalingen."
-          : ` til ${vippsTil(info.vippsNummer)}${info.vippsNavn ? ` (${info.vippsNavn})` : ""} etter at du har meldt deg på.`}{" "}
+          : ". Vipps-nummeret får du i e-posten med påmeldingen, og du vippser beløpet selv."}{" "}
         Plassen din er sikret når betalingen er mottatt, og du får en
         bekreftelse på e-post. Påmeldingsfristen er {info.fristTekst}, eller
         tidligere hvis det blir fullt. Er det fullt, kan du sette deg på

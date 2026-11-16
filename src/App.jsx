@@ -7,7 +7,6 @@ import {
   API_URL,
   DEFAULTS,
   KONTAKT_EPOST,
-  vippsTil,
   formatPrice,
 } from "./config.js"
 import VippsPayment from "./VippsPayment.jsx"
@@ -87,8 +86,6 @@ export default function App() {
         setInfo((prev) => ({
           ...prev,
           ...d,
-          vippsNummer: d.vippsNummer || prev.vippsNummer,
-          vippsNavn: d.vippsNummer ? d.vippsNavn || "" : prev.vippsNavn,
         }))
         if (d.stengt) setStatus((s) => s ?? "stengt")
       })
@@ -337,8 +334,8 @@ export default function App() {
                 </div>
                 <VippsPayment
                   belop={detaljer?.belop || info.pris}
-                  vippsNummer={detaljer?.vippsNummer || info.vippsNummer}
-                  vippsNavn={detaljer?.vippsNummer ? detaljer.vippsNavn : info.vippsNavn}
+                  vippsNummer={detaljer?.vippsNummer}
+                  vippsNavn={detaljer?.vippsNavn}
                   navn={[detaljer?.fornavn, detaljer?.etternavn]
                     .filter(Boolean)
                     .join(" ")}
@@ -620,7 +617,7 @@ export default function App() {
                 <p>
                   {vippsAktiv
                     ? "Du betaler med Vipps når du melder deg på."
-                    : `Du betaler med Vipps til ${vippsTil(info.vippsNummer)}${info.vippsNavn ? ` (${info.vippsNavn})` : ""} når du har meldt deg på.`}{" "}
+                    : "Når du har meldt deg på, får du Vipps-nummeret i e-posten med påmeldingen, og vippser beløpet selv."}{" "}
                   Plassen din er sikret når betalingen er mottatt.
                 </p>
                 <p>
