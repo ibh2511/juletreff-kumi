@@ -1,10 +1,7 @@
-import { KONTAKT_EPOST, formatPrice } from "./config.js"
+import { KONTAKT_EPOST, formatPrice, vippsTil } from "./config.js"
 
 // Fyll inn før lansering (se backend/OPPSETT.md)
 const ARRANGOR = "Nordisk vegan"
-const MOTTAKER = "Elstad Media"
-const ORGNR = "938 529 205"
-const ADRESSE = "Bruddveien 4, 2016 Frogner"
 const KONTAKTPERSON = "Isabelle Haugan"
 const OPPDATERT = "15. november 2026"
 
@@ -27,8 +24,7 @@ function Vilkar({ info }) {
       <h2>Arrangører</h2>
       <p>
         Arrangører: {ARRANGOR}, Vegan Norway og Oslo vegansamfunn (org.nr.{" "}
-        929 119 819, Ensjøveien 29 C, 0661 Oslo). Betalingen tas imot av {MOTTAKER}, org.nr.{" "}
-        {ORGNR}, {ADRESSE}. Kontakt: {KONTAKTPERSON},{" "}
+        929 119 819, Ensjøveien 29 C, 0661 Oslo). Kontakt: {KONTAKTPERSON},{" "}
         <Epost info={info} />.
       </p>
 
@@ -45,7 +41,7 @@ function Vilkar({ info }) {
         Du melder deg på via skjemaet på nettsiden og betaler med Vipps
         {info.vippsAktiv
           ? ", der du sendes rett til betalingen."
-          : ` til nummer #${info.vippsNummer} etter at du har meldt deg på.`}{" "}
+          : ` til ${vippsTil(info.vippsNummer)}${info.vippsNavn ? ` (${info.vippsNavn})` : ""} etter at du har meldt deg på.`}{" "}
         Plassen din er sikret når betalingen er mottatt, og du får en
         bekreftelse på e-post. Påmeldingsfristen er {info.fristTekst}, eller
         tidligere hvis det blir fullt. Er det fullt, kan du sette deg på
@@ -159,8 +155,7 @@ function Personvern({ info }) {
       <h2>Hvem som får opplysningene</h2>
       <p>
         Betalingen skjer med Vipps (Vipps MobilePay AS), som behandler
-        betalingen etter sine egne vilkår. {MOTTAKER}, org.nr. {ORGNR}, tar
-        imot betalingen og ser derfor navnet ditt og beløpet. Vi gir KUMI antall deltakere og
+        betalingen etter sine egne vilkår. Vi gir KUMI antall deltakere og
         eventuelle allergier, men ikke kontaktopplysningene dine. Vi selger
         eller deler aldri opplysningene dine med andre.
       </p>

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { apiPost } from "./api.js"
-import { formatPrice } from "./config.js"
+import { formatPrice, vippsTil } from "./config.js"
 import "./AdminStats.css"
 
 const STATUS = {
@@ -68,6 +68,7 @@ export default function AdminStats({ okt, onLogout }) {
   const [test, setTest] = useState({ fornavn: "Test", etternavn: "Testesen", epost: "" })
   const [testType, setTestType] = useState("pamelding")
   const [svar, setSvar] = useState(null)
+  const [vipps, setVipps] = useState(null) // { nummer, navn } når noe er endret
   const [tlf, setTlf] = useState(null)
   const [program, setProgram] = useState(null)
   const [takk, setTakk] = useState(null)
@@ -383,9 +384,47 @@ export default function AdminStats({ okt, onLogout }) {
             <div className="liten">
               {arr.vippsAktiv
                 ? `Deltakerne sendes rett til Vipps og betaler med en gang${arr.vippsMiljo !== "prod" ? " (testmiljø)" : ""}.`
-                : `Deltakerne betaler til Vipps-nummer #${arr.vippsNummer}, og du markerer betalingen som mottatt her.`}
+                : `Deltakerne betaler med Vipps til ${vippsTil(arr.vippsNummer)}${arr.vippsNavn ? ` (${arr.vippsNavn})` : ""}, og du markerer betalingen som mottatt her.`}
               {!arr.harVippsNokler &&
                 " API-et kan slås på når Vipps-avtalen er på plass og nøklene er lagt inn i Apps Script."}
+            </div>
+            <div className="innstilling-rad">
+              <input
+                type="text"
+                inputMode="numeric"
+                aria-label="Vipps-nummer eller mobilnummer"
+                placeholder="Vipps- eller mobilnummer"
+                value={vipps ? vipps.nummer : arr.vippsNummer || ""}
+                onChange={(e) =>
+                  setVipps({ navn: arr.vippsNavn || "", ...vipps, nummer: e.target.value })
+                }
+              />
+              <input
+                type="text"
+                aria-label="Navn på mottaker"
+                placeholder="Mottakers navn"
+                value={vipps ? vipps.navn : arr.vippsNavn || ""}
+                onChange={(e) =>
+                  setVipps({ nummer: arr.vippsNummer || "", ...vipps, navn: e.target.value })
+                }
+              />
+              <button
+                className="mini ok"
+                disabled={jobber || !vipps}
+                onClick={() =>
+                  send(
+                    { action: "innstillinger", vippsNummer: vipps.nummer, vippsNavn: vipps.navn },
+                    "vipps",
+                    () => setVipps(null)
+                  )
+                }
+              >
+                Lagre
+              </button>
+            </div>
+            <div className="liten">
+              Nummeret står i e-postene og på nettsiden. Navnet vises ved
+              siden av, så folk ser at de betaler til riktig person.
             </div>
             {vis("vipps")}
           </div>

@@ -7,6 +7,7 @@ import {
   API_URL,
   DEFAULTS,
   KONTAKT_EPOST,
+  vippsTil,
   formatPrice,
 } from "./config.js"
 import VippsPayment from "./VippsPayment.jsx"
@@ -20,7 +21,7 @@ const LegalPage = lazy(() => import("./LegalPage.jsx"))
 const IMAGES = ["images/kumi.jpeg", "images/munch.jpg"]
 
 // Teksten i FAQ-en «Blir det underholdning?»
-// «torsdag 17. desember» → «17. des»
+// «onsdag 16. desember» → «16. des»
 const kortDato = (t) => {
   const m = String(t || "").match(/(\d{1,2})\.\s*([a-zæøå]{3})/i)
   return m ? `${m[1]}. ${m[2].toLowerCase()}` : t
@@ -87,6 +88,7 @@ export default function App() {
           ...prev,
           ...d,
           vippsNummer: d.vippsNummer || prev.vippsNummer,
+          vippsNavn: d.vippsNummer ? d.vippsNavn || "" : prev.vippsNavn,
         }))
         if (d.stengt) setStatus((s) => s ?? "stengt")
       })
@@ -266,7 +268,7 @@ export default function App() {
 
           {/* Skjema */}
           <div className="booking-form">
-            <h2>✨Juletreff på KUMI🥂</h2>
+            <h2 className="tittel">✨Juletreff på KUMI🥂</h2>
             <div className="subheader">{info.dato}</div>
 
             {skjemaSynlig && (
@@ -336,6 +338,7 @@ export default function App() {
                 <VippsPayment
                   belop={detaljer?.belop || info.pris}
                   vippsNummer={detaljer?.vippsNummer || info.vippsNummer}
+                  vippsNavn={detaljer?.vippsNummer ? detaljer.vippsNavn : info.vippsNavn}
                   navn={[detaljer?.fornavn, detaljer?.etternavn]
                     .filter(Boolean)
                     .join(" ")}
@@ -617,7 +620,7 @@ export default function App() {
                 <p>
                   {vippsAktiv
                     ? "Du betaler med Vipps når du melder deg på."
-                    : `Du betaler med Vipps til nummer #${info.vippsNummer} når du har meldt deg på.`}{" "}
+                    : `Du betaler med Vipps til ${vippsTil(info.vippsNummer)}${info.vippsNavn ? ` (${info.vippsNavn})` : ""} når du har meldt deg på.`}{" "}
                   Plassen din er sikret når betalingen er mottatt.
                 </p>
                 <p>

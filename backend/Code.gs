@@ -20,6 +20,15 @@ var STANDARD_FACEBOOK_URL = 'https://www.facebook.com/events/664624256515915';
 
 var PAMELDING_ARK = 'Påmeldinger';
 var BESOK_ARK = 'Besøk';
+// Betaling uten Vipps-avtale: et Vipps-nummer (5–6 sifre) eller et mobilnummer (8 sifre). Endres i adminsiden.
+var STANDARD_VIPPS_NUMMER = '45454642';
+var STANDARD_VIPPS_NAVN = 'Isabelle Haugan';
+/** «#12345» for Vipps-nummer, «45 45 46 42» for mobilnummer. */
+function vippsTil_(nr) {
+  var d = String(nr || '').replace(/\D/g, '');
+  return d.length === 8 ? d.replace(/(\d{2})(?=\d)/g, '$1 ') : '#' + d;
+}
+function vippsErMobil_(nr) { return String(nr || '').replace(/\D/g, '').length === 8; }
 var KOLONNER = ['id', 'opprettet', 'status', 'fornavn', 'etternavn', 'epost', 'telefon', 'kommentar',
   'belop', 'betaling', 'nokkel', 'betalt', 'epost_sendt', 'bindende_godtatt', 'trukket', 'refundert', 'notat', 'kilde', 'refusjon', 'test', 'varslet', 'purret', 'program', 'purringer', 'mott', 'takket'];
 var BESOK_KOLONNER = ['tid', 'besokende', 'kilde', 'enhet'];
@@ -56,13 +65,14 @@ function arrangement_() {
     pris: Number(cfg_('PRIS', '600')),
     dato: cfg_('DATO_TEKST', 'Fredag 18. desember kl. 18.30'),
     sted: cfg_('STED', 'KUMI, Operagata 71B, Oslobukta'),
-    frist: new Date(cfg_('PAMELDINGSFRIST', '2026-12-17T23:59:59+01:00')),
-    fristTekst: cfg_('FRIST_TEKST', 'torsdag 17. desember'),
+    frist: new Date(cfg_('PAMELDINGSFRIST', '2026-12-16T23:59:59+01:00')),
+    fristTekst: cfg_('FRIST_TEKST', 'onsdag 16. desember'),
     kapasitet: Number(cfg_('KAPASITET', '30')),
     // Trekk med legeerklæring under 48 timer før start: vi beholder no-show-gebyret til KUMI
     start: new Date(cfg_('ARR_START', '2026-12-18T18:30:00+01:00')),
     noshow: Number(cfg_('NOSHOW_GEBYR', '300')),
-    vippsNummer: cfg_('VIPPS_NUMMER', '76192'),
+    vippsNummer: cfg_('VIPPS_NUMMER', STANDARD_VIPPS_NUMMER),
+    vippsNavn: cfg_('VIPPS_NAVN', STANDARD_VIPPS_NAVN),
     // Bryteren i adminsiden. Vipps-API brukes bare når den står på OG nøklene finnes.
     vippsModus: cfg_('VIPPS_MODUS', 'nummer') === 'api' ? 'api' : 'nummer',
     vippsAktiv: cfg_('VIPPS_MODUS', 'nummer') === 'api' && harVippsNokler_()
@@ -170,7 +180,7 @@ function info_() {
     ok: true, pris: a.pris, dato: a.dato, sted: a.sted, fristTekst: a.fristTekst, kapasitet: a.kapasitet,
     stengt: Date.now() > a.frist.getTime(),
     ledige: Math.max(0, a.kapasitet - opptatt), fullt: opptatt >= a.kapasitet,
-    vippsAktiv: a.vippsAktiv, vippsNummer: a.vippsNummer, noshow: a.noshow, start: a.start.toISOString(),
+    vippsAktiv: a.vippsAktiv, vippsNummer: a.vippsNummer, vippsNavn: a.vippsNavn, noshow: a.noshow, start: a.start.toISOString(),
     facebookUrl: facebookUrl_(),
     // Samme adresse som står som svaradresse i e-postene, så den er allerede offentlig
     kontaktEpost: cfg_('SVAR_EPOST', '')
@@ -259,7 +269,7 @@ function pamelding_(p, test) {
 
   if (rad.status === 'UBETALT') {
     sendBekreftelse_(rad);
-    return { ok: true, status: 'UBETALT', id: rad.id, k: rad.nokkel, belop: rad.belop, vippsNummer: a.vippsNummer };
+    return { ok: true, status: 'UBETALT', id: rad.id, k: rad.nokkel, belop: rad.belop, vippsNummer: a.vippsNummer, vippsNavn: a.vippsNavn };
   }
 
   var site = cfg_('SITE_URL', 'https://ibh2511.github.io/juletreff-kumi').replace(/\/$/, '');
@@ -442,7 +452,7 @@ function sendBekreftelse_(r) {
     'Hei ' + r.fornavn + '!\n\n' +
     (betalt ? 'Du er påmeldt Juletreff på KUMI. Plassen din er sikret.' : 'Takk for din påmelding til Juletreff på KUMI.') + '\n\n' +
     (betalt ? 'Betalt: ' + r.belop + ' kr.'
-      : 'Betal ' + r.belop + ' kr med Vipps' + (a.vippsNummer ? ' til #' + a.vippsNummer : '') +
+      : 'Betal ' + r.belop + ' kr med Vipps' + (a.vippsNummer ? ' til ' + vippsTil_(a.vippsNummer) + (a.vippsNavn ? ' (' + a.vippsNavn + ')' : '') : '') +
         ' og skriv «' + melding + '» i meldingen. Plassen din er sikret når betalingen er mottatt.') + '\n\n' +
     'Sted: ' + a.sted + '\nTid: ' + a.dato + '\nPåmelding: ' + r.id + '\n\n' +
     'Trykk «Skal» på Facebook-eventet: ' + fb + '\n\n' +
@@ -548,7 +558,8 @@ function vippsBoks_(r, undertekst) {
     '<h3 style="font-size: 1.2rem; color: #ff5b24; margin: 0 0 10px 0; text-align: center;">Betal ' + r.belop + ' kr med Vipps</h3>' +
     '<p style="text-align: center; margin: 0 0 15px 0;">' + undertekst + '</p>' +
     epostTabell_(
-      (a.vippsNummer ? epostRad_('Vipps-nummer:', '<b>#' + e(a.vippsNummer) + '</b>', false, '#edb77d') : '') +
+      (a.vippsNummer ? epostRad_(vippsErMobil_(a.vippsNummer) ? 'Vipps til:' : 'Vipps-nummer:', '<b>' + e(vippsTil_(a.vippsNummer)) + '</b>', false, '#edb77d') : '') +
+      (a.vippsNummer && a.vippsNavn ? epostRad_('Mottaker:', e(a.vippsNavn), false) : '') +
       epostRad_('Beløp:', '<b>' + r.belop + ' kr</b>', false, '#edb77d') +
       epostRad_('Melding:', '<b>' + e('Juletreff ' + r.fornavn + ' ' + r.etternavn) + '</b>', true, '#edb77d')) +
     '</div>';
@@ -586,7 +597,7 @@ function sendPurring_(r) {
   var site = cfg_('SITE_URL', 'https://ibh2511.github.io/juletreff-kumi').replace(/\/$/, '');
   sendEpost_(r.epost, (erTest_(r) ? '[TEST] ' : '') + (siste ? 'Siste påminnelse' : 'Påminnelse') + ': betaling for Juletreff på KUMI',
     'Hei ' + r.fornavn + '!\n\nVi har ikke registrert betalingen for påmeldingen din (' + r.id + ') ennå.\n\n' +
-    'Betal ' + r.belop + ' kr med Vipps' + (a.vippsNummer ? ' til #' + a.vippsNummer : '') +
+    'Betal ' + r.belop + ' kr med Vipps' + (a.vippsNummer ? ' til ' + vippsTil_(a.vippsNummer) + (a.vippsNavn ? ' (' + a.vippsNavn + ')' : '') : '') +
     ' og skriv «Juletreff ' + r.fornavn + ' ' + r.etternavn + '» i meldingen.\n\n' +
     (siste ? sisteTekst + '\n\n' : '') +
     'Har du betalt de siste dagene, kan du se bort fra denne e-posten.\n\n' +
@@ -658,7 +669,7 @@ function sendProgramEpost_(r) {
   var tlf = cfg_('KONTAKT_TELEFON', '');
   sendEpost_(r.epost, (erTest_(r) ? '[TEST] ' : '') + '✨ Snart juletreff på KUMI 🥂 Her er programmet',
     'Hei ' + r.fornavn + '!\n\nSnart er det juletreff: ' + a.dato + ' på ' + a.sted + '.\n\nProgram:\n' + linjer.join('\n') +
-    (ubetalt ? '\n\nVi har ikke registrert betalingen din ennå. Betal ' + r.belop + ' kr med Vipps' + (a.vippsNummer ? ' til #' + a.vippsNummer : '') + '.' : '') +
+    (ubetalt ? '\n\nVi har ikke registrert betalingen din ennå. Betal ' + r.belop + ' kr med Vipps' + (a.vippsNummer ? ' til ' + vippsTil_(a.vippsNummer) + (a.vippsNavn ? ' (' + a.vippsNavn + ')' : '') : '') + '.' : '') +
     '\n\nKart: ' + kart + '\nMUNCH bar (20 års aldersgrense): ' + MUNCH_BAR_URL + '\nDrikkemeny på MUNCH bar: ' + MUNCH_MENY_URL +
     (tlf ? '\n\nFinner du ikke fram på dagen? Ring ' + tlf + '.' : '') +
     '\nFacebook-eventet: ' + facebookUrl_() + '\n\nVi gleder oss til å se deg!',
@@ -672,7 +683,9 @@ function sendProgramEpost_(r) {
     epostAvsnitt_('Etterpå går vi videre til <a href="' + MUNCH_BAR_URL + '" style="color: #edb77d;">MUNCH bar</a> i 13. etasje på MUNCH (20 års aldersgrense). ' +
       'Drikkemenyen finner du <a href="' + MUNCH_MENY_URL + '" style="color: #edb77d;">her</a>.') +
     epostAvsnitt_('Følg med på <a href="' + facebookUrl_() + '" style="color: #edb77d;">Facebook-eventet</a> for siste nytt. Vi gleder oss til å se deg!'),
-    'Kan du ikke komme likevel? Svar på denne e-posten.');
+    Date.now() > a.start.getTime() - 48 * 36e5
+      ? 'Kan du ikke komme likevel? Svar på denne e-posten. Det er under 48 timer igjen, så ved avmelding med legeerklæring beholder vi ' + a.noshow + ' kr til KUMIs no-show-gebyr.'
+      : 'Kan du ikke komme likevel? Svar på denne e-posten. Avmelding krever legeerklæring, og under 48 timer før beholder vi ' + a.noshow + ' kr til KUMIs no-show-gebyr.');
 }
 
 /** Takk for sist. Sendes manuelt fra admin etter arrangementet. */
@@ -786,7 +799,7 @@ function adminOversikt_(okt) {
     ok: true,
     arrangement: { dato: a.dato, pris: a.pris, kapasitet: a.kapasitet, fristTekst: a.fristTekst, vippsAktiv: a.vippsAktiv,
       vippsModus: a.vippsModus, harVippsNokler: harVippsNokler_(), vippsMiljo: cfg_('VIPPS_ENV', 'test'),
-      vippsNummer: a.vippsNummer, start: a.start.toISOString(), noshow: a.noshow, rapportTil: rapportMottaker_(),
+      vippsNummer: a.vippsNummer, vippsNavn: a.vippsNavn, start: a.start.toISOString(), noshow: a.noshow, rapportTil: rapportMottaker_(),
       facebookUrl: facebookUrl_(), epostKvote: epostKvote_(), svarEpost: cfg_('SVAR_EPOST', ''), program: program_(), takk: takk_(), telefon: cfg_('KONTAKT_TELEFON', ''),
       maksPurringer: MAKS_PURRINGER,
       frist: a.frist.toISOString() },
@@ -890,7 +903,7 @@ function adminEndre_(p) {
       o.status = 'UBETALT';
       sendBekreftelse_(o);
       return { ok: true, melding: o.fornavn + ' har fått plass og fått e-post med betalingsinfo' +
-        (a.vippsNummer ? ' (Vipps-nummer ' + a.vippsNummer + ')' : '') + '.' };
+        (a.vippsNummer ? ' (Vipps til ' + vippsTil_(a.vippsNummer) + ')' : '') + '.' };
     }
     if (p.handling === 'bekreftelse') {
       if (['BETALT', 'UBETALT'].indexOf(o.status) < 0) return { ok: false, error: 'Bekreftelse kan bare sendes til påmeldte' };
@@ -965,6 +978,14 @@ function adminInnstillinger_(p) {
       var venter = rader.filter(function (r) { return r.status === 'VENTELISTE' && !erTest_(r); }).length;
       if (k > opptatt && venter) meldinger.push(venter + ' står på ventelisten. Gi dem plass fra listen under hvis de skal få de nye plassene.');
     }
+    if (p.vippsNummer !== undefined) {
+      var vn = String(p.vippsNummer == null ? '' : p.vippsNummer).replace(/\D/g, '');
+      if (vn.length === 10 && vn.indexOf('47') === 0) vn = vn.slice(2);
+      if ([5, 6, 8].indexOf(vn.length) < 0) return { ok: false, error: 'Skriv inn et Vipps-nummer (5–6 sifre) eller et mobilnummer (8 sifre)' };
+      props.setProperty('VIPPS_NUMMER', vn);
+      props.setProperty('VIPPS_NAVN', tekst_(p.vippsNavn, 60));
+      meldinger.push('Nye e-poster og nettsiden viser nå Vipps til ' + vippsTil_(vn) + '. De som allerede har fått betalingsinfo, har det gamle nummeret i e-posten sin.');
+    }
     if (p.svarEpost !== undefined) {
       var se = tekst_(p.svarEpost, 120).toLowerCase();
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(se)) return { ok: false, error: 'Skriv inn en gyldig e-postadresse' };
@@ -1006,7 +1027,7 @@ function adminInnstillinger_(p) {
       props.setProperty('VIPPS_MODUS', p.vippsModus);
       meldinger.push(p.vippsModus === 'api'
         ? 'Vipps-API er slått på' + (cfg_('VIPPS_ENV', 'test') === 'prod' ? '.' : ' i TESTMILJØET (VIPPS_ENV er ikke «prod»).') + ' Nye påmeldinger sendes rett til Vipps.'
-        : 'Vipps-API er slått av. Nye påmeldinger betaler til Vipps-nummer ' + cfg_('VIPPS_NUMMER', '76192') + '.');
+        : 'Vipps-API er slått av. Nye påmeldinger betaler med Vipps til ' + vippsTil_(cfg_('VIPPS_NUMMER', STANDARD_VIPPS_NUMMER)) + '.');
     }
   } finally { lock.releaseLock(); }
   return { ok: true, melding: meldinger.join(' ') || 'Ingen endringer.' };
