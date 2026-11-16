@@ -1,9 +1,10 @@
 import { useState } from "react"
-import { formatPrice } from "./config.js"
+import { formatPrice, vippsTil } from "./config.js"
 
 // Betalingskort når Vipps-avtalen (ePayment) ikke er satt opp: deltakeren betaler
 // selv til Vipps-nummeret. Admin markerer betalingen som mottatt i adminsiden.
-export default function VippsPayment({ belop, vippsNummer, navn, id }) {
+export default function VippsPayment({ belop, vippsNummer, vippsNavn, navn, id }) {
+  const mobil = String(vippsNummer || "").replace(/\D/g, "").length === 8
   const [copied, setCopied] = useState(false)
   const melding = `Juletreff ${navn || ""}`.trim()
 
@@ -49,15 +50,16 @@ export default function VippsPayment({ belop, vippsNummer, navn, id }) {
           <ol className="vipps-steps">
             <li>Åpne Vipps og velg «Betal»</li>
             <li>
-              Søk opp Vipps-nummer{" "}
+              {mobil ? "Send til mobilnummer" : "Søk opp Vipps-nummer"}{" "}
               <button
                 type="button"
                 className="vipps-number"
                 onClick={copyNumber}
-                title="Kopier Vipps-nummer"
+                title="Kopier nummeret"
               >
-                #{vippsNummer}
+                {vippsTil(vippsNummer)}
               </button>
+              {vippsNavn && <> ({vippsNavn})</>}
               {copied && <span className="vipps-copied">Kopiert</span>}
             </li>
             <li>

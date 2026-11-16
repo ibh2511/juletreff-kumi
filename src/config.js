@@ -11,13 +11,20 @@ export const API_URL =
 export const DEFAULTS = {
   pris: Number(import.meta.env.VITE_PRIS || 600),
   dato: import.meta.env.VITE_DATO_TEKST || "Fredag 18. desember kl. 18.30",
-  fristTekst: import.meta.env.VITE_FRIST_TEKST || "torsdag 17. desember",
-  vippsNummer: import.meta.env.VITE_VIPPS_NUMBER || "76192",
+  fristTekst: import.meta.env.VITE_FRIST_TEKST || "onsdag 16. desember",
+  // Vipps-nummeret vises bare til den som har meldt seg på. Det settes i adminsiden.
+  vippsNummer: "",
   // Beholdes ved trekk med legeerklæring under 48 timer før start (KUMIs no-show-gebyr)
   noshow: 300,
 }
 
 // Kontakt for spørsmål, venteliste og legeerklæring (settes i .env)
 export const KONTAKT_EPOST = import.meta.env.VITE_KONTAKT_EPOST || ""
+
+// «#12345» for Vipps-nummer, «12 34 56 78» for mobilnummer
+export const vippsTil = (nr) => {
+  const d = String(nr || "").replace(/\D/g, "")
+  return d.length === 8 ? d.replace(/(\d{2})(?=\d)/g, "$1 ") : `#${d}`
+}
 
 export const formatPrice = (nok) => `${Number(nok).toLocaleString("nb-NO")} kr`
