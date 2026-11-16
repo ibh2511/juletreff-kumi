@@ -477,9 +477,20 @@ function sendBekreftelse_(r) {
   } catch (err) { console.error('E-post feilet for ' + r.id + ': ' + err); return false; }
 }
 
+// Hvor langt bakgrunnsfargen tegnes ut i e-postappens egen marg på mobil. Gmail-appen har 16 px og kan skalere
+// innholdet litt ned, så 20 px dekker margen med klaring uten å gå langt inn under appens egen topp og bunn.
+var EPOST_MARG_PX = 20;
+
 /**
  * Felles ramme for e-postene: fersken bakgrunn, bilde øverst, mørkt kort og mørk bunntekst.
  * Luften er satt for mobil og økes på brede skjermer, så klienter som fjerner <style> også får plass til innholdet.
+ *
+ * Bakgrunnen må tåle at e-postappene pakker inn e-posten på hver sin måte:
+ * - Noen fjerner <body> (Gmail, Yahoo), så fargen står også på en <div> og en tabell i full bredde.
+ * - Gmail-appen legger sin egen hvite marg på 16 px rundt e-posten (<body style="margin: 0 16px"> i appens mal).
+ *   Negative marger, position og transform fjernes av Gmail, så det eneste som når ut i margen er en outline.
+ *   Den tar ingen plass i layouten og gir derfor ingen sidelengs rulling. box-shadow gjør det samme der outline mangler.
+ *   Den slås bare på for smale skjermer, så den ikke kan tegne utenfor e-posten i nettlesere på PC.
  */
 function epostRamme_(kropp, bunntekst) {
   var site = cfg_('SITE_URL', 'https://ibh2511.github.io/juletreff-kumi').replace(/\/$/, '');
@@ -487,19 +498,22 @@ function epostRamme_(kropp, bunntekst) {
   return '<!DOCTYPE html><html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">' +
     '<meta name="color-scheme" content="light only"><style>@media only screen and (min-width: 601px) {' +
     '.ytre { padding: 30px !important; } .indre { padding: 30px !important; } .boks { padding: 20px !important; } }' +
+    '@media only screen and (max-width: 600px) { .omslag { outline: ' + EPOST_MARG_PX + 'px solid #ffd9b0 !important; ' +
+    'box-shadow: 0 0 0 ' + EPOST_MARG_PX + 'px #ffd9b0 !important; } }' +
     '@media only screen and (max-width: 420px) { .knapp { font-size: .85rem !important; padding: 8px 15px !important; } }</style></head><body style="margin: 0; padding: 0; background-color: #ffd9b0;" bgcolor="#ffd9b0">' +
-    '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffd9b0;" bgcolor="#ffd9b0"><tr><td align="center" style="background-color: #ffd9b0;" bgcolor="#ffd9b0">' +
+    '<div class="omslag" style="background-color: #ffd9b0;">' +
+    '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="width: 100%; background-color: #ffd9b0;" bgcolor="#ffd9b0"><tr><td align="center" style="background-color: #ffd9b0;" bgcolor="#ffd9b0">' +
     '<table align="center" width="100%" cellpadding="0" cellspacing="0" class="ytre" style="background-color: #ffd9b0; ' +
     "font-family: 'Poppins', Arial, sans-serif; color: #333; max-width: 600px; margin: auto; padding: 8px;\" bgcolor=\"#ffd9b0\">" +
     '<tr><td style="padding: 0; border-radius: 15px 15px 0 0; overflow: hidden;" bgcolor="#ffd9b0">' +
     '<img src="' + bilde + '" alt="Juletreff på KUMI" style="width: 100%; height: 175px; object-fit: cover; display: block; border-radius: 15px 15px 0 0;">' +
     '</td></tr>' +
-    '<tr><td class="indre" style="background-color: #333; color: #F4EADF; padding: 12px;" bgcolor="#333">' + kropp + '</td></tr>' +
+    '<tr><td class="indre" style="background-color: #333; color: #F4EADF; font-size: 16px; padding: 12px;" bgcolor="#333">' + kropp + '</td></tr>' +
     '<tr><td style="background-color: #111; padding: 20px; text-align: center; color: #777; border-radius: 0 0 15px 15px;" bgcolor="#111">' +
     '<p style="font-size: .8rem; margin: 0 0 6px 0;">' + bunntekst + '</p>' +
     '<p style="font-size: .8rem; margin: 0;"><a href="' + site + '/#vilkar" style="color: #999;">Salgsvilkår</a> · ' +
     '<a href="' + site + '/#personvern" style="color: #999;">Personvern</a></p>' +
-    '</td></tr></table></td></tr></table></body></html>';
+    '</td></tr></table></td></tr></table></div></body></html>';
 }
 
 /** «Det er ledig plass»: sendes fra admin til alle på ventelisten. Først til mølla. */
