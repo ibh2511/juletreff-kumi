@@ -400,7 +400,8 @@ function bindendeTekst_(belop) {
   var a = arrangement_();
   return 'Påmeldingen er bindende og kan bare trekkes med legeerklæring. Trekker du deg mer enn 48 timer før ' +
     'arrangementet, får du hele beløpet tilbake. Trekker du deg senere, får du ' + Math.max(0, belop - a.noshow) +
-    ' kr tilbake, fordi vi beholder ' + a.noshow + ' kr til KUMIs no-show-gebyr.';
+    ' kr tilbake, fordi vi beholder ' + a.noshow + ' kr til KUMIs no-show-gebyr. Kan du ikke komme, kan du også gi plassen ' +
+    'til en annen. Svar på denne e-posten med navn, e-post og telefonnummer til den nye deltakeren.';
 }
 
 /** Bekreftelse i samme stil som den opprinnelige e-posten: fersken ramme, mørkt kort, bilde øverst. */
@@ -507,12 +508,10 @@ function sendLedigPlassEpost_(r, ledige) {
     '<p style="font-size: 1rem; line-height: 1.5; margin: 20px 0 0 0; text-align: center;">' +
     'Du står på ventelisten, og vi sier fra til alle på listen samtidig. Den som melder seg på først, får plassen.</p>' +
     epostKnapp_(site + '/', 'Meld meg på nå') +
-    '<table width="100%" cellpadding="0" cellspacing="0" style="color: #F4EADF; font-size: 1rem; text-align: left;">' +
-    '<tr><td style="padding: 8px; border-bottom: 1px solid #555; width: 110px;"><b>Tid:</b></td>' +
-    '<td style="padding: 8px; border-bottom: 1px solid #555;">' + escapeHtml_(a.dato) + '</td></tr>' +
-    '<tr><td style="padding: 8px; border-bottom: 1px solid #555;"><b>Sted:</b></td>' +
-    '<td style="padding: 8px; border-bottom: 1px solid #555;">' + escapeHtml_(a.sted) + '</td></tr>' +
-    '<tr><td style="padding: 8px;"><b>Pris:</b></td><td style="padding: 8px;">' + a.pris + ' kr</td></tr></table>' +
+    epostTabell_(
+      epostRad_('Tid:', escapeHtml_(a.dato)) +
+      epostRad_('Sted:', escapeHtml_(a.sted)) +
+      epostRad_('Pris:', a.pris + ' kr', true)) +
     '<p style="font-size: .85rem; line-height: 1.5; margin: 26px 0 0 0; color: #bdb3a8; text-align: center;">' +
     'Påmeldingsfristen er ' + escapeHtml_(a.fristTekst) + '. Vil du ikke lenger stå på ventelisten, kan du bare svare på denne e-posten.</p>';
   var tekst = 'Hei ' + r.fornavn + '!\n\nNå er det ' + plasser + ' på Juletreff på KUMI (' + a.dato + ').\n' +
@@ -534,8 +533,9 @@ function epostKnapp_(href, tekst) {
 
 function epostRad_(k, v, sist, farge) {
   var td = 'padding: 8px; color: #F4EADF;' + (sist ? '' : ' border-bottom: 1px solid #555;');
-  return '<tr><td style="' + td + ' width: 110px;" bgcolor="#333"><b>' + k + '</b></td>' +
-    '<td style="' + td + (farge ? ' color: ' + farge + ';' : '') + '" bgcolor="#333">' + v + '</td></tr>';
+  // Første kolonne er bare så bred som den lengste etiketten, så verdien får resten av plassen.
+  return '<tr><td style="' + td + ' width: 1%; white-space: nowrap; padding-right: 18px; vertical-align: top;" bgcolor="#333"><b>' + k + '</b></td>' +
+    '<td style="' + td + ' vertical-align: top; overflow-wrap: anywhere;' + (farge ? ' color: ' + farge + ';' : '') + '" bgcolor="#333">' + v + '</td></tr>';
 }
 
 function epostTabell_(innhold, margin) {
@@ -906,6 +906,28 @@ function adminEndre_(p) {
       sendBekreftelse_(o);
       return { ok: true, melding: o.fornavn + ' har fått plass og fått e-post med betalingsinfo' +
         (a.vippsNummer ? ' (Vipps til ' + vippsTil_(a.vippsNummer) + ')' : '') + '.' };
+    }
+    if (p.handling === 'overdra') {
+      if (['BETALT', 'UBETALT'].indexOf(o.status) < 0) return { ok: false, error: 'Bare påmeldte kan gi plassen videre' };
+      var ny = {
+        fornavn: tekst_(p.fornavn, 60), etternavn: tekst_(p.etternavn, 60),
+        epost: tekst_(p.epost, 120).toLowerCase(), telefon: formatPhone_(tekst_(p.telefon, 20))
+      };
+      if (!ny.fornavn || !ny.etternavn) return { ok: false, error: 'Skriv inn fornavn og etternavn på den nye deltakeren' };
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(ny.epost)) return { ok: false, error: 'Skriv inn en gyldig e-postadresse' };
+      if (String(ny.telefon).replace(/\D/g, '').length < 8) return { ok: false, error: 'Skriv inn et gyldig telefonnummer' };
+      var opptattEpost = alle_().some(function (x) { return x.id !== o.id && x.epost === ny.epost && !erTest_(x) && HOLDER_PLASS.indexOf(x.status) >= 0; });
+      if (opptattEpost) return { ok: false, error: ny.epost + ' er allerede påmeldt' };
+      var fra = o.fornavn + ' ' + o.etternavn;
+      // Den nye deltakeren får ny nøkkel, så den gamle bekreftelseslenken ikke virker lenger.
+      Object.assign(ny, { nokkel: nyNokkel_(), kommentar: '', epost_sendt: '', purret: '', purringer: '', program: '', mott: '', takket: '',
+        notat: nyttNotat('Overtatt fra ' + fra + ' (' + o.epost + ')' + (notat ? ': ' + notat : '')) });
+      oppdater_(o._rad, ny);
+      Object.assign(o, ny);
+      var sendtNy = sendBekreftelse_(o);
+      return { ok: true, melding: 'Plassen er gitt videre fra ' + fra + ' til ' + ny.fornavn + ' ' + ny.etternavn + '.' +
+        (sendtNy ? ' ' + ny.fornavn + ' har fått bekreftelse på e-post.' : ' Bekreftelsen ble ikke sendt, prøv «Send bekreftelsen på nytt» senere.') +
+        (o.status === 'UBETALT' ? ' Plassen er ikke betalt ennå.' : '') };
     }
     if (p.handling === 'bekreftelse') {
       if (['BETALT', 'UBETALT'].indexOf(o.status) < 0) return { ok: false, error: 'Bekreftelse kan bare sendes til påmeldte' };

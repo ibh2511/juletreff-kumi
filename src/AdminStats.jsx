@@ -59,6 +59,7 @@ export default function AdminStats({ okt, onLogout }) {
   const [sok, setSok] = useState("")
   const [aapen, setAapen] = useState(null) // { id, handling }
   const [notat, setNotat] = useState("")
+  const [ny, setNy] = useState({ fornavn: "", etternavn: "", epost: "", telefon: "" })
   const [refunder, setRefunder] = useState(true)
   const [sent, setSent] = useState(false) // trukket under 48 timer før start
   const [jobber, setJobber] = useState(false)
@@ -121,6 +122,7 @@ export default function AdminStats({ okt, onLogout }) {
   const apne = (id, handling) => {
     setAapen({ id, handling })
     setNotat("")
+    setNy({ fornavn: "", etternavn: "", epost: "", telefon: "" })
     setRefunder(true)
     setVarsle(true)
     // Standard: under 48 timer hvis det er mindre enn 48 timer igjen nå
@@ -141,6 +143,7 @@ export default function AdminStats({ okt, onLogout }) {
         refunder,
         sent,
         varsle,
+        ...(aapen.handling === "overdra" ? ny : {}),
       })
       if (d.utlogget) return onLogout()
       if (!d.ok) throw new Error(d.error)
@@ -241,6 +244,7 @@ export default function AdminStats({ okt, onLogout }) {
     purring: "Send purring",
     frigi: "Frigi plassen (ikke betalt)",
     bekreftelse: "Send bekreftelsen på nytt",
+    overdra: "Gi plassen til en annen",
     tilbud: "Gi plass fra ventelisten",
     refundert: "Marker som refundert",
     trekk: "Trekk påmeldingen",
@@ -252,6 +256,7 @@ export default function AdminStats({ okt, onLogout }) {
     purring: "🟠",
     frigi: "🔴",
     bekreftelse: "✉️",
+    overdra: "🔵",
     tilbud: "🔵",
     refundert: "🟡",
     trekk: "🔴",
@@ -955,7 +960,7 @@ export default function AdminStats({ okt, onLogout }) {
                     valg.push("betalt")
                     valg.push(r.purringer >= maksPurringer ? "frigi" : "purring")
                   }
-                  if (["BETALT", "UBETALT"].includes(r.status)) valg.push("bekreftelse")
+                  if (["BETALT", "UBETALT"].includes(r.status)) valg.push("bekreftelse", "overdra")
                   if (r.status === "VENTELISTE") valg.push("tilbud")
                   if (["BETALT", "UBETALT", "VENTELISTE"].includes(r.status))
                     valg.push("trekk")
@@ -1038,6 +1043,32 @@ export default function AdminStats({ okt, onLogout }) {
                             <b>
                               {handlingTekst[aapen.handling]}: {r.navn}
                             </b>
+                            {aapen.handling === "overdra" && (
+                              <>
+                                <p>
+                                  Plassen{r.status === "BETALT" ? ", og betalingen," : ""} går
+                                  over til den nye deltakeren, som får en ny
+                                  bekreftelse. Pengene gjøres opp mellom dem selv.
+                                </p>
+                                <div className="overdra-felt">
+                                  {[
+                                    ["fornavn", "Fornavn", "text"],
+                                    ["etternavn", "Etternavn", "text"],
+                                    ["epost", "E-post", "email"],
+                                    ["telefon", "Telefon", "tel"],
+                                  ].map(([k, tekst, type]) => (
+                                    <input
+                                      key={k}
+                                      type={type}
+                                      placeholder={tekst}
+                                      aria-label={tekst}
+                                      value={ny[k]}
+                                      onChange={(e) => setNy({ ...ny, [k]: e.target.value })}
+                                    />
+                                  ))}
+                                </div>
+                              </>
+                            )}
                             {aapen.handling === "frigi" && (
                               <p>
                                 {r.navn} har fått {r.purringer} purringer uten
