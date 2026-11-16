@@ -437,7 +437,7 @@ function sendBekreftelse_(r) {
       rad('Tid:', e(a.dato)) +
       rad('Påmelding:', r.id, true), 'margin: 30px 0; ') +
 
-    epostKnapp_(fb, 'Trykk «Skal» på Facebook-eventet 📅') +
+    (betalt ? epostKnapp_(fb, 'Trykk «Skal» på Facebook-eventet 📅') : '') +
 
     '<h3 style="font-size: 1.2rem; color: #edb77d; margin-bottom: 10px; text-align: left;">Dine detaljer:</h3>' +
     tabell(
@@ -458,7 +458,7 @@ function sendBekreftelse_(r) {
       : 'Betal ' + r.belop + ' kr med Vipps' + (a.vippsNummer ? ' til ' + vippsTil_(a.vippsNummer) + (a.vippsNavn ? ' (' + a.vippsNavn + ')' : '') : '') +
         ' og skriv «' + melding + '» i meldingen. Plassen din er sikret når betalingen er mottatt.') + '\n\n' +
     'Sted: ' + a.sted + '\nTid: ' + a.dato + '\nPåmelding: ' + r.id + '\n\n' +
-    'Trykk «Skal» på Facebook-eventet: ' + fb + '\n\n' +
+    (betalt ? 'Trykk «Skal» på Facebook-eventet: ' + fb + '\n\n' : '') +
     bindendeTekst_(r.belop) + '\n\n' +
     'Spørsmål, eller må du melde deg av med legeerklæring? Svar på denne e-posten.\n' +
     'Salgsvilkår: ' + site + '/#vilkar\nPersonvern: ' + site + '/#personvern';
@@ -482,7 +482,8 @@ function epostRamme_(kropp, bunntekst) {
   return '<!DOCTYPE html><html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">' +
     '<meta name="color-scheme" content="light only"><style>@media only screen and (max-width: 600px) {' +
     '.ytre { padding: 10px !important; } .indre { padding: 14px !important; } }' +
-    '@media only screen and (max-width: 420px) { .knapp { font-size: .85rem !important; padding: 8px 15px !important; } }</style></head><body style="margin: 0;">' +
+    '@media only screen and (max-width: 420px) { .knapp { font-size: .85rem !important; padding: 8px 15px !important; } }</style></head><body style="margin: 0; padding: 0; background-color: #ffd9b0;" bgcolor="#ffd9b0">' +
+    '<table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffd9b0;" bgcolor="#ffd9b0"><tr><td align="center" style="background-color: #ffd9b0;" bgcolor="#ffd9b0">' +
     '<table align="center" width="100%" cellpadding="0" cellspacing="0" class="ytre" style="background-color: #ffd9b0; ' +
     "font-family: 'Poppins', Arial, sans-serif; color: #333; max-width: 600px; margin: auto; padding: 30px;\" bgcolor=\"#ffd9b0\">" +
     '<tr><td style="padding: 0; border-radius: 15px 15px 0 0; overflow: hidden;" bgcolor="#ffd9b0">' +
@@ -493,7 +494,7 @@ function epostRamme_(kropp, bunntekst) {
     '<p style="font-size: .8rem; margin: 0 0 6px 0;">' + bunntekst + '</p>' +
     '<p style="font-size: .8rem; margin: 0;"><a href="' + site + '/#vilkar" style="color: #999;">Salgsvilkår</a> · ' +
     '<a href="' + site + '/#personvern" style="color: #999;">Personvern</a></p>' +
-    '</td></tr></table></body></html>';
+    '</td></tr></table></td></tr></table></body></html>';
 }
 
 /** «Det er ledig plass»: sendes fra admin til alle på ventelisten. Først til mølla. */
