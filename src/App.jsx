@@ -785,13 +785,14 @@ export default function App() {
                 </p>
                 <p>
                   Han vil lage musikk som kan inspirere og bety noe for andre,
-                  og som også er terapi og underholdning for ham selv.{" "}
+                  og som også er terapi og underholdning for ham selv. Hør han
+                  på{" "}
                   <a
                     href="https://www.youtube.com/@MatiasHamreSveen"
                     target="_blank"
                     rel="noreferrer"
                   >
-                    Hør ham på YouTube
+                    YouTube
                   </a>
                 </p>
               </div>

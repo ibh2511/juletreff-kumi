@@ -712,6 +712,11 @@ textarea {
   font-weight: 500;
   cursor: pointer;
 }
+.vipps-kopier:not(.ok):hover,
+.vipps-endre:hover {
+  border-color: #fff;
+  color: #fff;
+}
 .vipps-kopier.ok {
   background: #6fbf73;
   border-color: #6fbf73;
@@ -789,8 +794,11 @@ textarea {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 8px 12px;
-  margin: 0;
+  /* Står verdien på egen linje fordi kortet er smalt, holder den seg til høyre, så «Kopier» og beløpet står på linje */
+  margin: 0 0 0 auto;
+  text-align: right;
   font-size: 20px;
   font-weight: 500;
   color: var(--ink);
