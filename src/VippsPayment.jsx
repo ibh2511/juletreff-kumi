@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { apiPost } from "./api.js"
 import { formatPrice } from "./config.js"
 import { kopier, lenker, miljo, qrSvg, valg } from "./vipps.js"
@@ -7,6 +7,25 @@ import { kopier, lenker, miljo, qrSvg, valg } from "./vipps.js"
 //  Vipps privat: kopier nummeret, «Åpne Vipps» med nummer, beløp og melding fylt ut, eller QR-kode på PC.
 //  Vipps bedrift: «Betal med Vipps» sender deltakeren til Vipps og tilbake hit.
 // Siden sjekker betalingen i bakgrunnen (se App.jsx), og bytter til «Du er påmeldt» når den er kommet.
+// Har deltakeren åpnet Vipps (eller trykket «Jeg har betalt»), viser boksen at vi venter på betalingen,
+// så ingen tror de må betale igjen mens banken bruker noen minutter.
+
+const VENT_KEY = (id) => `jt_betalt_${id}`
+function lesVent(id) {
+  try {
+    return Number(sessionStorage.getItem(VENT_KEY(id))) || 0
+  } catch {
+    return 0
+  }
+}
+function lagreVent(id, t) {
+  try {
+    if (t) sessionStorage.setItem(VENT_KEY(id), String(t))
+    else sessionStorage.removeItem(VENT_KEY(id))
+  } catch {
+    // privat modus: gjelder til siden lastes på nytt
+  }
+}
 export default function VippsPayment({ info, id, k, venter, lead }) {
   const m = useMemo(() => miljo(), [])
   const [kopiert, setKopiert] = useState("")
@@ -16,6 +35,41 @@ export default function VippsPayment({ info, id, k, venter, lead }) {
   const [navnFeil, setNavnFeil] = useState("")
   const [sender, setSender] = useState(false)
   const [betalFeil, setBetalFeil] = useState("")
+  // Når deltakeren trolig har betalt (åpnet Vipps eller trykket «Jeg har betalt»), som tidspunkt
+  const [venterFra, setVenterFra] = useState(() => (id ? lesVent(id) : 0))
+  const [naa, setNaa] = useState(() => Date.now())
+  const forlot = useRef(false)
+
+  const harBetalt = () => {
+    const t = Date.now()
+    setVenterFra(t)
+    lagreVent(id, t)
+  }
+  const visBetalingen = () => {
+    setVenterFra(0)
+    lagreVent(id, 0)
+  }
+
+  // Kopierte nummeret og gikk til Vipps selv: når siden vises igjen, regner vi med at det er betalt.
+  useEffect(() => {
+    const synlig = () => {
+      if (document.visibilityState === "hidden") return
+      if (forlot.current) {
+        forlot.current = false
+        harBetalt()
+      }
+    }
+    document.addEventListener("visibilitychange", synlig)
+    return () => document.removeEventListener("visibilitychange", synlig)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id])
+
+  // Klokke for «det har gått en stund»-teksten
+  useEffect(() => {
+    if (!venterFra) return
+    const t = setInterval(() => setNaa(Date.now()), 30000)
+    return () => clearInterval(t)
+  }, [venterFra])
 
   if (!info) {
     return (
@@ -58,13 +112,15 @@ export default function VippsPayment({ info, id, k, venter, lead }) {
   const l = info.lenke ? lenker(info.lenke) : null
   const v = valg(m)
 
-  const kopierTekst = (tekst, hva) =>
-    kopier(tekst)
+  const kopierTekst = (tekst, hva) => {
+    if (hva === "nr") forlot.current = true // går trolig til Vipps nå
+    return kopier(tekst)
       .then(() => {
         setKopiert(hva)
         setTimeout(() => setKopiert(""), 2500)
       })
       .catch(() => setKopiert(`feil-${hva}`))
+  }
 
   const kopiKnapp = (tekst, hva) => (
     <button
@@ -92,6 +148,21 @@ export default function VippsPayment({ info, id, k, venter, lead }) {
       setNavnFeil(err.message === "Failed to fetch" ? "Fikk ikke lagret navnet. Prøv igjen." : err.message)
     }
   }
+
+  const navnSkjema = (
+    <form className="vipps-nytt-navn" onSubmit={lagreNavn}>
+      <input
+        value={nyttNavn}
+        onChange={(e) => setNyttNavn(e.target.value)}
+        placeholder="Fullt navn på Vipps-kontoen"
+        aria-label="Fullt navn på Vipps-kontoen"
+        maxLength={80}
+        autoComplete="off"
+        required
+      />
+      <button type="submit">Lagre</button>
+    </form>
+  )
 
   const naar = info.automatisk
     ? "Siden oppdaterer seg selv når betalingen er kommet, vanligvis i løpet av kort tid."
@@ -126,10 +197,10 @@ export default function VippsPayment({ info, id, k, venter, lead }) {
           <span className="nr">2</span>
           <div>
             <b>Åpne Vipps</b>
-            <a className="vipps-btn" href={l[v.hoved]}>
+            <a className="vipps-btn" href={l[v.hoved]} onClick={() => (forlot.current = true)}>
               Åpne Vipps
             </a>
-            <a className="vipps-reserve" href={l[v.reserve]}>
+            <a className="vipps-reserve" href={l[v.reserve]} onClick={() => (forlot.current = true)}>
               Åpnet ikke Vipps? Prøv denne lenken
             </a>
             <small>
@@ -231,6 +302,45 @@ export default function VippsPayment({ info, id, k, venter, lead }) {
     )
   }
 
+  if (venterFra) {
+    const lenge = naa - venterFra > 20 * 60000
+    return (
+      <div className="vipps-card vipps-sjekker" role="status">
+        <div className="vipps-sjekker-ikon" aria-hidden="true">
+          <span className="prikk" />
+        </div>
+        <h3>Vi ser etter betalingen din</h3>
+        <p className="vipps-lead">
+          Har du betalt {kr}, er du ferdig og trenger ikke betale igjen.{" "}
+          {info.automatisk
+            ? "Siden oppdaterer seg selv når betalingen er registrert, som regel innen noen minutter. Du får også bekreftelse på e-post."
+            : "Du får bekreftelse på e-post når betalingen er registrert."}
+        </p>
+        {info.automatisk && venter && <div className="vipps-venter">{venter}</div>}
+        {lenge && (
+          <p className="vipps-fra">
+            Har det gått mer enn 20 minutter? Betalte du fra en annens Vipps, kan du skrive
+            navnet under. Ellers svarer du på e-posten fra oss, så ser vi på det.
+          </p>
+        )}
+        <p className="vipps-fra">
+          Vi ser etter betaling fra Vipps-kontoen til <b>{fraNavn}</b>.{" "}
+          <button type="button" className="link-btn" onClick={() => setEndrer(!endrer)}>
+            Betalte du fra en annens Vipps?
+          </button>
+        </p>
+        {endrer && navnSkjema}
+        {navnFeil && <p className="vipps-feil">{navnFeil}</p>}
+        <p className="vipps-fra">
+          <button type="button" className="link-btn" onClick={visBetalingen}>
+            Har du ikke betalt ennå? Vis betalingen
+          </button>
+        </p>
+        <p className="vipps-ref">Påmeldings-ID: {info.id}</p>
+      </div>
+    )
+  }
+
   return (
     <div className="vipps-card">
       <h3>Betal {kr} med Vipps</h3>
@@ -246,27 +356,11 @@ export default function VippsPayment({ info, id, k, venter, lead }) {
           Betaler du fra en annens Vipps?
         </button>
       </p>
-      {endrer && (
-        <form className="vipps-nytt-navn" onSubmit={lagreNavn}>
-          <input
-            value={nyttNavn}
-            onChange={(e) => setNyttNavn(e.target.value)}
-            placeholder="Fullt navn på Vipps-kontoen"
-            aria-label="Fullt navn på Vipps-kontoen"
-            maxLength={80}
-            autoComplete="off"
-            required
-          />
-          <button type="submit">Lagre</button>
-        </form>
-      )}
+      {endrer && navnSkjema}
       {navnFeil && <p className="vipps-feil">{navnFeil}</p>}
-      {info.automatisk && venter && (
-        <div className="vipps-venter" role="status">
-          <span className="prikk" aria-hidden="true" />
-          {venter}
-        </div>
-      )}
+      <button type="button" className="vipps-har-betalt" onClick={harBetalt}>
+        Jeg har betalt
+      </button>
       <p className="vipps-ref">Påmeldings-ID: {info.id}</p>
     </div>
   )

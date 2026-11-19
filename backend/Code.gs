@@ -1162,7 +1162,9 @@ function sendBekreftelse_(r) {
     ? '<div class="boks" style="border: 1px solid #6fbf73; border-radius: 10px; padding: 14px 12px; margin: 30px 0;">' +
       '<h3 style="font-size: 1.2rem; color: #8fd694; margin: 0 0 6px 0; text-align: center;">Betalt ' + r.belop + ' kr ✓</h3>' +
       '<p style="text-align: center; margin: 0;">Plassen din er sikret.</p></div>'
-    : vippsBoks_(r, 'Plassen din er sikret når betalingen er mottatt.');
+    : vippsBoks_(r, 'Plassen din er sikret når betalingen er mottatt.') +
+      '<p style="font-size: .9rem; line-height: 1.5; margin: 0; color: #bdb3a8; text-align: center;">' +
+      'Har du allerede betalt? Da trenger du ikke gjøre noe mer. Du får en ny e-post når betalingen er registrert.</p>';
 
   var html = epostRamme_(
     '<h2 style="color: #edb77d; font-size: 1.5rem; margin-top: 0; text-align: center;">Hei ' + fornavn + ',</h2>' +
@@ -1196,7 +1198,8 @@ function sendBekreftelse_(r) {
     'Hei ' + r.fornavn + '!\n\n' +
     (betalt ? 'Du er påmeldt Juletreff på KUMI. Plassen din er sikret.' : 'Ett steg igjen: betal, så er plassen din på Juletreff på KUMI.') + '\n\n' +
     (betalt ? 'Betalt: ' + r.belop + ' kr.'
-      : vippsTekst_(r) + '\nPlassen din er sikret når betalingen er mottatt.') + '\n\n' +
+      : vippsTekst_(r) + '\nPlassen din er sikret når betalingen er mottatt.\n' +
+        'Har du allerede betalt? Da trenger du ikke gjøre noe mer. Du får en ny e-post når betalingen er registrert.') + '\n\n' +
     'Sted: ' + a.sted + '\nTid: ' + a.dato + '\nPåmelding: ' + r.id + '\n\n' +
     (betalt ? 'Trykk «Skal» på Facebook-eventet: ' + fb + '\n\n' : '') +
     (betalt ? bindendeTekst_(r.belop) + '\n\n' : '') +
