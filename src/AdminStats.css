@@ -788,19 +788,113 @@
 .under-tittel { font-size: 15px; margin: 20px 0 6px; color: #5b4a3a; }
 .under-tittel:first-of-type { margin-top: 6px; }
 .panel tr.sum td { border-bottom: 0; }
-.bank-status { font-size: 14px; margin: 10px 0; }
-.bank-felt { display: grid; gap: 8px; margin: 8px 0; }
+.bank-kort {
+  margin: 10px 0 12px; padding: 14px; border: 1px solid #e4d7c5; border-left: 4px solid #a79a8b;
+  border-radius: 10px; background: #fcfaf6; display: grid; gap: 12px;
+}
+.bank-kort.ok { border-left-color: #1e6b33; }
+.bank-kort.halv { border-left-color: #c77d00; }
+.bank-kort.feil { border-left-color: #b3261e; background: #fdf6f5; }
+.bank-hode { display: flex; align-items: flex-start; gap: 10px; }
+.bank-prikk { flex: none; width: 10px; height: 10px; margin-top: 5px; border-radius: 50%; background: #a79a8b; }
+.ok > .bank-hode .bank-prikk { background: #1e6b33; box-shadow: 0 0 0 4px #e3f2e6; }
+.halv > .bank-hode .bank-prikk { background: #c77d00; box-shadow: 0 0 0 4px #fbecd2; }
+.feil > .bank-hode .bank-prikk { background: #b3261e; box-shadow: 0 0 0 4px #f8dcd9; }
+.bank-tittel { flex: 1; min-width: 0; display: grid; gap: 2px; }
+.bank-tittel b { font-size: 15px; color: #111; }
+.bank-tittel span { font-size: 13px; color: #5b4a3a; }
+.bank-hode .mini { margin: 0; flex: none; }
+.bank-fakta { display: grid; gap: 8px 16px; margin: 0; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); }
+.bank-fakta div { min-width: 0; }
+.bank-fakta dt { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .04em; color: #8a7a68; }
+.bank-fakta dd { margin: 2px 0 0; font-size: 14px; color: #111; overflow-wrap: anywhere; }
+.bank-kort .bank-knapper { margin: 0; }
+.bank-kort .admin-note.lokal { margin: 0; }
+.bank-konto { max-width: 420px; }
+.bank-oppsett { border: 1px solid #e4d7c5; border-radius: 10px; background: #fff; }
+.bank-oppsett summary {
+  cursor: pointer; padding: 12px 14px; font-size: 14px; font-weight: 600; color: #3d2f22; list-style-position: inside;
+}
+.bank-oppsett[open] summary { border-bottom: 1px solid #efe6da; }
+.bank-steg { list-style: none; counter-reset: steg; margin: 0; padding: 4px 14px 14px; display: grid; }
+.bank-steg li {
+  counter-increment: steg; position: relative; padding: 12px 0 12px 38px; display: grid; gap: 6px;
+  font-size: 13px; color: #5b4a3a; border-bottom: 1px dashed #efe6da;
+}
+.bank-steg li:last-child { border-bottom: 0; padding-bottom: 0; }
+.bank-steg li::before {
+  content: counter(steg); position: absolute; left: 0; top: 10px; width: 26px; height: 26px; border-radius: 50%;
+  background: #f3ebe0; color: #3d2f22; font-weight: 700; font-size: 13px; display: grid; place-items: center;
+}
+.bank-steg b { font-size: 14px; color: #111; }
+.bank-steg a { color: #1e6b33; font-weight: 600; }
+.kopi-rad {
+  display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 10px;
+  border: 1px solid #e4d7c5; border-radius: 8px; background: #faf6f0;
+}
+.kopi-rad code { flex: 1; min-width: 0; font-size: 12px; overflow-wrap: anywhere; color: #3d2f22; }
+.kopi-rad .mini { margin: 0; flex: none; }
+.bank-felt { display: grid; gap: 8px; }
 @media (min-width: 700px) { .bank-felt { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
 .bank-felt label { display: grid; gap: 4px; font-size: 12px; font-weight: 600; color: #5b4a3a; }
+.bank-felt label i { font-style: normal; font-weight: 400; color: #8a7a68; }
 .bank-felt input {
-  font: inherit; font-size: 14px; font-weight: 400; padding: 7px 10px;
+  font: inherit; font-size: 14px; font-weight: 400; padding: 8px 10px;
   border: 1px solid #d9cbb8; border-radius: 8px; background: #fff; color: #111; min-width: 0;
 }
-.bank-knapper { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
-.bank-knapper .mini { margin: 0; padding: 7px 12px; }
+.bank-felt input:focus { outline: 2px solid #1e6b33; outline-offset: -1px; border-color: #1e6b33; }
+.bank-knapper { display: flex; flex-wrap: wrap; gap: 6px; }
+.bank-knapper .mini, .bank-steg .mini { margin: 0; padding: 7px 12px; }
+.mini.stor { padding: 9px 16px; font-size: 14px; }
 .kode { font-size: 12px; background: #f7f1e8; padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
 .bank-raa {
   max-height: 320px; overflow: auto; font-size: 11px; background: #faf6f0;
   border: 1px solid #efe6da; border-radius: 8px; padding: 10px; white-space: pre-wrap; overflow-wrap: anywhere;
 }
 .panel td.tall, .panel th.tall { white-space: nowrap; }
+
+/* Mobil: tabellene i «Vipps og bank» og felt som ikke får plass ved siden av hverandre */
+@media (max-width: 600px) {
+  table.salg, table.salg tbody { display: block; }
+  table.salg thead { display: none; }
+  table.salg tr {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px 8px;
+    padding: 12px 0; border-bottom: 1px solid #efe6da;
+  }
+  table.salg tr.sum { border-bottom: 0; }
+  .panel table.salg td { display: block; padding: 0; border: 0; min-width: 0; text-align: left; }
+  table.salg td:first-child { grid-column: 1 / -1; font-weight: 600; }
+  table.salg td[data-label]::before {
+    content: attr(data-label); display: block; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .03em; color: #8a7a68; margin-bottom: 2px;
+  }
+
+  table.bankrader, table.bankrader tbody { display: block; }
+  table.bankrader thead { display: none; }
+  table.bankrader tr {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px;
+    padding: 12px 0; border-bottom: 1px solid #efe6da;
+  }
+  table.bankrader td { display: block; padding: 0; border: 0; min-width: 0; overflow-wrap: anywhere; }
+  table.bankrader .c-fra { grid-column: 1; grid-row: 1; font-weight: 600; }
+  table.bankrader .c-fra .liten { font-weight: 400; }
+  table.bankrader .c-belop { grid-column: 2; grid-row: 1; font-weight: 600; }
+  table.bankrader .c-dato { grid-column: 1; grid-row: 2; align-self: center; }
+  table.bankrader .c-status { grid-column: 2; grid-row: 2; text-align: right; }
+  table.bankrader .c-velg, table.bankrader .handlinger { grid-column: 1 / -1; }
+  table.bankrader .handling-velger { width: 100%; max-width: none; padding-top: 9px; padding-bottom: 9px; }
+  table.bankrader .handlinger { display: flex; gap: 6px; }
+  table.bankrader .handlinger .mini { flex: 1; margin: 0; padding: 9px 12px; }
+
+  .innstilling-rad.to-felt input[type="text"] { flex: 1 1 100%; }
+  table.deltakere tr.deltaker { grid-template-columns: minmax(7.5em, 1fr) minmax(0, max-content); }
+  table.deltakere .c-navn { overflow-wrap: break-word; }
+  table.deltakere .c-status { max-width: 14em; }
+}
+@media (max-width: 360px) {
+  table.salg tr { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .innsjekk .panel-head { margin-bottom: 10px; }
+}
+.innstilling a.mini { text-decoration: none; display: inline-flex; align-items: center; }

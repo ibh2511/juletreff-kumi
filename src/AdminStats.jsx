@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { apiPost } from "./api.js"
 import { formatPrice } from "./config.js"
 import AdminBetaling from "./AdminBetaling.jsx"
+import { kopier } from "./vipps.js"
 import "./AdminStats.css"
 
 const vippsErMobil = (nr) => String(nr || "").replace(/\D/g, "").length === 8
@@ -71,6 +72,7 @@ export default function AdminStats({ okt, onLogout }) {
   const [fb, setFb] = useState(null) // null = ikke endret
   const [test, setTest] = useState({ fornavn: "Test", etternavn: "Testesen", epost: "" })
   const [testType, setTestType] = useState("pamelding")
+  const [lenkeKopiert, setLenkeKopiert] = useState(false)
   const [svar, setSvar] = useState(null)
   const [vipps, setVipps] = useState(null) // { nummer, navn } når noe er endret
   const [tlf, setTlf] = useState(null)
@@ -417,7 +419,7 @@ export default function AdminStats({ okt, onLogout }) {
             {vis("vipps")}
 
             <div className="innstilling-tittel">Nummer for Vipps privat</div>
-            <div className="innstilling-rad">
+            <div className="innstilling-rad to-felt">
               <input
                 type="text"
                 inputMode="numeric"
@@ -493,6 +495,73 @@ export default function AdminStats({ okt, onLogout }) {
           </div>
 
           <div className="innstilling">
+            <div className="innstilling-tittel">Test hele løpet med 1 kr</div>
+            <div className="liten">
+              Lag en lenke, åpne den på mobilen og meld deg på som en vanlig
+              deltaker. Du betaler 1 kr med {arr.betaling === "bedrift" ? "Vipps bedrift" : "Vipps privat"}, og
+              alt kjøres som for ekte: skjemaet, betalingssiden, Vipps
+              {arr.betaling === "bedrift" ? "" : ", banken"} og e-postene. Påmeldingen
+              merkes som test og tar ikke plass. Lenken virker i 2 timer, og bare
+              for den som har den.
+            </div>
+            {data.testlenke ? (
+              <>
+                <div className="kopi-rad">
+                  <code>{data.testlenke.url}</code>
+                  <button
+                    type="button"
+                    className={`mini ${lenkeKopiert ? "ok" : ""}`}
+                    onClick={() =>
+                      kopier(data.testlenke.url)
+                        .then(() => {
+                          setLenkeKopiert(true)
+                          setTimeout(() => setLenkeKopiert(false), 2500)
+                        })
+                        .catch(() => {})
+                    }
+                  >
+                    {lenkeKopiert ? "Kopiert!" : "Kopier"}
+                  </button>
+                </div>
+                <div className="innstilling-rad">
+                  <a className="mini ok" href={data.testlenke.url} target="_blank" rel="noreferrer">
+                    Åpne
+                  </a>
+                  <button className="mini" disabled={jobber} onClick={() => send({ action: "testlenke" }, "testlenke")}>
+                    Lag ny
+                  </button>
+                  <button
+                    className="mini"
+                    disabled={jobber}
+                    onClick={() => send({ action: "testlenke", stopp: true }, "testlenke")}
+                  >
+                    Stopp lenken
+                  </button>
+                </div>
+                <div className="liten">
+                  Virker til kl.{" "}
+                  {new Date(data.testlenke.utloper).toLocaleTimeString("nb-NO", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    timeZone: "Europe/Oslo",
+                  })}
+                  . Lager du en ny, slutter den gamle å virke.
+                </div>
+              </>
+            ) : (
+              <div className="innstilling-rad">
+                <button className="mini ok" disabled={jobber} onClick={() => send({ action: "testlenke" }, "testlenke")}>
+                  Lag testlenke
+                </button>
+              </div>
+            )}
+            {vis("testlenke")}
+            <div className="liten">
+              Etterpå: {arr.betaling === "bedrift" ? "velg «Trekk påmeldingen» med refusjon på testen" : "betal 1 kr-en tilbake til deg selv i Vipps"}, og slett testen.
+            </div>
+          </div>
+
+          <div className="innstilling">
             <div className="innstilling-tittel">Testpåmelding</div>
             <div className="innstilling-rad">
               <select
@@ -538,7 +607,7 @@ export default function AdminStats({ okt, onLogout }) {
             <div className="innstilling-rad">
               <input
                 type="email"
-                placeholder="E-post som skal få bekreftelsen"
+                placeholder="E-post til bekreftelsen"
                 value={test.epost}
                 onChange={(e) => setTest({ ...test, epost: e.target.value })}
               />
@@ -834,7 +903,7 @@ export default function AdminStats({ okt, onLogout }) {
               type="search"
               className="innsjekk-sok"
               autoFocus
-              placeholder="Navn, telefon, e-post eller JT-nummer"
+              placeholder="Søk navn, telefon eller JT-nr."
               value={innsjekkSok}
               onChange={(e) => setInnsjekkSok(e.target.value)}
             />
