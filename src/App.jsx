@@ -34,6 +34,18 @@ function viewFromHash() {
   return "main"
 }
 
+// Testlenke fra admin (?testpris=…): 1 kr for den som har lenken. Huskes for økten, så den
+// virker også om siden lastes på nytt eller deltakeren kommer tilbake fra Vipps.
+function readTestpris() {
+  const fraLenke = new URLSearchParams(window.location.search).get("testpris") || ""
+  try {
+    if (fraLenke) sessionStorage.setItem("jt_testpris", fraLenke)
+    return fraLenke || sessionStorage.getItem("jt_testpris") || ""
+  } catch {
+    return fraLenke
+  }
+}
+
 function readOkt() {
   try {
     return sessionStorage.getItem(OKT_KEY) || ""
@@ -58,6 +70,7 @@ const FERDIG = [
 export default function App() {
   const [view, setView] = useState(viewFromHash)
   const [okt, setOkt] = useState(readOkt)
+  const [testpris] = useState(readTestpris)
   const [info, setInfo] = useState({ ...DEFAULTS, ledige: null, fullt: false })
   // null | sending | redirect | sjekker | betalt | ubetalt | venter | avbrutt | waitlist | duplicate | stengt | error
   const [status, setStatus] = useState(null)
@@ -78,7 +91,7 @@ export default function App() {
   // Pris, dato og ledige plasser fra backend, og anonym besøkstelling
   useEffect(() => {
     trackVisit()
-    apiGet({ action: "info" })
+    apiGet(testpris ? { action: "info", testpris } : { action: "info" })
       .then((d) => {
         if (!d.ok) return
         setInfo((prev) => ({
@@ -88,7 +101,7 @@ export default function App() {
         if (d.stengt) setStatus((s) => s ?? "stengt")
       })
       .catch(() => {})
-  }, [])
+  }, [testpris])
 
   // Betalingssiden: ?betaling=JT-1001&k=... Hit kommer deltakeren tilbake fra Vipps bedrift, fra
   // betalingslenken i e-posten, og etter påmeldingen med Vipps privat. Adressen beholdes, så siden
@@ -207,6 +220,7 @@ export default function App() {
         bindende: f.get("Bindende") === "ja",
         kilde: kilde(),
         nettside: f.get("Nettside"), // felle for roboter, skal være tom
+        testpris,
       })
       if (d.duplicate) return setStatus("duplicate")
       if (d.waitlist) return setStatus("waitlist")
@@ -318,6 +332,16 @@ export default function App() {
           <div className="booking-form">
             <h2 className="tittel">✨Juletreff på KUMI🥂</h2>
             <div className="subheader">{info.dato}</div>
+
+            {(info.test || detaljer?.test) && (
+              <div className="test-banner" role="note">
+                <b>Testmodus: {formatPrice(detaljer?.belop || info.pris)}</b>
+                <span>
+                  Påmeldingen merkes som test, tar ikke plass og telles ikke. Alt
+                  annet virker som for ekte, også Vipps, banken og e-postene.
+                </span>
+              </div>
+            )}
 
             {skjemaSynlig && (
               <>

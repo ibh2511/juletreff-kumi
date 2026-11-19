@@ -105,6 +105,18 @@ Her ser du plasser tatt, betalt, ikke betalt, venteliste, trukket, innbetalt bel
 - **Gi plass fra ventelisten:** deltakeren får e-post med betalingsinfo (Vipps-nummeret).
 - **Deltakerliste (CSV):** navn, telefon, e-post og kommentarer (allergier) for de påmeldte.
 
+## Test hele løpet med 1 kr
+
+I adminsiden under **Test hele løpet med 1 kr** trykker du **Lag testlenke**. Åpne lenken på mobilen (gjerne inne i Facebook eller Instagram også) og meld deg på som en vanlig deltaker. Siden viser «Testmodus: 1 kr», og alt kjøres som for ekte: skjemaet, betalingssiden, Vipps, banken og e-postene (merket [TEST]). Påmeldingen merkes som test, tar ikke plass og telles ikke. Lenken virker i 2 timer, bare for den som har den, også når det er fullt eller fristen er ute. Lager du en ny lenke, slutter den gamle å virke. Lenken lagres i skriptegenskapen `TESTLENKE`.
+
+Etterpå betaler du 1 kr-en tilbake til deg selv i Vipps (Vipps privat), eller velger «Trekk påmeldingen» med refusjon (Vipps bedrift). Slett testen i påmeldingslisten.
+
+**Samme Vipps-nummer og konto som vegansk juleribbe:** Vipps privat sender alt til kontoen som er valgt i Vipps-appen, så juletreff og juleribbe må lese samme konto, og begge ser alle innbetalingene. Det går bra fordi:
+
+- Beløpene er forskjellige (600 kr mot juleribbes priser). Hver backend ser bare etter sine egne beløp.
+- Meldingen fra «Åpne Vipps» har nummeret: «Juletreff JT-1001 …» og «Juleribbe VJ-…». En betaling med den andres nummer eller navn hoppes over, også når navn og beløp passer, og gir ingen «Feil beløp» eller varsel.
+- Den eneste måten å blande dem på er to 1 kr-tester fra samme navn samtidig, uten melding i Vipps. Ta derfor én test om gangen, og betal med «Åpne Vipps», så meldingen kommer med.
+
 ## 4. Før lansering
 
 1. Fyll inn arrangør, org.nr., kontaktperson og dato i `src/LegalPage.jsx` (står i hakeparentes).

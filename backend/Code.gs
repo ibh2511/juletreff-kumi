@@ -101,6 +101,53 @@ function erTest_(r) { return r && (r.test === 'ja' || r.test === true); }
 var VENTER_MINUTTER = 30;
 
 /* ------------------------------------------------------------------ */
+/* Testlenke: hele påmeldingen med 1 kr, bare for den som har lenken   */
+/* ------------------------------------------------------------------ */
+
+// Påmeldingen går gjennom det samme som en ekte: skjemaet på nettsiden, betalingssiden, Vipps, banken og
+// e-postene. Den merkes som test, tar ikke plass og telles ikke. Lenken virker også når det er fullt
+// eller fristen har gått ut, så du kan teste når som helst.
+var TESTPRIS_KR = 1;
+var TESTLENKE_TIMER = 2;
+
+/** Lenken som er aktiv nå, eller null. Bare én lenke gjelder om gangen, og den går ut av seg selv. */
+function aktivTestlenke_() {
+  var lagret = cfg_('TESTLENKE', '');
+  if (!lagret) return null;
+  var t;
+  try { t = JSON.parse(lagret); } catch (e) { return null; }
+  if (!t || !t.kode || !(Date.now() < new Date(t.utloper).getTime())) return null;
+  return t;
+}
+
+function testprisGyldig_(kode) {
+  var t = aktivTestlenke_();
+  return !!(t && kode && String(kode) === t.kode);
+}
+
+function testlenkeInfo_() {
+  var t = aktivTestlenke_();
+  if (!t) return null;
+  return { url: cfg_('SITE_URL', 'https://ibh2511.github.io/juletreff-kumi').replace(/\/$/, '') + '/?testpris=' + t.kode,
+    utloper: t.utloper, belop: TESTPRIS_KR };
+}
+
+/** Admin: lager en ny testlenke (den gamle slutter å virke), eller stopper den som er aktiv. */
+function adminTestlenke_(p) {
+  if (!sjekkOkt_(p.okt)) return { ok: false, utlogget: true, error: 'Logg inn på nytt' };
+  begrens_('testlenke', 10);
+  var props = PropertiesService.getScriptProperties();
+  if (p.stopp === true || p.stopp === 'true' || p.stopp === '1') {
+    props.deleteProperty('TESTLENKE');
+    return { ok: true, testlenke: null, melding: 'Testlenken er stoppet. Alle ser vanlig pris.' };
+  }
+  var utloper = new Date(Date.now() + TESTLENKE_TIMER * 36e5);
+  props.setProperty('TESTLENKE', JSON.stringify({ kode: nyNokkel_(24), utloper: utloper.toISOString() }));
+  return { ok: true, testlenke: testlenkeInfo_(),
+    melding: 'Testlenken er klar og virker til kl. ' + Utilities.formatDate(utloper, 'Europe/Oslo', 'HH:mm') + '. Åpne den på mobilen.' };
+}
+
+/* ------------------------------------------------------------------ */
 /* Innstillinger                                                       */
 /* ------------------------------------------------------------------ */
 
@@ -197,7 +244,7 @@ function route_(e, body) {
   try {
     if (!body && p.action && GET_HANDLINGER.indexOf(p.action) < 0) return json_({ ok: false, error: 'Ugyldig forespørsel' });
     switch (p.action) {
-      case 'info':      begrens_('info', 300); return json_(info_());
+      case 'info':      begrens_('info', 300); return json_(info_(p));
       case 'pamelding': begrens_('pamelding', 60); return json_(pamelding_(p));
       case 'status':    begrens_('status', 240); return json_(sjekkBetaling_(p.id, p.k, false, p.sjekk === '1' || p.sjekk === true));
       case 'betal':     begrens_('betal', 30); return json_(betalBedrift_(p));
@@ -209,6 +256,7 @@ function route_(e, body) {
       case 'endre':     return json_(adminEndre_(p));
       case 'innstillinger': return json_(adminInnstillinger_(p));
       case 'testpamelding': return json_(adminTestpamelding_(p));
+      case 'testlenke': return json_(adminTestlenke_(p));
       case 'varsleventeliste': return json_(adminVarsleVenteliste_(p));
       case 'nullstill': return json_(adminNullstill_(p));
       case 'purring': return json_(adminPurring_(p));
@@ -241,10 +289,10 @@ function json_(obj) {
 /* Offentlig info: pris, dato og ledige plasser                        */
 /* ------------------------------------------------------------------ */
 
-function info_() {
+function info_(p) {
   var a = arrangement_();
   var opptatt = opptatte_(alle_());
-  return {
+  var svar = {
     ok: true, pris: a.pris, dato: a.dato, sted: a.sted, fristTekst: a.fristTekst, kapasitet: a.kapasitet,
     stengt: Date.now() > a.frist.getTime(),
     ledige: Math.max(0, a.kapasitet - opptatt), fullt: opptatt >= a.kapasitet,
@@ -253,6 +301,12 @@ function info_() {
     // Samme adresse som står som svaradresse i e-postene, så den er allerede offentlig
     kontaktEpost: cfg_('SVAR_EPOST', '')
   };
+  // Testlenken: 1 kr, og skjemaet vises selv om det er fullt eller fristen er ute. Alle andre ser vanlig pris.
+  if (testprisGyldig_(p && p.testpris)) {
+    Object.assign(svar, { pris: TESTPRIS_KR, test: true, testUtloper: aktivTestlenke_().utloper, stengt: false, fullt: false,
+      ledige: Math.max(1, svar.ledige) });
+  }
+  return svar;
 }
 
 /** Antall plasser som er tatt: betalt, ubetalt (manuell Vipps) og ferske Vipps-betalinger som venter. */
@@ -283,7 +337,9 @@ function pamelding_(p, test) {
   if (!test && !(p.bindende === true || p.bindende === 'true' || p.bindende === '1')) {
     return { ok: false, error: 'Du må bekrefte at påmeldingen er bindende' };
   }
-  if (!test && Date.now() > a.frist.getTime()) return { ok: false, stengt: true, error: 'Påmeldingen er stengt' };
+  var testlenke = !test && testprisGyldig_(p.testpris);
+  if (!test && !testlenke && Date.now() > a.frist.getTime()) return { ok: false, stengt: true, error: 'Påmeldingen er stengt' };
+  if (testlenke) test = true; // videre gjelder alt som for en testpåmelding fra admin
 
   var lock = LockService.getScriptLock();
   lock.waitLock(15000);
@@ -314,12 +370,12 @@ function pamelding_(p, test) {
     Object.assign(rad, d);
     rad.id = nesteId_();
     rad.opprettet = new Date();
-    rad.belop = a.pris;
+    rad.belop = testlenke ? TESTPRIS_KR : a.pris;
     rad.nokkel = nyNokkel_();
     rad.bindende_godtatt = test ? '' : new Date();
-    rad.kilde = test ? 'admin-test' : tekst_(p.kilde, 60);
+    rad.kilde = testlenke ? 'testlenke' : test ? 'admin-test' : tekst_(p.kilde, 60);
     rad.test = test ? 'ja' : '';
-    if (test) rad.notat = 'Testpåmelding fra admin';
+    if (test) rad.notat = testlenke ? 'Test med ' + TESTPRIS_KR + ' kr fra testlenken' : 'Testpåmelding fra admin';
     rad.status = fullt ? 'VENTELISTE' : a.vippsAktiv ? 'VENTER' : 'UBETALT';
     rad.betaling = fullt ? '' : a.vippsAktiv ? 'vipps' : 'manuell';
     if (rad.status === 'VENTER') rad.vipps_ref = rad.id;
@@ -340,7 +396,7 @@ function pamelding_(p, test) {
     // Vipps privat: banken sjekkes ofte de neste døgnene, så betalingen blir funnet raskt.
     venterPaBank_();
     sendBekreftelse_(rad);
-    return { ok: true, status: 'UBETALT', id: rad.id, k: rad.nokkel, belop: rad.belop, fornavn: rad.fornavn,
+    return { ok: true, status: 'UBETALT', id: rad.id, k: rad.nokkel, belop: rad.belop, fornavn: rad.fornavn, test: erTest_(rad),
       epost: maskEmail_(rad.epost), betalingsinfo: betalingsinfo_(rad) };
   }
 
@@ -518,7 +574,7 @@ function betaltRef_(o) { return aktivRef_(o) || o.id; }
 
 /** Svaret betalingssiden får. Ubetalte får også det som trengs for å betale. */
 function statusSvar_(o, status) {
-  var s = { ok: true, status: status || o.status, fornavn: o.fornavn, epost: maskEmail_(o.epost), belop: o.belop };
+  var s = { ok: true, status: status || o.status, fornavn: o.fornavn, epost: maskEmail_(o.epost), belop: o.belop, test: erTest_(o) };
   if (s.status === 'UBETALT') s.betalingsinfo = betalingsinfo_(o);
   return s;
 }
@@ -862,6 +918,17 @@ function idITekst_(tekst) {
 }
 
 /**
+ * Betaling til et annet arrangement på samme Vipps-nummer, som vegansk juleribbe (VJ-12345, TEST-10001).
+ * Vipps privat sender alt til samme bankkonto, så begge backendene ser de samme innbetalingene. Den med
+ * den andres nummer eller navn i meldingen hoppes over, også når navn og beløp passer med en her.
+ */
+function annetArrangement_(tekst) {
+  var t = String(tekst || '');
+  if (idITekst_(t)) return false;
+  return /\b(VJ|TEST)[\s-]?\d{5,}/i.test(t) || /juleribbe/i.test(t);
+}
+
+/**
  * Finner påmeldingen en innbetaling hører til. Først på påmeldings-ID i meldingen (Vipps-lenken fyller den ut),
  * så på navn og beløp. Gir påmeldingen, 'FLERE' hvis det ikke går å skille, eller null.
  */
@@ -945,7 +1012,7 @@ function sjekkBank_() {
       sett[t.id] = 1; nye++;
     };
     trans.forEach(function (t) {
-      if (!(t.belop > 0) || sett[t.id]) return;
+      if (!(t.belop > 0) || sett[t.id] || annetArrangement_(t.tekst)) return;
       if (!priser[ore_(t.belop)]) {
         var hvem = deltakerForBetaling_(t, ventende);
         if (!hvem) return; // en vanlig vipps som ikke gjelder juletreffet
@@ -1493,6 +1560,7 @@ function adminOversikt_(okt) {
 
   return {
     ok: true,
+    testlenke: testlenkeInfo_(),
     arrangement: { dato: a.dato, pris: a.pris, kapasitet: a.kapasitet, fristTekst: a.fristTekst, vippsAktiv: a.vippsAktiv,
       vippsModus: a.vippsModus, harVippsNokler: harVippsNokler_(), vippsMiljo: cfg_('VIPPS_ENV', 'test'),
       vippsNummer: a.vippsNummer, vippsNavn: a.vippsNavn, start: a.start.toISOString(), noshow: a.noshow, rapportTil: rapportMottaker_(),

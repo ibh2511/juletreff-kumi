@@ -897,3 +897,4 @@
 @media (max-width: 600px) {
   .innsjekk .panel-head { margin-bottom: 10px; }
 }
+.innstilling a.mini { text-decoration: none; display: inline-flex; align-items: center; }

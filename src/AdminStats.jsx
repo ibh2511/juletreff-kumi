@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { apiPost } from "./api.js"
 import { formatPrice } from "./config.js"
 import AdminBetaling from "./AdminBetaling.jsx"
+import { kopier } from "./vipps.js"
 import "./AdminStats.css"
 
 const vippsErMobil = (nr) => String(nr || "").replace(/\D/g, "").length === 8
@@ -71,6 +72,7 @@ export default function AdminStats({ okt, onLogout }) {
   const [fb, setFb] = useState(null) // null = ikke endret
   const [test, setTest] = useState({ fornavn: "Test", etternavn: "Testesen", epost: "" })
   const [testType, setTestType] = useState("pamelding")
+  const [lenkeKopiert, setLenkeKopiert] = useState(false)
   const [svar, setSvar] = useState(null)
   const [vipps, setVipps] = useState(null) // { nummer, navn } når noe er endret
   const [tlf, setTlf] = useState(null)
@@ -490,6 +492,73 @@ export default function AdminStats({ okt, onLogout }) {
               <span className="liten">Lager en betaling på 1 kr og avbryter den med en gang.</span>
             </div>
             {vis("vippssjekk")}
+          </div>
+
+          <div className="innstilling">
+            <div className="innstilling-tittel">Test hele løpet med 1 kr</div>
+            <div className="liten">
+              Lag en lenke, åpne den på mobilen og meld deg på som en vanlig
+              deltaker. Du betaler 1 kr med {arr.betaling === "bedrift" ? "Vipps bedrift" : "Vipps privat"}, og
+              alt kjøres som for ekte: skjemaet, betalingssiden, Vipps
+              {arr.betaling === "bedrift" ? "" : ", banken"} og e-postene. Påmeldingen
+              merkes som test og tar ikke plass. Lenken virker i 2 timer, og bare
+              for den som har den.
+            </div>
+            {data.testlenke ? (
+              <>
+                <div className="kopi-rad">
+                  <code>{data.testlenke.url}</code>
+                  <button
+                    type="button"
+                    className={`mini ${lenkeKopiert ? "ok" : ""}`}
+                    onClick={() =>
+                      kopier(data.testlenke.url)
+                        .then(() => {
+                          setLenkeKopiert(true)
+                          setTimeout(() => setLenkeKopiert(false), 2500)
+                        })
+                        .catch(() => {})
+                    }
+                  >
+                    {lenkeKopiert ? "Kopiert!" : "Kopier"}
+                  </button>
+                </div>
+                <div className="innstilling-rad">
+                  <a className="mini ok" href={data.testlenke.url} target="_blank" rel="noreferrer">
+                    Åpne
+                  </a>
+                  <button className="mini" disabled={jobber} onClick={() => send({ action: "testlenke" }, "testlenke")}>
+                    Lag ny
+                  </button>
+                  <button
+                    className="mini"
+                    disabled={jobber}
+                    onClick={() => send({ action: "testlenke", stopp: true }, "testlenke")}
+                  >
+                    Stopp lenken
+                  </button>
+                </div>
+                <div className="liten">
+                  Virker til kl.{" "}
+                  {new Date(data.testlenke.utloper).toLocaleTimeString("nb-NO", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    timeZone: "Europe/Oslo",
+                  })}
+                  . Lager du en ny, slutter den gamle å virke.
+                </div>
+              </>
+            ) : (
+              <div className="innstilling-rad">
+                <button className="mini ok" disabled={jobber} onClick={() => send({ action: "testlenke" }, "testlenke")}>
+                  Lag testlenke
+                </button>
+              </div>
+            )}
+            {vis("testlenke")}
+            <div className="liten">
+              Etterpå: {arr.betaling === "bedrift" ? "velg «Trekk påmeldingen» med refusjon på testen" : "betal 1 kr-en tilbake til deg selv i Vipps"}, og slett testen.
+            </div>
           </div>
 
           <div className="innstilling">
