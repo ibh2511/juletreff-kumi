@@ -81,10 +81,12 @@ Tilgangen lagres bare i Skriptegenskaper (`BANK_CLIENT_ID`, `BANK_CLIENT_SECRET`
 
 **Slik fungerer koblingen:**
 
+- E-posten med betalingsinfo sendes først når betalingen ikke har kommet etter 5 minutter (`EPOST_VENT_MIN` i `Code.gs`). Betaler deltakeren med en gang, får de bare bekreftelsen, så ingen får en «Betal 600 kr»-e-post etter at de har betalt. Uten banken koblet til, og for testpåmeldinger fra admin, sendes den med en gang.
+
 - Innbetalinger kobles på påmeldings-ID-en i meldingen, ellers på fornavn, etternavn og beløp. Mellomnavn i Vipps gjør ingenting. Venter bare én på beløpet, holder det at ett av navnene stemmer.
 - Bare innbetalinger med juletreffets beløp lagres (fanen **Bank**). Unntaket er når noen som ikke har betalt, betaler feil beløp (navnet eller ID-en står i bankteksten). Den lagres som «Feil beløp» med påmeldingen som forslag.
 - Det som ikke kan kobles sikkert, står i adminsiden under **Innbetalinger som ikke ble koblet**, og du får e-post om det. Velg påmeldingen og trykk «Koble», eller «Ignorer».
-- Mens deltakeren står på betalingssiden, spør siden hvert 10. sekund, og backend spør banken høyst hvert 20. sekund. En utløser spør banken hvert minutt i 48 timer etter en ny ubetalt påmelding eller purring, og ellers hvert 15. minutt så lenge noen ikke har betalt. Utløseren lages når du kobler til banken eller velger Vipps privat.
+- Mens deltakeren står på betalingssiden, spør siden hvert 10. sekund, og backend spør banken høyst hvert 20. sekund. En utløser spør banken hvert minutt de første 2 timene etter en ny ubetalt påmelding eller purring, hvert 5. minutt resten av de 48 timene, og ellers hvert 15. minutt så lenge noen ikke har betalt. Har alle betalt, spør den ikke banken i det hele tatt. Det holder kjøretiden godt under Googles grense på 90 minutter i døgnet for utløsere på en vanlig Gmail-konto. Grensen deles med andre skript på samme konto, som vegansk juleribbe. Utløseren lages når du kobler til banken eller velger Vipps privat.
 - Går banktilgangen ut eller slutter å virke, får du e-post med beskjed om å koble til på nytt. Varslene går til `VARSEL_EPOST`, ellers `ADMIN_EPOST`, ellers `SVAR_EPOST`.
 
 ## Vipps bedrift

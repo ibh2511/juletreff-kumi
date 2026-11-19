@@ -395,8 +395,12 @@ function pamelding_(p, test) {
   if (rad.status === 'UBETALT') {
     // Vipps privat: banken sjekkes ofte de neste døgnene, så betalingen blir funnet raskt.
     venterPaBank_();
-    sendBekreftelse_(rad);
+    // Med banken koblet til venter e-posten med betalingsinfo i EPOST_VENT_MIN minutter. Betaler deltakeren
+    // med en gang, får de bare bekreftelsen. Testpåmeldinger fra admin får e-posten med en gang.
+    var vent = bankKlar_() && !(test && !testlenke);
+    if (!vent) sendBekreftelse_(rad);
     return { ok: true, status: 'UBETALT', id: rad.id, k: rad.nokkel, belop: rad.belop, fornavn: rad.fornavn, test: erTest_(rad),
+      epostVent: vent ? EPOST_VENT_MIN : 0,
       epost: maskEmail_(rad.epost), betalingsinfo: betalingsinfo_(rad) };
   }
 
@@ -591,6 +595,8 @@ function pollPending() {
       oppdater_(r._rad, { status: 'AVBRUTT', notat: 'Utløpt' });
     }
   });
+  // Reserve hvis bankutløseren ikke går: betalingsinfoen kommer senest etter et kvarter.
+  try { sendVentendeBetalingsinfo_(15); } catch (err) { console.error(err); }
 }
 
 /* ------------------------------------------------------------------ */
@@ -665,14 +671,25 @@ var SB1_API = 'https://api.sparebank1.no';
 var SB1_ACCEPT = 'application/vnd.sparebank1.v1+json; charset=utf-8';
 // Så lenge etter en ny ubetalt påmelding eller purring spør utløseren banken hvert minutt.
 // Ellers spør den hvert 15. minutt så lenge noen ikke har betalt.
+// Hvor ofte utløseren spør banken. Hvert minutt de første to timene etter en ny ubetalt påmelding (da betaler
+// de fleste), hvert 5. minutt resten av de to døgnene, og ellers hvert 15. minutt så lenge noen ikke har betalt.
+// Betalingssiden spør i tillegg banken selv mens deltakeren står på den. Google gir et vanlig Gmail-konto
+// 90 minutter kjøretid for utløsere i døgnet, og det deles mellom alle skriptene på kontoen.
+var BANK_STRAKS_TIMER = 2;
+// E-posten med betalingsinfo sendes først når betalingen ikke har kommet etter så mange minutter.
+var EPOST_VENT_MIN = 5;
 var BANK_OFTE_TIMER = 48;
+var BANK_OFTE_MIN = 5;
 var BANK_SJELDEN_MIN = 15;
 
 function bankKlar_() { return !!(cfg_('BANK_REFRESH_TOKEN', '') && cfg_('BANK_ACCOUNT_KEY', '')); }
 
 /** Noen skal betale til nummeret snart: utløseren spør banken hvert minutt de neste døgnene. */
 function venterPaBank_() {
-  PropertiesService.getScriptProperties().setProperty('BANK_VENTER_TIL', String(Date.now() + BANK_OFTE_TIMER * 36e5));
+  PropertiesService.getScriptProperties().setProperties({
+    BANK_STRAKS_TIL: String(Date.now() + BANK_STRAKS_TIMER * 36e5),
+    BANK_VENTER_TIL: String(Date.now() + BANK_OFTE_TIMER * 36e5)
+  });
 }
 
 function qs_(o) {
@@ -1072,14 +1089,39 @@ function sjekkBankUtloser() {
     varsle_(v.emne, v.tekst);
   }
   if (!bankKlar_()) return;
-  var cache = CacheService.getScriptCache();
-  if (Date.now() > Number(props.getProperty('BANK_VENTER_TIL') || 0)) {
-    if (cache.get('bank_sjelden')) return;
-    cache.put('bank_sjelden', '1', BANK_SJELDEN_MIN * 60);
-    if (!alle_().some(function (r) { return r.status === 'UBETALT'; })) return;
+  var cache = CacheService.getScriptCache(), naa = Date.now();
+  var min = naa < Number(props.getProperty('BANK_STRAKS_TIL') || 0) ? 1
+    : naa < Number(props.getProperty('BANK_VENTER_TIL') || 0) ? BANK_OFTE_MIN : BANK_SJELDEN_MIN;
+  if (min > 1) {
+    if (cache.get('bank_neste')) return;
+    cache.put('bank_neste', '1', min * 60 - 30);
   }
+  // Har alle betalt, trengs ikke banken før noen nye melder seg på.
+  if (!alle_().some(function (r) { return r.status === 'UBETALT'; })) return;
   cache.put('bank_sist', '1', 20);
   sjekkBank_();
+  // Etter banksjekken, så den som nettopp betalte, får bekreftelsen og ikke betalingsinfo.
+  sendVentendeBetalingsinfo_(EPOST_VENT_MIN);
+}
+
+/**
+ * Sender e-posten med betalingsinfo til dem som meldte seg på for mer enn «min» minutter siden og ikke har
+ * betalt ennå. De som betalte med en gang, har fått bekreftelsen i stedet. Bare påmeldinger fra de siste
+ * to døgnene, så en e-post som feilet tidligere ikke sendes igjen og igjen (den står i statusmailen).
+ */
+/** E-posten med betalingsinfo er ikke sendt ennå fordi den venter på at betalingen kanskje kommer først. */
+function epostVenter_(r) {
+  return r.status === 'UBETALT' && r.betaling === 'manuell' && Date.now() - new Date(r.opprettet).getTime() < 20 * 60000;
+}
+
+function sendVentendeBetalingsinfo_(min) {
+  var naa = Date.now();
+  alle_().forEach(function (r) {
+    if (r.status !== 'UBETALT' || r.epost_sendt || r.betaling !== 'manuell') return;
+    var alder = naa - new Date(r.opprettet).getTime();
+    if (alder < min * 60000 || alder > 48 * 36e5) return;
+    sendBekreftelse_(r);
+  });
 }
 
 function sikreBankUtloser_() {
@@ -1150,12 +1192,14 @@ function sendBekreftelse_(r) {
     ? '<div class="boks" style="border: 1px solid #6fbf73; border-radius: 10px; padding: 14px 12px; margin: 30px 0;">' +
       '<h3 style="font-size: 1.2rem; color: #8fd694; margin: 0 0 6px 0; text-align: center;">Betalt ' + r.belop + ' kr ✓</h3>' +
       '<p style="text-align: center; margin: 0;">Plassen din er sikret.</p></div>'
-    : vippsBoks_(r, 'Plassen din er sikret når betalingen er mottatt.');
+    : vippsBoks_(r, 'Plassen din er sikret når betalingen er mottatt.') +
+      '<p style="font-size: .9rem; line-height: 1.5; margin: 0; color: #bdb3a8; text-align: center;">' +
+      'Har du allerede betalt? Da trenger du ikke gjøre noe mer. Du får en ny e-post når betalingen er registrert.</p>';
 
   var html = epostRamme_(
     '<h2 style="color: #edb77d; font-size: 1.5rem; margin-top: 0; text-align: center;">Hei ' + fornavn + ',</h2>' +
     '<p style="font-weight: bold; font-size: 1.1rem; margin: 20px 0 0 0; letter-spacing: 0.5px; text-align: center;">' +
-    (betalt ? 'Du er påmeldt Juletreff på KUMI 🌿' : 'Takk for din påmelding til Juletreff på KUMI 🌿') + '</p>' +
+    (betalt ? 'Du er påmeldt Juletreff på KUMI 🌿' : 'Ett steg igjen: betal, så er plassen din 🌿') + '</p>' +
 
     betaling +
 
@@ -1182,9 +1226,10 @@ function sendBekreftelse_(r) {
 
   var tekst =
     'Hei ' + r.fornavn + '!\n\n' +
-    (betalt ? 'Du er påmeldt Juletreff på KUMI. Plassen din er sikret.' : 'Takk for din påmelding til Juletreff på KUMI.') + '\n\n' +
+    (betalt ? 'Du er påmeldt Juletreff på KUMI. Plassen din er sikret.' : 'Ett steg igjen: betal, så er plassen din på Juletreff på KUMI.') + '\n\n' +
     (betalt ? 'Betalt: ' + r.belop + ' kr.'
-      : vippsTekst_(r) + '\nPlassen din er sikret når betalingen er mottatt.') + '\n\n' +
+      : vippsTekst_(r) + '\nPlassen din er sikret når betalingen er mottatt.\n' +
+        'Har du allerede betalt? Da trenger du ikke gjøre noe mer. Du får en ny e-post når betalingen er registrert.') + '\n\n' +
     'Sted: ' + a.sted + '\nTid: ' + a.dato + '\nPåmelding: ' + r.id + '\n\n' +
     (betalt ? 'Trykk «Skal» på Facebook-eventet: ' + fb + '\n\n' : '') +
     (betalt ? bindendeTekst_(r.belop) + '\n\n' : '') +
@@ -1586,7 +1631,7 @@ function adminOversikt_(okt) {
         trukket: r.trukket, refundert: r.refundert, refusjon: r.refusjon, notat: r.notat, test: erTest_(r), varslet: r.varslet, purret: r.purret,
         program: r.program, purringer: antallPurringer_(r), mott: r.mott, takket: r.takket,
         vippsNavn: r.vipps_navn, gebyr: r.gebyr, bankId: r.bank_id, vippsNaa: !!aktivRef_(r),
-        utenEpost: HOLDER_PLASS.indexOf(r.status) >= 0 && !r.epost_sendt };
+        utenEpost: HOLDER_PLASS.indexOf(r.status) >= 0 && !r.epost_sendt && !epostVenter_(r) };
     })
   };
 }
@@ -2329,7 +2374,7 @@ function dagligRapport(tvungen) {
   var ubetalte = rader.filter(function (r) { return r.status === 'UBETALT' && Date.now() - new Date(r.opprettet).getTime() > 2 * dogn; });
   var skyldig = function (r) { return r.refusjon === '' || r.refusjon == null ? Number(r.belop) || 0 : Number(r.refusjon) || 0; };
   var refusjon = rader.filter(function (r) { return r.status === 'TRUKKET' && r.betalt && !r.refundert && skyldig(r) > 0; });
-  var utenEpost = rader.filter(function (r) { return HOLDER_PLASS.indexOf(r.status) >= 0 && !r.epost_sendt; });
+  var utenEpost = rader.filter(function (r) { return HOLDER_PLASS.indexOf(r.status) >= 0 && !r.epost_sendt && !epostVenter_(r); });
   var venteliste = (antall.VENTELISTE || 0) > 0 && ledige > 0;
   var ukoblet = [];
   try { ukoblet = bankRader_().filter(function (b) { return b.status !== 'DUPLIKAT'; }); } catch (err) { console.error(err); }

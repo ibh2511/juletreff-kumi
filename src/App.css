@@ -1020,3 +1020,92 @@ h2.tittel { white-space: nowrap; font-size: clamp(18px, 6.4vw, 34px); letter-spa
   line-height: 1.4;
 }
 .test-banner b { font-size: 15px; }
+
+/* Hvor deltakeren er i påmeldingen: påmeldt, betal, ferdig */
+.fremdrift {
+  list-style: none;
+  margin: 8px 0 14px;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #8f877e;
+  animation: fadeIn 0.8s ease-in-out;
+}
+.fremdrift li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.fremdrift li + li::before {
+  content: "";
+  width: 18px;
+  height: 1px;
+  background: rgba(237, 183, 125, 0.35);
+  margin-right: 2px;
+}
+.fremdrift span {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid rgba(237, 183, 125, 0.35);
+  font-size: 12px;
+  font-weight: 700;
+}
+.fremdrift .ferdig { color: #c9c1b8; }
+.fremdrift .ferdig span { background: #2f6b3a; border-color: #2f6b3a; color: #fff; }
+.fremdrift .aktiv { color: #fff; font-weight: 600; }
+.fremdrift .aktiv span { background: #ff5b24; border-color: #ff5b24; color: #fff; }
+.epost-notis {
+  margin: 12px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #a39b92;
+  text-align: center;
+}
+@media (max-width: 360px) {
+  .fremdrift { font-size: 12px; gap: 4px; }
+  .fremdrift li + li::before { width: 10px; }
+}
+
+.fremdrift + .vipps-card { margin-top: 0; }
+
+/* Etter at deltakeren har åpnet Vipps: vi venter på betalingen, ikke betal igjen */
+.vipps-har-betalt {
+  display: block;
+  width: 100%;
+  margin: 18px 0 0;
+  padding: 12px 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(237, 183, 125, 0.45);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.vipps-har-betalt:hover { border-color: var(--accent); }
+.vipps-sjekker-ikon {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 10px;
+  border-radius: 50%;
+  background: rgba(255, 91, 36, 0.12);
+}
+.vipps-sjekker-ikon .prikk {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ff5b24;
+  animation: vippsPuls 1.4s ease-in-out infinite;
+}
+.vipps-sjekker .vipps-venter { margin-top: 10px; }
