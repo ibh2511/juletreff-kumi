@@ -289,10 +289,14 @@ textarea {
 .msg.error h3 {
   color: #d9534f;
 }
+/* Stiplede lenker bruker understreking, ikke kantlinje. Da følger den stiplede linjen ordene,
+   også når lenken brytes over to linjer, og går aldri over hele bredden. */
 .msg a {
   color: var(--muted);
-  text-decoration: none;
-  border-bottom: 0.75px dotted var(--muted);
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 0.75px;
+  text-underline-offset: 3px;
 }
 .msg a:hover {
   color: var(--accent);
@@ -748,7 +752,10 @@ textarea {
 }
 .vipps-reserve {
   color: var(--muted);
-  border-bottom: 0.75px dotted var(--muted);
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 0.75px;
+  text-underline-offset: 3px;
 }
 .vipps-belop {
   margin-top: 6px;
@@ -904,7 +911,10 @@ textarea {
 .binding-check a,
 .binding-box a {
   color: var(--accent);
-  border-bottom: 0.75px dotted var(--accent);
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 0.75px;
+  text-underline-offset: 3px;
 }
 .binding-box {
   width: 100%;
@@ -938,7 +948,10 @@ textarea {
   padding: 0;
   font: inherit;
   color: var(--muted);
-  border-bottom: 0.75px dotted var(--muted);
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 0.75px;
+  text-underline-offset: 3px;
   cursor: pointer;
 }
 
@@ -954,7 +967,10 @@ textarea {
 .site-footer a {
   color: #111;
   font-weight: 400;
-  border-bottom: 0.75px dotted #111;
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 0.75px;
+  text-underline-offset: 3px;
 }
 
 /* Salgsvilkår og personvern */
@@ -1222,10 +1238,13 @@ h2.tittel { white-space: nowrap; font-size: clamp(18px, 6.4vw, 34px); letter-spa
 .vipps-tilbake {
   padding: 0;
   border: 0;
-  border-bottom: 0.75px dotted currentColor;
   border-radius: 0;
   background: none;
   color: var(--ink);
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 0.75px;
+  text-underline-offset: 3px;
   font: inherit;
   cursor: pointer;
 }
