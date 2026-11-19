@@ -4,7 +4,7 @@ import { formatPrice } from "./config.js"
 import { kopier, lenker, miljo, qrSvg, valg } from "./vipps.js"
 
 // Betalingsboksen for den som har plass, men ikke har betalt ennå.
-//  Vipps privat: kopier nummeret, «Åpne Vipps» med nummer, beløp og melding fylt ut, eller QR-kode på PC.
+//  Vipps privat: kopier nummeret, «Åpne Vipps» med nummeret fylt ut, eller QR-kode på PC.
 //  Vipps bedrift: «Betal med Vipps» sender deltakeren til Vipps og tilbake hit.
 // Siden sjekker betalingen i bakgrunnen (se App.jsx), og bytter til «Du er påmeldt» når den er kommet.
 //
@@ -34,7 +34,7 @@ function lagreVent(id, t) {
     // privat modus: gjelder til siden lastes på nytt
   }
 }
-export default function VippsPayment({ info, id, k, venter, lead, notis }) {
+export default function VippsPayment({ info, id, k, lead, notis }) {
   const m = useMemo(() => miljo(), [])
   const [kopiert, setKopiert] = useState("")
   const [fraNavn, setFraNavn] = useState(info?.fraNavn || "")
@@ -208,9 +208,13 @@ export default function VippsPayment({ info, id, k, venter, lead, notis }) {
             <a className="vipps-btn" href={l[v.hoved]} onClick={() => (forlot.current = true)}>
               Åpne Vipps
             </a>
-            <a className="vipps-reserve" href={l[v.reserve]} onClick={() => (forlot.current = true)}>
-              Åpnet ikke Vipps? Prøv denne lenken
-            </a>
+            <p className="vipps-reserve-rad">
+              Åpnet ikke Vipps?
+              <br />
+              <a className="vipps-reserve" href={l[v.reserve]} onClick={() => (forlot.current = true)}>
+                Prøv denne lenken
+              </a>
+            </p>
             <small>
               Virker ingen av dem, åpner du Vipps-appen selv og limer inn
               nummeret.
@@ -325,35 +329,62 @@ export default function VippsPayment({ info, id, k, venter, lead, notis }) {
   if (venterFra) {
     const lenge = naa - venterFra > 20 * 60000
     return (
-      <div className="vipps-card vipps-sjekker" role="status">
-        <div className="vipps-sjekker-ikon" aria-hidden="true">
-          <span className="prikk" />
+      <div className="vipps-card vipps-sjekker">
+        <div className="vipps-radar" aria-hidden="true">
+          <span />
         </div>
-        <h3>Vi ser etter betalingen din</h3>
-        <p className="vipps-lead">
-          Har du betalt {kr}, er du ferdig og trenger ikke betale igjen.{" "}
-          {info.automatisk
-            ? "Siden oppdaterer seg selv når betalingen er registrert, som regel innen noen minutter. Du får også bekreftelse på e-post."
-            : "Du får bekreftelse på e-post når betalingen er registrert."}
-        </p>
-        {info.automatisk && venter && <div className="vipps-venter">{venter}</div>}
-        {lenge && (
-          <p className="vipps-fra">
-            Har det gått mer enn 20 minutter? Betalte du fra en annens Vipps, kan du skrive
-            navnet under. Ellers svarer du på e-posten fra oss, så ser vi på det.
-          </p>
-        )}
-        <p className="vipps-fra">
-          Vi ser etter betaling fra Vipps-kontoen til <b>{fraNavn}</b>.{" "}
-          <button type="button" className="link-btn" onClick={() => setEndrer(!endrer)}>
-            Betalte du fra en annens Vipps?
-          </button>
-        </p>
+        <h3 role="status">Vi ser etter betalingen din</h3>
+        <p className="vipps-lead">Har du betalt, er du ferdig og trenger ikke betale igjen.</p>
+        <dl className="vipps-fakta vipps-sjekker-kort">
+          <div>
+            <dt>Beløp</dt>
+            <dd>{kr}</dd>
+          </div>
+          <div>
+            <dt>Til</dt>
+            <dd>{info.mottaker}</dd>
+          </div>
+          <div>
+            <dt>Fra</dt>
+            <dd>
+              <span className="vipps-fra-navn">{fraNavn}</span>
+              <button
+                type="button"
+                className="vipps-endre"
+                aria-expanded={endrer}
+                onClick={() => setEndrer(!endrer)}
+              >
+                Endre
+              </button>
+            </dd>
+          </div>
+        </dl>
         {endrer && navnSkjema}
         {navnFeil && <p className="vipps-feil">{navnFeil}</p>}
-        <p className="vipps-fra">
-          <button type="button" className="link-btn" onClick={visBetalingen}>
-            Har du ikke betalt ennå? Vis betalingen
+        <p className="vipps-sjekker-tekst">
+          {info.automatisk ? (
+            <>
+              Siden oppdaterer seg selv når betalingen er registrert, som regel etter kort tid. Du får
+              også bekreftelse på <span className="nowrap">e-post</span>.
+            </>
+          ) : (
+            <>
+              Du får bekreftelse på <span className="nowrap">e-post</span> når betalingen er registrert.
+            </>
+          )}
+        </p>
+        {lenge && (
+          <div className="vipps-hjelp">
+            Har det gått mer enn 20 minutter? Sjekk i Vipps at du betalte {kr} til {info.mottaker}.
+            Betalte du fra en annens Vipps, trykker du «Endre» og skriver navnet. Ellers svarer du på
+            e-posten fra oss, så ser vi på det. Ikke betal på nytt.
+          </div>
+        )}
+        <p className="vipps-tilbake-rad">
+          Har du ikke betalt ennå?
+          <br />
+          <button type="button" className="vipps-tilbake" onClick={visBetalingen}>
+            Vis betalingen
           </button>
         </p>
         <p className="vipps-ref">Påmeldings-ID: {info.id}</p>

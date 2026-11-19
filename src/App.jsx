@@ -143,7 +143,6 @@ export default function App() {
   const ventId = status === "ubetalt" ? detaljer?.id : null
   const ventK = status === "ubetalt" ? detaljer?.k : null
   const automatisk = !!detaljer?.betalingsinfo?.automatisk
-  const [venterTekst, setVenterTekst] = useState("Venter på betalingen …")
   useEffect(() => {
     if (!ventId || !ventK) return
     const startet = Date.now()
@@ -162,7 +161,6 @@ export default function App() {
             setStatus("betalt")
             return
           }
-          setVenterTekst("Venter på betalingen …")
           if (document.visibilityState !== "hidden")
             planlegg(automatisk && Date.now() - startet < 36e5 ? 10000 : 60000)
         })
@@ -170,7 +168,6 @@ export default function App() {
     }
     const synlig = () => {
       if (document.visibilityState !== "visible") return
-      setVenterTekst("Ser om betalingen har kommet …")
       planlegg(300)
     }
     document.addEventListener("visibilitychange", synlig)
@@ -193,6 +190,7 @@ export default function App() {
 
   // Flytende etiketter og FAQ må kobles på nytt når forsiden vises
   const skjemaSynlig = view === "main" && !FERDIG.includes(status)
+  const betalingPagar = ["sjekker", "redirect", "ubetalt", "venter"].includes(status)
   useEffect(() => {
     if (view !== "main") return
     const teardownLabels = setupFloatingLabels()
@@ -345,8 +343,13 @@ export default function App() {
 
           {/* Skjema */}
           <div className="booking-form">
-            <h2 className="tittel">✨Juletreff på KUMI🥂</h2>
-            <div className="subheader">{info.dato}</div>
+            {/* Mens betalingen pågår, trengs plassen til betalingen. Overskriften og datoen kommer tilbake når den er registrert. */}
+            {!betalingPagar && (
+              <>
+                <h2 className="tittel">✨Juletreff på KUMI🥂</h2>
+                <div className="subheader">{info.dato}</div>
+              </>
+            )}
 
             {(info.test || detaljer?.test) && (
               <div className="test-banner" role="note">
@@ -421,7 +424,6 @@ export default function App() {
                   info={detaljer?.betalingsinfo}
                   id={detaljer?.id}
                   k={detaljer?.k}
-                  venter={venterTekst}
                   lead={
                     detaljer?.fraLenke
                       ? `Hei${detaljer?.fornavn ? ` ${detaljer.fornavn}` : ""}! Du har plass, men vi har ikke fått betalingen ennå.`

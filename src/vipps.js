@@ -1,6 +1,7 @@
-// Vipps privat: lenker som åpner Vipps med mottaker, beløp og melding ferdig utfylt, kopiering og QR-kode.
-// Lenkeformatet er det samme som Vipps bruker i QR-kodene for privatpersoner. Det er ikke offisielt
-// dokumentert, så betalingssiden har alltid en reservelenke og en kopier-knapp.
+// Vipps privat: lenker som åpner Vipps med mottakeren ferdig utfylt, kopiering og QR-kode.
+// Lenken lages i backend (vippsLenke_) i formatet Vipps dokumenterer for personlige QR-koder.
+// At den åpner appen fra en nettside, er ikke dokumentert, så betalingssiden har alltid en reservelenke
+// og en kopier-knapp.
 import qrcode from "qrcode-generator"
 
 // Nettleseren inne i Instagram, Facebook, Messenger, TikTok, Snapchat o.l.
