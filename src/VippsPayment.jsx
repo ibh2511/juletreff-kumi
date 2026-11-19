@@ -7,7 +7,7 @@ import { kopier, lenker, miljo, qrSvg, valg } from "./vipps.js"
 //  Vipps privat: kopier nummeret, «Åpne Vipps» med nummer, beløp og melding fylt ut, eller QR-kode på PC.
 //  Vipps bedrift: «Betal med Vipps» sender deltakeren til Vipps og tilbake hit.
 // Siden sjekker betalingen i bakgrunnen (se App.jsx), og bytter til «Du er påmeldt» når den er kommet.
-export default function VippsPayment({ info, id, k, venter }) {
+export default function VippsPayment({ info, id, k, venter, lead }) {
   const m = useMemo(() => miljo(), [])
   const [kopiert, setKopiert] = useState("")
   const [fraNavn, setFraNavn] = useState(info?.fraNavn || "")
@@ -43,9 +43,8 @@ export default function VippsPayment({ info, id, k, venter }) {
     }
     return (
       <div className="vipps-card">
-        <div className="vipps-step">Siste steg</div>
         <h3>Betal {kr} med Vipps</h3>
-        <p className="vipps-lead">Plassen din er sikret når betalingen er mottatt.</p>
+        <p className="vipps-lead">{lead || "Plassen din er sikret når betalingen er mottatt."}</p>
         <button type="button" className="vipps-btn" onClick={betal} disabled={sender}>
           {sender ? "Sender deg til Vipps …" : `Betal ${kr} med Vipps`}
         </button>
@@ -234,10 +233,9 @@ export default function VippsPayment({ info, id, k, venter }) {
 
   return (
     <div className="vipps-card">
-      <div className="vipps-step">Siste steg</div>
       <h3>Betal {kr} med Vipps</h3>
       <p className="vipps-lead">
-        Plassen din er sikret når betalingen er mottatt.
+        {lead || "Plassen din er sikret når betalingen er mottatt."}
         {info.vippsNavn && l && <> Mottaker: {info.vippsNavn}.</>}
       </p>
       {trinn}

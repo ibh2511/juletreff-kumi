@@ -1020,3 +1020,58 @@ h2.tittel { white-space: nowrap; font-size: clamp(18px, 6.4vw, 34px); letter-spa
   line-height: 1.4;
 }
 .test-banner b { font-size: 15px; }
+
+/* Hvor deltakeren er i påmeldingen: påmeldt, betal, ferdig */
+.fremdrift {
+  list-style: none;
+  margin: 8px 0 14px;
+  padding: 0;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #8f877e;
+  animation: fadeIn 0.8s ease-in-out;
+}
+.fremdrift li {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+.fremdrift li + li::before {
+  content: "";
+  width: 18px;
+  height: 1px;
+  background: rgba(237, 183, 125, 0.35);
+  margin-right: 2px;
+}
+.fremdrift span {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 1px solid rgba(237, 183, 125, 0.35);
+  font-size: 12px;
+  font-weight: 700;
+}
+.fremdrift .ferdig { color: #c9c1b8; }
+.fremdrift .ferdig span { background: #2f6b3a; border-color: #2f6b3a; color: #fff; }
+.fremdrift .aktiv { color: #fff; font-weight: 600; }
+.fremdrift .aktiv span { background: #ff5b24; border-color: #ff5b24; color: #fff; }
+.epost-notis {
+  margin: 12px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #a39b92;
+  text-align: center;
+}
+@media (max-width: 360px) {
+  .fremdrift { font-size: 12px; gap: 4px; }
+  .fremdrift li + li::before { width: 10px; }
+}
+
+.fremdrift + .vipps-card { margin-top: 0; }

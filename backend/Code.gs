@@ -1167,7 +1167,7 @@ function sendBekreftelse_(r) {
   var html = epostRamme_(
     '<h2 style="color: #edb77d; font-size: 1.5rem; margin-top: 0; text-align: center;">Hei ' + fornavn + ',</h2>' +
     '<p style="font-weight: bold; font-size: 1.1rem; margin: 20px 0 0 0; letter-spacing: 0.5px; text-align: center;">' +
-    (betalt ? 'Du er påmeldt Juletreff på KUMI 🌿' : 'Takk for din påmelding til Juletreff på KUMI 🌿') + '</p>' +
+    (betalt ? 'Du er påmeldt Juletreff på KUMI 🌿' : 'Ett steg igjen: betal, så er plassen din 🌿') + '</p>' +
 
     betaling +
 
@@ -1194,7 +1194,7 @@ function sendBekreftelse_(r) {
 
   var tekst =
     'Hei ' + r.fornavn + '!\n\n' +
-    (betalt ? 'Du er påmeldt Juletreff på KUMI. Plassen din er sikret.' : 'Takk for din påmelding til Juletreff på KUMI.') + '\n\n' +
+    (betalt ? 'Du er påmeldt Juletreff på KUMI. Plassen din er sikret.' : 'Ett steg igjen: betal, så er plassen din på Juletreff på KUMI.') + '\n\n' +
     (betalt ? 'Betalt: ' + r.belop + ' kr.'
       : vippsTekst_(r) + '\nPlassen din er sikret når betalingen er mottatt.') + '\n\n' +
     'Sted: ' + a.sted + '\nTid: ' + a.dato + '\nPåmelding: ' + r.id + '\n\n' +

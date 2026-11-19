@@ -300,6 +300,21 @@ export default function App() {
       ? `Meld meg på og betal ${formatPrice(info.pris)}`
       : `Meld meg på · ${formatPrice(info.pris)}`
 
+  // Påmeldt → Betal → Plassen er din. Vises over betalingsboksen, så det er tydelig hva som gjenstår.
+  const fremdrift = (betalt) => (
+    <ol className="fremdrift" aria-label="Påmeldingen">
+      <li className="ferdig">
+        <span aria-hidden="true">✓</span>Påmeldt
+      </li>
+      <li className={betalt ? "ferdig" : "aktiv"} aria-current={betalt ? undefined : "step"}>
+        <span aria-hidden="true">{betalt ? "✓" : "2"}</span>{betalt ? "Betalt" : "Betal"}
+      </li>
+      <li className={betalt ? "ferdig" : ""} aria-current={betalt ? "step" : undefined}>
+        <span aria-hidden="true">{betalt ? "✓" : "3"}</span>Plassen er din
+      </li>
+    </ol>
+  )
+
   const bindendeBoks = (
     <div className="binding-box">
       Påmeldingen er bindende og kan bare trekkes med legeerklæring. Under 48
@@ -384,6 +399,7 @@ export default function App() {
 
             {status === "betalt" && (
               <>
+                {fremdrift(true)}
                 <div className="msg thanks">
                   <h3>🎉 Du er påmeldt! 🎉</h3>
                   <p>Betalingen på {pris} er mottatt.</p>
@@ -400,26 +416,24 @@ export default function App() {
 
             {status === "ubetalt" && (
               <>
-                {detaljer?.fraLenke ? (
-                  <div className="msg">
-                    <h3>Hei{detaljer?.fornavn ? ` ${detaljer.fornavn}` : ""}!</h3>
-                    <p>Du har plass, men vi har ikke registrert betalingen ennå.</p>
-                  </div>
-                ) : (
-                  <div className="msg thanks">
-                    <h3>🎉 Takk for påmeldingen! 🎉</h3>
-                    <p>Bekreftelse sendt på e-post 📬</p>
-                    <p>
-                      <small>Sjekk søppelpost/spam</small>
-                    </p>
-                  </div>
-                )}
+                {fremdrift(false)}
                 <VippsPayment
                   info={detaljer?.betalingsinfo}
                   id={detaljer?.id}
                   k={detaljer?.k}
                   venter={venterTekst}
+                  lead={
+                    detaljer?.fraLenke
+                      ? `Hei${detaljer?.fornavn ? ` ${detaljer.fornavn}` : ""}! Du har plass, men vi har ikke fått betalingen ennå.`
+                      : ""
+                  }
                 />
+                {!detaljer?.fraLenke && (
+                  <p className="epost-notis">
+                    📬 Betalingsinfoen er også sendt til {detaljer?.epost || "e-posten din"}.
+                    Sjekk søppelpost hvis du ikke finner den.
+                  </p>
+                )}
                 {bindendeBoks}
               </>
             )}
