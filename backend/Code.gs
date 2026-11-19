@@ -6,8 +6,8 @@
  *  - To betalingsløsninger, som velges i adminsiden:
  *     Vipps bedrift: Vipps-avtalen (ePayment API). Deltakeren sendes til Vipps, betalingen sjekkes
  *                    direkte hos Vipps og beløpet trekkes.
- *     Vipps privat:  deltakeren vippser til et mobilnummer fra betalingssiden («Åpne Vipps» med nummer,
- *                    beløp og melding fylt ut, QR-kode på PC). Backend kan lese innbetalingene i SpareBank 1
+ *     Vipps privat:  deltakeren vippser til et mobilnummer fra betalingssiden («Åpne Vipps» med nummeret
+ *                    fylt ut, QR-kode på PC). Backend kan lese innbetalingene i SpareBank 1
  *                    og koble dem til påmeldingen på påmeldings-ID, navn og beløp. Uten bankkobling markerer
  *                    du betalingen som mottatt i adminsiden.
  *  - Sender bekreftelse på e-post (med beskjed om at påmeldingen er bindende)
@@ -62,19 +62,18 @@ function gebyr_(kr) {
 }
 
 /**
- * Lenke som åpner Vipps med mottaker, beløp og melding fylt ut. Samme format som Vipps bruker i QR-kodene
- * for privatpersoner, så den virker bare for mobilnummer (8 sifre). Formatet er ikke offisielt dokumentert,
- * så utfyllingen av beløp og melding kan slås av i adminsiden (VIPPS_LENKE_UTFYLT=nei). Beløpet er i øre.
+ * Lenke (og QR-kode) som åpner Vipps med mottakeren fylt ut. Formatet er det Vipps dokumenterer for
+ * personlige QR-koder i Norge, med landskoden 47 foran mobilnummeret:
+ *   https://qr.vipps.no/28/2/01/031/4712345678?v=1
+ *   (developer.vippsmobilepay.com/docs/APIs/epayment-api/api-guide/features/personal-qr/)
+ * Uten 47 åpnet Vipps seg, men ble stående og laste. Beløp og melding står ikke i formatet og ble ikke
+ * fylt ut i testen, så de er ikke med. Deltakeren skriver beløpet selv. Virker bare for mobilnummer.
  */
-function vippsLenke_(nr, ore, melding) {
+function vippsLenke_(nr) {
   var d = String(nr || '').replace(/\D/g, '');
+  if (d.length === 10 && d.slice(0, 2) === '47') d = d.slice(2);
   if (d.length !== 8) return '';
-  var l = 'https://qr.vipps.no/28/2/01/031/' + d + '?v=1';
-  if (cfg_('VIPPS_LENKE_UTFYLT', 'ja') !== 'nei') {
-    if (ore) l += '&a=' + Math.round(ore);
-    if (melding) l += '&m=' + encodeURIComponent(String(melding).slice(0, 50));
-  }
-  return l;
+  return 'https://qr.vipps.no/28/2/01/031/47' + d + '?v=1';
 }
 
 /** Det som skal stå i Vipps-meldingen. Påmeldings-ID-en gjør at banken kan koble betalingen sikkert. */
@@ -489,12 +488,11 @@ function betalBedrift_(p) {
 function betalingsinfo_(r) {
   var a = arrangement_();
   var nr = String(a.vippsNummer || '').replace(/\D/g, '');
-  var ore = Math.round(Number(r.belop) * 100);
   return {
     losning: a.vippsAktiv ? 'bedrift' : 'privat',
     belop: Number(r.belop), id: r.id,
     nr: nr, mottaker: nr ? vippsTil_(nr) : '', mobil: vippsErMobil_(nr), vippsNavn: a.vippsNavn,
-    lenke: vippsLenke_(nr, ore, vippsMelding_(r)), melding: vippsMelding_(r),
+    lenke: vippsLenke_(nr), melding: vippsMelding_(r),
     fraNavn: r.vipps_navn || (r.fornavn + ' ' + r.etternavn),
     automatisk: bankKlar_()
   };
@@ -1334,7 +1332,7 @@ function epostAvsnitt_(tekst, liten) {
 
 /**
  * Oransje Vipps-boks i e-postene for den som ikke har betalt ennå.
- *  Vipps privat: «Åpne Vipps»-knapp med nummer, beløp og melding fylt ut (mobilnummer), og tabell med alt som trengs.
+ *  Vipps privat: «Åpne Vipps»-knapp med nummeret fylt ut (mobilnummer), og tabell med alt som trengs.
  *  Vipps bedrift: «Betal med Vipps»-knapp til betalingssiden, som sender videre til Vipps.
  */
 function vippsBoks_(r, undertekst) {
@@ -1612,7 +1610,7 @@ function adminOversikt_(okt) {
       vippsNummer: a.vippsNummer, vippsNavn: a.vippsNavn, start: a.start.toISOString(), noshow: a.noshow, rapportTil: rapportMottaker_(),
       facebookUrl: facebookUrl_(), epostKvote: epostKvote_(), svarEpost: cfg_('SVAR_EPOST', ''), program: program_(), takk: takk_(), telefon: cfg_('KONTAKT_TELEFON', ''),
       maksPurringer: MAKS_PURRINGER, betaling: a.vippsAktiv ? 'bedrift' : 'privat',
-      utfylt: cfg_('VIPPS_LENKE_UTFYLT', 'ja') !== 'nei', gebyrProsent: GEBYR_PROSENT, gebyrKr: GEBYR_KR, varselEpost: varselEpost_(),
+      gebyrProsent: GEBYR_PROSENT, gebyrKr: GEBYR_KR, varselEpost: varselEpost_(),
       frist: a.frist.toISOString() },
     bank: bankStatus_(),
     bankrader: bankRader_(),
@@ -1846,7 +1844,6 @@ function adminEndre_(p) {
  *  kapasitet   antall plasser (1–500)
  *  betaling    'privat' (deltakerne vippser til nummeret) eller 'bedrift' (Vipps-avtalen).
  *              Lagres som VIPPS_MODUS ('nummer' / 'api'). Det gamle feltet vippsModus virker fortsatt.
- *  utfylt      om «Åpne Vipps»-lenken fyller ut beløp og melding (VIPPS_LENKE_UTFYLT)
  */
 function adminInnstillinger_(p) {
   if (!sjekkOkt_(p.okt)) return { ok: false, utlogget: true, error: 'Logg inn på nytt' };
@@ -1904,11 +1901,6 @@ function adminInnstillinger_(p) {
       if (!gyldigFacebookUrl_(fbu)) return { ok: false, error: 'Lenken må være en Facebook-adresse som starter med https://www.facebook.com/ eller https://fb.me/' };
       props.setProperty('FACEBOOK_URL', fbu);
       meldinger.push('Facebook-lenken er lagret. Den brukes i e-postene og på nettsiden.');
-    }
-    if (p.utfylt !== undefined) {
-      var uf = !(p.utfylt === false || p.utfylt === 'false' || p.utfylt === 'nei');
-      props.setProperty('VIPPS_LENKE_UTFYLT', uf ? 'ja' : 'nei');
-      meldinger.push(uf ? '«Åpne Vipps» fyller nå ut nummer, beløp og melding.' : '«Åpne Vipps» fyller nå bare ut nummeret.');
     }
     if (p.betaling === 'bedrift') p.vippsModus = 'api';
     if (p.betaling === 'privat') p.vippsModus = 'nummer';

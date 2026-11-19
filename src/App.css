@@ -289,10 +289,14 @@ textarea {
 .msg.error h3 {
   color: #d9534f;
 }
+/* Stiplede lenker bruker understreking, ikke kantlinje. Da følger den stiplede linjen ordene,
+   også når lenken brytes over to linjer, og går aldri over hele bredden. */
 .msg a {
   color: var(--muted);
-  text-decoration: none;
-  border-bottom: 0.75px dotted var(--muted);
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 0.75px;
+  text-underline-offset: 3px;
 }
 .msg a:hover {
   color: var(--accent);
@@ -738,12 +742,20 @@ textarea {
   opacity: 0.7;
   cursor: default;
 }
-.vipps-reserve {
-  display: inline-block;
-  margin-top: 10px;
+/* «Åpnet ikke Vipps?» på én linje og lenken på linjen under. Lenken er inline, så den stiplede
+   linjen følger bare teksten og aldri går over hele bredden. */
+.vipps-reserve-rad {
+  margin: 10px 0 0;
   font-size: 13.5px;
+  line-height: 1.7;
   color: var(--muted);
-  border-bottom: 0.75px dotted var(--muted);
+}
+.vipps-reserve {
+  color: var(--muted);
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 0.75px;
+  text-underline-offset: 3px;
 }
 .vipps-belop {
   margin-top: 6px;
@@ -875,26 +887,6 @@ textarea {
   font-size: 13px;
   color: #ffab8a;
 }
-.vipps-venter {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 10px;
-  margin-top: 16px;
-  font-size: 13.5px;
-  font-weight: 300;
-}
-.vipps-venter .prikk {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #ff5b24;
-  animation: vippsPuls 1.4s ease-in-out infinite;
-}
-@keyframes vippsPuls {
-  0%, 100% { opacity: 0.25; transform: scale(0.8); }
-  50% { opacity: 1; transform: scale(1.1); }
-}
 
 /* Bindende påmelding */
 .binding-check {
@@ -919,7 +911,10 @@ textarea {
 .binding-check a,
 .binding-box a {
   color: var(--accent);
-  border-bottom: 0.75px dotted var(--accent);
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 0.75px;
+  text-underline-offset: 3px;
 }
 .binding-box {
   width: 100%;
@@ -953,7 +948,10 @@ textarea {
   padding: 0;
   font: inherit;
   color: var(--muted);
-  border-bottom: 0.75px dotted var(--muted);
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 0.75px;
+  text-underline-offset: 3px;
   cursor: pointer;
 }
 
@@ -969,7 +967,10 @@ textarea {
 .site-footer a {
   color: #111;
   font-weight: 400;
-  border-bottom: 0.75px dotted #111;
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 0.75px;
+  text-underline-offset: 3px;
 }
 
 /* Salgsvilkår og personvern */
@@ -1120,28 +1121,133 @@ h2.tittel { white-space: nowrap; font-size: clamp(18px, 6.4vw, 34px); letter-spa
 
 .fremdrift + .vipps-card { margin-top: 0; }
 
-/* Under betalingsstegene, og venteboksen etter at deltakeren har vært i Vipps */
-.vipps-hint {
-  margin: 4px 0 0;
-  font-size: 13px;
-  line-height: 1.5;
-  color: #a39b92;
-  text-align: center;
+/* Venteboksen etter at deltakeren har vært i Vipps */
+.vipps-sjekker {
+  padding-top: 30px;
 }
-.vipps-sjekker-ikon {
-  display: grid;
-  place-items: center;
-  width: 48px;
-  height: 48px;
-  margin: 0 auto 10px;
+.vipps-radar {
+  position: relative;
+  width: 76px;
+  height: 76px;
+  margin: 0 auto 16px;
+}
+.vipps-radar::before,
+.vipps-radar::after {
+  content: "";
+  position: absolute;
+  inset: 0;
   border-radius: 50%;
-  background: rgba(255, 91, 36, 0.12);
+  border: 2px solid rgba(255, 91, 36, 0.7);
+  opacity: 0;
+  animation: vippsRadar 2.4s cubic-bezier(0.2, 0.6, 0.35, 1) infinite;
 }
-.vipps-sjekker-ikon .prikk {
-  width: 14px;
-  height: 14px;
+.vipps-radar::after {
+  animation-delay: 1.2s;
+}
+.vipps-radar span {
+  position: absolute;
+  inset: 25px;
   border-radius: 50%;
   background: #ff5b24;
-  animation: vippsPuls 1.4s ease-in-out infinite;
+  box-shadow: 0 0 0 6px rgba(255, 91, 36, 0.18), 0 6px 18px rgba(255, 91, 36, 0.35);
 }
-.vipps-sjekker .vipps-venter { margin-top: 10px; }
+@keyframes vippsRadar {
+  0% { transform: scale(0.35); opacity: 0.9; }
+  80%, 100% { transform: scale(1); opacity: 0; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .vipps-radar::before { animation: none; opacity: 0.35; transform: scale(0.8); }
+  .vipps-radar::after { display: none; }
+}
+.vipps-sjekker h3 {
+  font-size: 22px;
+  text-wrap: balance;
+}
+.vipps-sjekker .vipps-lead {
+  margin-bottom: 18px;
+  font-size: 15px;
+  color: var(--ink);
+}
+.vipps-sjekker-kort {
+  margin: 0;
+  padding: 2px 14px;
+  border-radius: 10px;
+  background: #222;
+  border: 1px solid rgba(244, 234, 223, 0.12);
+  text-align: left;
+}
+.vipps-sjekker-kort dd {
+  /* Verdien blir på samme linje som «Fra» også på smal mobil. Er det for trangt, går «Endre» under navnet. */
+  flex: 1 1 0%;
+  min-width: 0;
+  justify-content: flex-end;
+  text-align: right;
+  font-size: 16px;
+  white-space: normal;
+}
+.vipps-fra-navn {
+  overflow-wrap: anywhere;
+}
+.vipps-endre {
+  min-height: 32px;
+  padding: 4px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(237, 183, 125, 0.55);
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.vipps-endre[aria-expanded="true"] {
+  background: rgba(237, 183, 125, 0.12);
+}
+.vipps-sjekker .vipps-nytt-navn {
+  margin-top: 12px;
+}
+.vipps-sjekker-tekst {
+  margin: 14px 0 0;
+  font-size: 13px;
+  font-weight: 300;
+  line-height: 1.55;
+  color: #a39b92;
+  text-wrap: pretty;
+}
+.vipps-sjekker-tekst .nowrap {
+  white-space: nowrap;
+}
+.vipps-hjelp {
+  margin-top: 14px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(237, 183, 125, 0.08);
+  border: 1px solid rgba(237, 183, 125, 0.3);
+  font-size: 13.5px;
+  line-height: 1.55;
+  color: var(--ink);
+  text-align: left;
+}
+/* Samme mønster som «Åpnet ikke Vipps?»: spørsmålet på én linje og den stiplede lenken på linjen under */
+.vipps-tilbake-rad {
+  margin: 18px 0 0;
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--muted);
+}
+.vipps-tilbake {
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: none;
+  color: var(--ink);
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-decoration-thickness: 0.75px;
+  text-underline-offset: 3px;
+  font: inherit;
+  cursor: pointer;
+}
+.vipps-tilbake:hover {
+  color: var(--accent);
+}

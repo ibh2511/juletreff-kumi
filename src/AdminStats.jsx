@@ -386,7 +386,7 @@ export default function AdminStats({ okt, onLogout }) {
                 <b>Vipps privat</b>
                 <span>
                   Deltakerne vippser til nummeret under, uten gebyr. «Åpne Vipps»
-                  fyller ut nummer, beløp og melding, og PC viser QR-kode.
+                  fyller ut nummeret, og PC viser QR-kode.
                 </span>
                 <em className={arr.vippsNummer ? (bank.klar ? "ok" : "") : "mangler"}>
                   {!arr.vippsNummer
@@ -453,17 +453,6 @@ export default function AdminStats({ okt, onLogout }) {
                 Lagre
               </button>
             </div>
-            <label className="sjekk liten-sjekk">
-              <input
-                type="checkbox"
-                checked={arr.utfylt !== false}
-                disabled={jobber}
-                onChange={(e) =>
-                  send({ action: "innstillinger", utfylt: e.target.checked }, "vippsnr")
-                }
-              />
-              «Åpne Vipps» fyller ut beløp og melding (ellers bare nummeret)
-            </label>
             <div className="liten">
               Bruk et mobilnummer (8 sifre), så får deltakerne «Åpne Vipps» og
               QR-kode. Et Vipps-nummer (5–6 sifre) må de søke opp selv. Nummeret
