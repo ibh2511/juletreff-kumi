@@ -123,7 +123,7 @@ export default function AdminBetaling({ data, okt, onLogout, last }) {
 
       <h3 className="under-tittel">Salg per betalingsløsning</h3>
       <div className="tabell">
-        <table>
+        <table className="salg">
           <thead>
             <tr>
               <th>Løsning</th>
@@ -138,34 +138,34 @@ export default function AdminBetaling({ data, okt, onLogout, last }) {
               <td>
                 Vipps privat {arr.betaling === "privat" && <span className="badge ok">I bruk</span>}
               </td>
-              <td className="tall">{pb.privat.salg}</td>
-              <td className="tall">{kr2(pb.privat.omsetning)}</td>
-              <td className="tall liten">Ingen</td>
-              <td className="tall">{kr2(pb.privat.netto)}</td>
+              <td data-label="Salg" className="tall">{pb.privat.salg}</td>
+              <td data-label="Omsetning" className="tall">{kr2(pb.privat.omsetning)}</td>
+              <td data-label="Gebyr" className="tall liten">Ingen</td>
+              <td data-label="Netto" className="tall">{kr2(pb.privat.netto)}</td>
             </tr>
             <tr>
               <td>
                 Vipps bedrift {arr.betaling === "bedrift" && <span className="badge ok">I bruk</span>}
               </td>
-              <td className="tall">{pb.bedrift.salg}</td>
-              <td className="tall">{kr2(pb.bedrift.omsetning)}</td>
-              <td className="tall">{kr2(pb.bedrift.gebyr)}</td>
-              <td className="tall">{kr2(pb.bedrift.netto)}</td>
+              <td data-label="Salg" className="tall">{pb.bedrift.salg}</td>
+              <td data-label="Omsetning" className="tall">{kr2(pb.bedrift.omsetning)}</td>
+              <td data-label="Gebyr" className="tall">{kr2(pb.bedrift.gebyr)}</td>
+              <td data-label="Netto" className="tall">{kr2(pb.bedrift.netto)}</td>
             </tr>
             <tr className="sum">
               <td>
                 <b>Sum</b>
               </td>
-              <td className="tall">
+              <td data-label="Salg" className="tall">
                 <b>{sum.salg}</b>
               </td>
-              <td className="tall">
+              <td data-label="Omsetning" className="tall">
                 <b>{kr2(sum.omsetning)}</b>
               </td>
-              <td className="tall">
+              <td data-label="Gebyr" className="tall">
                 <b>{kr2(sum.gebyr)}</b>
               </td>
-              <td className="tall">
+              <td data-label="Netto" className="tall">
                 <b>{kr2(sum.netto)}</b>
               </td>
             </tr>
@@ -188,7 +188,7 @@ export default function AdminBetaling({ data, okt, onLogout, last }) {
         <div className="tom">Ingen innbetalinger venter på kobling.</div>
       ) : (
         <div className="tabell">
-          <table>
+          <table className="bankrader">
             <thead>
               <tr>
                 <th>Dato</th>
@@ -205,16 +205,16 @@ export default function AdminBetaling({ data, okt, onLogout, last }) {
                 const v = valgt[b.bankId] ?? (ubetalte.some((r) => r.id === b.forslag) ? b.forslag : "")
                 return (
                   <tr key={b.bankId}>
-                    <td className="liten">{b.dato}</td>
-                    <td className="tall">{kr2(b.belop)}</td>
-                    <td>
+                    <td className="liten c-dato">{b.dato}</td>
+                    <td className="tall c-belop">{kr2(b.belop)}</td>
+                    <td className="c-fra">
                       {b.navn}
                       <div className="liten">{b.tekst}</div>
                     </td>
-                    <td>
+                    <td className="c-status">
                       <span className={`badge ${s.klasse}`}>{s.tekst}</span>
                     </td>
-                    <td>
+                    <td className="c-velg">
                       <select
                         className="handling-velger"
                         aria-label="Påmelding betalingen hører til"

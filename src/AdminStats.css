@@ -852,3 +852,48 @@
   border: 1px solid #efe6da; border-radius: 8px; padding: 10px; white-space: pre-wrap; overflow-wrap: anywhere;
 }
 .panel td.tall, .panel th.tall { white-space: nowrap; }
+
+/* Mobil: tabellene i «Vipps og bank» og felt som ikke får plass ved siden av hverandre */
+@media (max-width: 600px) {
+  table.salg, table.salg tbody { display: block; }
+  table.salg thead { display: none; }
+  table.salg tr {
+    display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px 8px;
+    padding: 12px 0; border-bottom: 1px solid #efe6da;
+  }
+  table.salg tr.sum { border-bottom: 0; }
+  .panel table.salg td { display: block; padding: 0; border: 0; min-width: 0; text-align: left; }
+  table.salg td:first-child { grid-column: 1 / -1; font-weight: 600; }
+  table.salg td[data-label]::before {
+    content: attr(data-label); display: block; font-size: 11px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .03em; color: #8a7a68; margin-bottom: 2px;
+  }
+
+  table.bankrader, table.bankrader tbody { display: block; }
+  table.bankrader thead { display: none; }
+  table.bankrader tr {
+    display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 6px 10px;
+    padding: 12px 0; border-bottom: 1px solid #efe6da;
+  }
+  table.bankrader td { display: block; padding: 0; border: 0; min-width: 0; overflow-wrap: anywhere; }
+  table.bankrader .c-fra { grid-column: 1; grid-row: 1; font-weight: 600; }
+  table.bankrader .c-fra .liten { font-weight: 400; }
+  table.bankrader .c-belop { grid-column: 2; grid-row: 1; font-weight: 600; }
+  table.bankrader .c-dato { grid-column: 1; grid-row: 2; align-self: center; }
+  table.bankrader .c-status { grid-column: 2; grid-row: 2; text-align: right; }
+  table.bankrader .c-velg, table.bankrader .handlinger { grid-column: 1 / -1; }
+  table.bankrader .handling-velger { width: 100%; max-width: none; padding-top: 9px; padding-bottom: 9px; }
+  table.bankrader .handlinger { display: flex; gap: 6px; }
+  table.bankrader .handlinger .mini { flex: 1; margin: 0; padding: 9px 12px; }
+
+  .innstilling-rad.to-felt input[type="text"] { flex: 1 1 100%; }
+  table.deltakere tr.deltaker { grid-template-columns: minmax(7.5em, 1fr) minmax(0, max-content); }
+  table.deltakere .c-navn { overflow-wrap: break-word; }
+  table.deltakere .c-status { max-width: 14em; }
+}
+@media (max-width: 400px) {
+  table.salg tr { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .innsjekk .panel-head { margin-bottom: 10px; }
+}

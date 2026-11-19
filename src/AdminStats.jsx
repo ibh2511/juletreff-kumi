@@ -417,7 +417,7 @@ export default function AdminStats({ okt, onLogout }) {
             {vis("vipps")}
 
             <div className="innstilling-tittel">Nummer for Vipps privat</div>
-            <div className="innstilling-rad">
+            <div className="innstilling-rad to-felt">
               <input
                 type="text"
                 inputMode="numeric"
@@ -538,7 +538,7 @@ export default function AdminStats({ okt, onLogout }) {
             <div className="innstilling-rad">
               <input
                 type="email"
-                placeholder="E-post som skal få bekreftelsen"
+                placeholder="E-post til bekreftelsen"
                 value={test.epost}
                 onChange={(e) => setTest({ ...test, epost: e.target.value })}
               />
@@ -834,7 +834,7 @@ export default function AdminStats({ okt, onLogout }) {
               type="search"
               className="innsjekk-sok"
               autoFocus
-              placeholder="Navn, telefon, e-post eller JT-nummer"
+              placeholder="Søk navn, telefon eller JT-nr."
               value={innsjekkSok}
               onChange={(e) => setInnsjekkSok(e.target.value)}
             />
