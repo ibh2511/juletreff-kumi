@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { apiPost } from "./api.js"
 import { API_URL, formatPrice } from "./config.js"
+import { kopier } from "./vipps.js"
 
 const kr2 = (v) =>
   `${Number(v || 0).toLocaleString("nb-NO", { minimumFractionDigits: 0, maximumFractionDigits: 2 })} kr`
@@ -30,6 +31,7 @@ export default function AdminBetaling({ data, okt, onLogout, last }) {
   const [klient, setKlient] = useState({ klientId: "", hemmelighet: "", finInst: null })
   const [kontoer, setKontoer] = useState(null)
   const [raa, setRaa] = useState("")
+  const [kopiert, setKopiert] = useState(false)
 
   const arr = data.arrangement
   const bank = data.bank || {}
@@ -90,18 +92,30 @@ export default function AdminBetaling({ data, okt, onLogout, last }) {
     } else fane?.close()
   }
 
-  const linjer = []
-  if (bank.feil) linjer.push("⚠️ Tilkoblingen virker ikke lenger. Trykk «Koble til banken» og logg inn med BankID på nytt.")
-  else if (bank.klar)
-    linjer.push(
-      `✅ Koblet til${bank.konto ? ` · konto ${bank.konto}` : ""}${bank.sistSjekket ? ` · sist sjekket ${tid(bank.sistSjekket)}` : ""}.`
-    )
-  else if (bank.tilkoblet) linjer.push("Koblet til, men ingen konto er valgt. Trykk «Velg konto».")
-  else linjer.push("Ikke koblet til. Lim inn klient-ID og hemmelighet fra developer.sparebank1.no og trykk «Koble til banken».")
-  if (bank.utloper)
-    linjer.push(
-      `BankID-godkjenningen varer til ${new Date(bank.utloper).toLocaleDateString("nb-NO", { dateStyle: "long" })}.`
-    )
+  const kopierRedirect = () =>
+    kopier(redirect)
+      .then(() => {
+        setKopiert(true)
+        setTimeout(() => setKopiert(false), 2500)
+      })
+      .catch(() => setMelding({ tekst: "Fikk ikke kopiert. Merk adressen og kopier den selv.", sted: "bank", feil: true }))
+
+  const tilstand = bank.feil ? "feil" : bank.klar ? "ok" : bank.tilkoblet ? "halv" : "av"
+  const status = {
+    feil: ["Tilkoblingen virker ikke lenger", "Logg inn med BankID på nytt under «Koble til på nytt»."],
+    ok: ["Koblet til banken", "Backend finner betalingene selv."],
+    halv: ["Koblet til, men ingen konto er valgt", "Trykk «Velg konto» og velg kontoen Vipps-pengene kommer inn på."],
+    av: ["Ikke koblet til", "Følg stegene under. Uten banken markerer du betalingene som mottatt selv."],
+  }[tilstand]
+  const fakta = [
+    bank.konto && ["Konto", bank.konto],
+    bank.sistSjekket && ["Sist sjekket", tid(bank.sistSjekket)],
+    bank.utloper && [
+      "BankID gyldig til",
+      new Date(bank.utloper).toLocaleDateString("nb-NO", { dateStyle: "long" }),
+    ],
+    ["Varsler til", arr.varselEpost || "VARSEL_EPOST, ADMIN_EPOST eller SVAR_EPOST"],
+  ].filter(Boolean)
 
   return (
     <section className="panel">
@@ -165,13 +179,10 @@ export default function AdminBetaling({ data, okt, onLogout, last }) {
 
       <h3 className="under-tittel">Innbetalinger som ikke ble koblet</h3>
       <div className="liten">
-        Backend kobler betalinger til påmeldinger på påmeldings-ID, navn og beløp.
-        Det som ikke kunne kobles sikkert, havner her, og du får e-post om det.
-        Velg påmeldingen og trykk «Koble», så får deltakeren bekreftelsen. Har noen
-        betalt feil beløp, er påmeldingen vi tror den hører til valgt på forhånd.
-        Gjelder den ikke juletreffet, trykker du «Ignorer». Ser du en betaling i
-        nettbanken som ikke står her, bruker du «Marker som betalt» i listen over
-        påmeldinger.
+        Betalinger backend ikke kunne koble sikkert. Velg påmeldingen og trykk
+        «Koble», så får deltakeren bekreftelsen. Gjelder den ikke juletreffet,
+        trykker du «Ignorer». Ser du en betaling i nettbanken som mangler her,
+        bruker du «Marker som betalt» i påmeldingslisten.
       </div>
       {rader.length === 0 ? (
         <div className="tom">Ingen innbetalinger venter på kobling.</div>
@@ -253,102 +264,151 @@ export default function AdminBetaling({ data, okt, onLogout, last }) {
 
       <h3 className="under-tittel">Banken (SpareBank 1)</h3>
       <div className="liten">
-        Trengs for at Vipps privat skal finne betalingene selv. Backend leser bare
-        innbetalinger på kontoen du velger, og flytter aldri penger. Uten banken
-        virker Vipps privat også, men da markerer du betalingene som mottatt selv.
+        Med banken koblet til finner Vipps privat betalingene selv. Backend leser
+        bare innbetalinger på kontoen du velger, og flytter aldri penger.
       </div>
-      <p className="bank-status">{linjer.join(" ")}</p>
-      <div className="bank-felt">
-        <label>
-          Klient-ID
-          <input
-            type="text"
-            autoComplete="off"
-            placeholder={bank.klientId ? "Lagret (lim inn for å bytte)" : "Fra developer.sparebank1.no"}
-            value={klient.klientId}
-            onChange={(e) => setKlient({ ...klient, klientId: e.target.value })}
-          />
-        </label>
-        <label>
-          Klienthemmelighet
-          <input
-            type="password"
-            autoComplete="new-password"
-            placeholder={bank.hemmelighet ? "Lagret (lim inn for å bytte)" : "Fra developer.sparebank1.no"}
-            value={klient.hemmelighet}
-            onChange={(e) => setKlient({ ...klient, hemmelighet: e.target.value })}
-          />
-        </label>
-        <label>
-          Bank-ID (finInst, valgfritt)
-          <input
-            type="text"
-            autoComplete="off"
-            placeholder="hvis portalen viser en"
-            value={klient.finInst ?? bank.finInst ?? ""}
-            onChange={(e) => setKlient({ ...klient, finInst: e.target.value })}
-          />
-        </label>
-      </div>
-      <div className="liten">
-        Redirect-adressen du limer inn hos SpareBank 1: <code className="kode">{redirect}</code>
-      </div>
-      <div className="bank-knapper">
-        <button className="mini ok" disabled={jobber} onClick={kobleTilBanken}>
-          Koble til banken
-        </button>
-        {bank.tilkoblet && (
-          <button
-            className="mini"
-            disabled={jobber}
-            onClick={() => kall({ action: "bankkontoer" }, "bank", (d) => setKontoer(d.kontoer))}
-          >
-            Velg konto
+
+      <div className={`bank-kort ${tilstand}`}>
+        <div className="bank-hode">
+          <span className="bank-prikk" aria-hidden="true" />
+          <div className="bank-tittel">
+            <b>{status[0]}</b>
+            <span>{status[1]}</span>
+          </div>
+          <button className="mini" disabled={jobber} onClick={last}>
+            Oppdater
           </button>
+        </div>
+
+        <dl className="bank-fakta">
+          {fakta.map(([k, v]) => (
+            <div key={k}>
+              <dt>{k}</dt>
+              <dd>{v}</dd>
+            </div>
+          ))}
+        </dl>
+
+        {bank.tilkoblet && (
+          <div className="bank-knapper">
+            <button
+              className={`mini ${tilstand === "halv" ? "ok" : ""}`}
+              disabled={jobber}
+              onClick={() => kall({ action: "bankkontoer" }, "bank", (d) => setKontoer(d.kontoer))}
+            >
+              Velg konto
+            </button>
+            {bank.klar && (
+              <button
+                className="mini"
+                disabled={jobber}
+                onClick={() =>
+                  kall({ action: "banktest" }, "bank", async (d) => {
+                    setRaa(d.eksempler.map((x) => JSON.stringify(x.raa, null, 2)).join("\n\n"))
+                    await last()
+                  })
+                }
+              >
+                Test banken
+              </button>
+            )}
+          </div>
         )}
-        {bank.klar && (
-          <button
-            className="mini"
-            disabled={jobber}
-            onClick={() =>
-              kall({ action: "banktest" }, "bank", async (d) => {
-                setRaa(d.eksempler.map((x) => JSON.stringify(x.raa, null, 2)).join("\n\n"))
+        {kontoer && (
+          <select
+            className="handling-velger bank-konto"
+            aria-label="Konto for Vipps-innbetalinger"
+            value={kontoer.find((x) => x.valgt)?.key || ""}
+            onChange={(e) =>
+              kall({ action: "bankkontoer", key: e.target.value }, "bank", async (d) => {
+                setKontoer(d.kontoer)
                 await last()
               })
             }
           >
-            Test banken
-          </button>
+            <option value="">Velg kontoen Vipps-pengene kommer inn på …</option>
+            {kontoer.map((x) => (
+              <option key={x.key} value={x.key}>
+                {x.navn} {x.nummer}
+              </option>
+            ))}
+          </select>
         )}
-        <button className="mini" disabled={jobber} onClick={last}>
-          Oppdater status
-        </button>
+        {vis("bank")}
+        {raa && <pre className="bank-raa">{raa}</pre>}
       </div>
-      {kontoer && (
-        <select
-          className="handling-velger"
-          aria-label="Konto for Vipps-innbetalinger"
-          value={kontoer.find((x) => x.valgt)?.key || ""}
-          onChange={(e) =>
-            kall({ action: "bankkontoer", key: e.target.value }, "bank", async (d) => {
-              setKontoer(d.kontoer)
-              await last()
-            })
-          }
-        >
-          <option value="">Velg kontoen Vipps-pengene kommer inn på …</option>
-          {kontoer.map((x) => (
-            <option key={x.key} value={x.key}>
-              {x.navn} {x.nummer}
-            </option>
-          ))}
-        </select>
-      )}
-      {vis("bank")}
-      {raa && <pre className="bank-raa">{raa}</pre>}
-      <div className="liten">
-        Varsler om betalinger og banken går til {arr.varselEpost || "adressen i VARSEL_EPOST, ADMIN_EPOST eller SVAR_EPOST"}.
-      </div>
+
+      <details className="bank-oppsett" open={!bank.tilkoblet || bank.feil}>
+        <summary>{bank.tilkoblet ? "Koble til på nytt eller bytt klient" : "Slik kobler du til banken"}</summary>
+        <ol className="bank-steg">
+          <li>
+            <b>Lag en klient hos SpareBank 1</b>
+            <span>
+              Gå til{" "}
+              <a href="https://developer.sparebank1.no" target="_blank" rel="noreferrer">
+                developer.sparebank1.no
+              </a>
+              , trykk «Create new client» og velg banken kontoen din er i. Bruk en
+              egen klient for juletreffet.
+            </span>
+          </li>
+          <li>
+            <b>Lim inn denne redirect-adressen på klienten</b>
+            <div className="kopi-rad">
+              <code>{redirect}</code>
+              <button type="button" className={`mini ${kopiert ? "ok" : ""}`} onClick={kopierRedirect}>
+                {kopiert ? "Kopiert!" : "Kopier"}
+              </button>
+            </div>
+          </li>
+          <li>
+            <b>Lim inn opplysningene fra klienten</b>
+            <div className="bank-felt">
+              <label>
+                Klient-ID
+                <input
+                  type="text"
+                  autoComplete="off"
+                  placeholder={bank.klientId ? "Lagret. Lim inn for å bytte" : "Client ID"}
+                  value={klient.klientId}
+                  onChange={(e) => setKlient({ ...klient, klientId: e.target.value })}
+                />
+              </label>
+              <label>
+                Klienthemmelighet
+                <input
+                  type="password"
+                  autoComplete="new-password"
+                  placeholder={bank.hemmelighet ? "Lagret. Lim inn for å bytte" : "Client secret"}
+                  value={klient.hemmelighet}
+                  onChange={(e) => setKlient({ ...klient, hemmelighet: e.target.value })}
+                />
+              </label>
+              <label>
+                <span>
+                  Bank-ID <i>(valgfritt)</i>
+                </span>
+                <input
+                  type="text"
+                  autoComplete="off"
+                  placeholder="Tom hvis portalen ikke viser en"
+                  value={klient.finInst ?? bank.finInst ?? ""}
+                  onChange={(e) => setKlient({ ...klient, finInst: e.target.value })}
+                />
+              </label>
+            </div>
+          </li>
+          <li>
+            <b>Logg inn med BankID</b>
+            <span>Det åpnes en ny fane. Kom tilbake hit når den sier at banken er koblet til.</span>
+            <div>
+              <button className="mini ok stor" disabled={jobber} onClick={kobleTilBanken}>
+                Koble til banken
+              </button>
+            </div>
+          </li>
+        </ol>
+      </details>
     </section>
   )
 }
