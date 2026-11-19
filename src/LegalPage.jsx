@@ -41,7 +41,7 @@ function Vilkar({ info }) {
         Du melder deg på via skjemaet på nettsiden og betaler med Vipps
         {info.vippsAktiv
           ? ", der du sendes rett til betalingen."
-          : ". Vipps-nummeret får du i e-posten med påmeldingen, og du vippser beløpet selv."}{" "}
+          : ". Når du har meldt deg på, får du opp nummeret og en knapp som åpner Vipps, og det samme på e-post. Du vippser beløpet selv."}{" "}
         Plassen din er sikret når betalingen er mottatt, og du får en
         bekreftelse på e-post. Påmeldingsfristen er {info.fristTekst}, eller
         tidligere hvis det blir fullt. Er det fullt, kan du sette deg på
@@ -164,10 +164,13 @@ function Personvern({ info }) {
       <h2>Hvem som får opplysningene</h2>
       <p>
         Betalingen skjer med Vipps (Vipps MobilePay AS), som behandler
-        betalingen etter sine egne vilkår. Når du vipper til nummeret i
-        e-posten, ser mottakeren navnet ditt, telefonnummeret ditt, beløpet og
-        meldingen du skriver, slik det alltid er i Vipps. Vi bruker det bare
-        til å se hvem som har betalt og til å betale tilbake. Opplysningene
+        betalingen etter sine egne vilkår. Når du vippser til nummeret, ser
+        mottakeren navnet ditt, telefonnummeret ditt, beløpet og meldingen du
+        skriver, slik det alltid er i Vipps. Innbetalingen kommer inn på
+        arrangørens bankkonto i SpareBank 1, og påmeldingssystemet leser
+        navnet, beløpet og meldingen derfra for å koble betalingen til
+        påmeldingen din. Vi bruker det bare til å se hvem som har betalt og
+        til å betale tilbake. Opplysningene
         ligger i mottakerens Vipps-historikk etter Vipps sine egne regler, og
         vi kan ikke slette dem der. Vi gir KUMI antall deltakere og
         eventuelle allergier, men ikke kontaktopplysningene dine. Vi selger

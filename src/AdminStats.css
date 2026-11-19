@@ -757,3 +757,50 @@
 .overdra-felt { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin: 8px 0; }
 .overdra-felt input { font: inherit; font-size: 14px; padding: 7px 10px; border: 1px solid #d9cbb8; border-radius: 8px; background: #fff; color: #111; min-width: 0; }
 @media (max-width: 480px) { .overdra-felt { grid-template-columns: 1fr; } }
+
+/* Betalingsløsning: to valgkort */
+.betaling-innstilling { grid-column: 1 / -1; }
+.valgkort-rad { display: grid; gap: 8px; }
+@media (min-width: 600px) { .valgkort-rad { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } }
+.valgkort {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px 12px 40px;
+  border: 1.5px solid #e4d7c5;
+  border-radius: 10px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 13px;
+  color: #5b4a3a;
+}
+.valgkort.valgt { border-color: #1e6b33; background: #f3faf4; }
+.valgkort input { position: absolute; left: 14px; top: 14px; accent-color: #1e6b33; }
+.valgkort input:disabled + b { color: #a79a8b; }
+.valgkort b { font-size: 15px; color: #111; }
+.valgkort em { font-style: normal; font-size: 12px; font-weight: 600; color: #8a5300; }
+.valgkort em.ok { color: #1e6b33; }
+.valgkort em.mangler { color: #b3261e; }
+.innstilling .sjekk { display: flex; gap: 8px; align-items: center; font-size: 13px; cursor: pointer; }
+.innstilling .sjekk input { accent-color: #1e6b33; }
+
+/* Vipps og bank */
+.under-tittel { font-size: 15px; margin: 20px 0 6px; color: #5b4a3a; }
+.under-tittel:first-of-type { margin-top: 6px; }
+.panel tr.sum td { border-bottom: 0; }
+.bank-status { font-size: 14px; margin: 10px 0; }
+.bank-felt { display: grid; gap: 8px; margin: 8px 0; }
+@media (min-width: 700px) { .bank-felt { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.bank-felt label { display: grid; gap: 4px; font-size: 12px; font-weight: 600; color: #5b4a3a; }
+.bank-felt input {
+  font: inherit; font-size: 14px; font-weight: 400; padding: 7px 10px;
+  border: 1px solid #d9cbb8; border-radius: 8px; background: #fff; color: #111; min-width: 0;
+}
+.bank-knapper { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+.bank-knapper .mini { margin: 0; padding: 7px 12px; }
+.kode { font-size: 12px; background: #f7f1e8; padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+.bank-raa {
+  max-height: 320px; overflow: auto; font-size: 11px; background: #faf6f0;
+  border: 1px solid #efe6da; border-radius: 8px; padding: 10px; white-space: pre-wrap; overflow-wrap: anywhere;
+}
+.panel td.tall, .panel th.tall { white-space: nowrap; }
