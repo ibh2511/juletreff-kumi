@@ -7,8 +7,15 @@ import { kopier, lenker, miljo, qrSvg, valg } from "./vipps.js"
 //  Vipps privat: kopier nummeret, «Åpne Vipps» med nummer, beløp og melding fylt ut, eller QR-kode på PC.
 //  Vipps bedrift: «Betal med Vipps» sender deltakeren til Vipps og tilbake hit.
 // Siden sjekker betalingen i bakgrunnen (se App.jsx), og bytter til «Du er påmeldt» når den er kommet.
-// Har deltakeren åpnet Vipps (eller trykket «Jeg har betalt»), viser boksen at vi venter på betalingen,
-// så ingen tror de må betale igjen mens banken bruker noen minutter.
+//
+// Siden kan ikke vite at noen har betalt før banken viser betalingen. Fram til da er det én tilstand,
+// «ikke registrert ennå», og den vises på to måter:
+//  - Betalingsstegene, som er det man trenger før man har betalt.
+//  - «Vi ser etter betalingen din», når deltakeren kommer tilbake til siden etter å ha åpnet Vipps eller
+//    kopiert nummeret. Da har de mest sannsynlig betalt, og stegene med «Åpne Vipps» øverst kunne fått dem
+//    til å betale igjen. Teksten sier «Har du betalt …», så den stemmer også for den som ikke betalte,
+//    og stegene er ett trykk unna.
+// Begge viser at siden følger med, og at den som har betalt ikke trenger å gjøre noe mer.
 
 const VENT_KEY = (id) => `jt_betalt_${id}`
 function lesVent(id) {
@@ -26,7 +33,7 @@ function lagreVent(id, t) {
     // privat modus: gjelder til siden lastes på nytt
   }
 }
-export default function VippsPayment({ info, id, k, venter, lead }) {
+export default function VippsPayment({ info, id, k, venter, lead, notis }) {
   const m = useMemo(() => miljo(), [])
   const [kopiert, setKopiert] = useState("")
   const [fraNavn, setFraNavn] = useState(info?.fraNavn || "")
@@ -35,12 +42,12 @@ export default function VippsPayment({ info, id, k, venter, lead }) {
   const [navnFeil, setNavnFeil] = useState("")
   const [sender, setSender] = useState(false)
   const [betalFeil, setBetalFeil] = useState("")
-  // Når deltakeren trolig har betalt (åpnet Vipps eller trykket «Jeg har betalt»), som tidspunkt
+  // Når deltakeren kom tilbake fra Vipps (tidspunkt), eller 0 mens betalingsstegene vises
   const [venterFra, setVenterFra] = useState(() => (id ? lesVent(id) : 0))
   const [naa, setNaa] = useState(() => Date.now())
   const forlot = useRef(false)
 
-  const harBetalt = () => {
+  const visVenting = () => {
     const t = Date.now()
     setVenterFra(t)
     lagreVent(id, t)
@@ -50,13 +57,13 @@ export default function VippsPayment({ info, id, k, venter, lead }) {
     lagreVent(id, 0)
   }
 
-  // Kopierte nummeret og gikk til Vipps selv: når siden vises igjen, regner vi med at det er betalt.
+  // Trykket «Åpne Vipps» eller kopierte nummeret og forlot siden: når den vises igjen, viser vi ventingen.
   useEffect(() => {
     const synlig = () => {
       if (document.visibilityState === "hidden") return
       if (forlot.current) {
         forlot.current = false
-        harBetalt()
+        visVenting()
       }
     }
     document.addEventListener("visibilitychange", synlig)
@@ -113,7 +120,7 @@ export default function VippsPayment({ info, id, k, venter, lead }) {
   const v = valg(m)
 
   const kopierTekst = (tekst, hva) => {
-    if (hva === "nr") forlot.current = true // går trolig til Vipps nå
+    forlot.current = true // nummeret eller meldingen skal limes inn i Vipps, så de går trolig dit nå
     return kopier(tekst)
       .then(() => {
         setKopiert(hva)
@@ -239,8 +246,10 @@ export default function VippsPayment({ info, id, k, venter, lead }) {
           <div>
             <b>Skann QR-koden med kameraet på mobilen</b>
             <small>
-              Da åpnes Vipps med nummeret fylt ut. Skriv inn {kr} og betal, så
-              oppdateres denne siden.
+              Da åpnes Vipps med nummeret fylt ut. Skriv inn {kr} og betal
+              {info.automatisk
+                ? ", så oppdateres denne siden."
+                : ". Du får bekreftelse på e-post når betalingen er registrert."}
             </small>
           </div>
         </div>
@@ -248,9 +257,19 @@ export default function VippsPayment({ info, id, k, venter, lead }) {
           <li className="enkel">
             <div>
               <b>Eller betal selv i Vipps på mobilen</b>
-              {nummerRad}
-              <div className="vipps-belop">{kr}</div>
-              <small>{naar}</small>
+              <dl className="vipps-fakta">
+                <div>
+                  <dt>Mobilnummer</dt>
+                  <dd>
+                    <span className="vipps-tlf">{info.mottaker}</span>
+                    {kopiKnapp(nr, "nr")}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Beløp</dt>
+                  <dd>{kr}</dd>
+                </div>
+              </dl>
             </div>
           </li>
         </ol>
@@ -342,26 +361,31 @@ export default function VippsPayment({ info, id, k, venter, lead }) {
   }
 
   return (
-    <div className="vipps-card">
-      <h3>Betal {kr} med Vipps</h3>
-      <p className="vipps-lead">
-        {lead || "Plassen din er sikret når betalingen er mottatt."}
-        {info.vippsNavn && l && <> Mottaker: {info.vippsNavn}.</>}
-      </p>
-      {trinn}
-      <p className="vipps-fra">
-        Betal fra Vipps-kontoen til <b>{fraNavn}</b>, så finner vi betalingen
-        din.{" "}
-        <button type="button" className="link-btn" onClick={() => setEndrer(!endrer)}>
-          Betaler du fra en annens Vipps?
-        </button>
-      </p>
-      {endrer && navnSkjema}
-      {navnFeil && <p className="vipps-feil">{navnFeil}</p>}
-      <button type="button" className="vipps-har-betalt" onClick={harBetalt}>
-        Jeg har betalt
-      </button>
-      <p className="vipps-ref">Påmeldings-ID: {info.id}</p>
-    </div>
+    <>
+      <div className="vipps-card">
+        <h3>Betal {kr} med Vipps</h3>
+        <p className="vipps-lead">
+          {lead || "Plassen din er sikret når betalingen er mottatt."}
+          {info.vippsNavn && l && <> Mottaker: {info.vippsNavn}.</>}
+        </p>
+        {trinn}
+        <p className="vipps-fra">
+          Betal fra Vipps-kontoen til <b>{fraNavn}</b>, så finner vi betalingen
+          din.{" "}
+          <button type="button" className="link-btn" onClick={() => setEndrer(!endrer)}>
+            Betaler du fra en annens Vipps?
+          </button>
+        </p>
+        {endrer && navnSkjema}
+        {navnFeil && <p className="vipps-feil">{navnFeil}</p>}
+        <div className="vipps-venter" role="status">
+          {info.automatisk && <span className="prikk" aria-hidden="true" />}
+          <span>{venter || "Venter på betalingen …"}</span>
+        </div>
+        <p className="vipps-hint">Har du betalt, trenger du ikke gjøre noe mer.</p>
+        <p className="vipps-ref">Påmeldings-ID: {info.id}</p>
+      </div>
+      {notis && <p className="epost-notis">{notis}</p>}
+    </>
   )
 }

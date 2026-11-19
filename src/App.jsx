@@ -427,15 +427,15 @@ export default function App() {
                       ? `Hei${detaljer?.fornavn ? ` ${detaljer.fornavn}` : ""}! Du har plass, men vi har ikke fått betalingen ennå.`
                       : ""
                   }
+                  // Bare under betalingsstegene: den som venter på at betalingen skal bli registrert, trenger ikke lese om e-posten.
+                  notis={
+                    detaljer?.fraLenke
+                      ? ""
+                      : detaljer?.epostVent
+                        ? `📬 Har vi ikke fått betalingen om ${detaljer.epostVent} minutter, sender vi betalingsinfoen til ${detaljer?.epost || "e-posten din"}, så du kan betale senere.`
+                        : `📬 Betalingsinfoen er også sendt til ${detaljer?.epost || "e-posten din"}. Sjekk søppelpost hvis du ikke finner den.`
+                  }
                 />
-                {!detaljer?.fraLenke && (
-                  <p className="epost-notis">
-                    {detaljer?.epostVent
-                      ? `📬 Betaler du senere? Da sender vi betalingsinfoen til ${detaljer?.epost || "e-posten din"} om ${detaljer.epostVent} minutter. Betaler du nå, får du bare bekreftelsen.`
-                      : `📬 Betalingsinfoen er også sendt til ${detaljer?.epost || "e-posten din"}. Sjekk søppelpost hvis du ikke finner den.`}
-                  </p>
-                )}
-                {bindendeBoks}
               </>
             )}
 

@@ -593,6 +593,7 @@ textarea {
 
 /* Vipps-betaling etter påmelding */
 .vipps-card {
+  container-type: inline-size; /* QR-koden og radene under tilpasser seg kortets bredde, ikke skjermens */
   width: 100%;
   margin-top: 18px;
   padding: 26px 24px 22px;
@@ -750,6 +751,41 @@ textarea {
   font-weight: 500;
   color: var(--ink);
 }
+/* PC: nummer og beløp under QR-koden, som to rader */
+.vipps-fakta {
+  margin: 8px 0 0;
+}
+.vipps-fakta > div {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 48px;
+  padding: 6px 0;
+  border-top: 1px solid rgba(244, 234, 223, 0.12);
+}
+.vipps-fakta > div:first-child {
+  border-top: 0;
+}
+.vipps-fakta dt {
+  font-size: 13.5px;
+  font-weight: 300;
+  color: #cfc5ba;
+}
+.vipps-fakta dd {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin: 0;
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.vipps-fakta .vipps-tlf {
+  font-size: 20px;
+}
 .vipps-qr {
   display: grid;
   grid-template-columns: 150px minmax(0, 1fr);
@@ -782,6 +818,14 @@ textarea {
   line-height: 1.35;
 }
 @media (max-width: 520px) {
+  .vipps-qr {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+}
+/* Smalt kort på PC, for eksempel i et halvt vindu der skjemaet står ved siden av bildet */
+@container (max-width: 430px) {
   .vipps-qr {
     grid-template-columns: 1fr;
     justify-items: center;
@@ -1076,22 +1120,14 @@ h2.tittel { white-space: nowrap; font-size: clamp(18px, 6.4vw, 34px); letter-spa
 
 .fremdrift + .vipps-card { margin-top: 0; }
 
-/* Etter at deltakeren har åpnet Vipps: vi venter på betalingen, ikke betal igjen */
-.vipps-har-betalt {
-  display: block;
-  width: 100%;
-  margin: 18px 0 0;
-  padding: 12px 16px;
-  border-radius: 999px;
-  border: 1px solid rgba(237, 183, 125, 0.45);
-  background: transparent;
-  color: var(--ink);
-  font: inherit;
-  font-size: 15px;
-  font-weight: 500;
-  cursor: pointer;
+/* Under betalingsstegene, og venteboksen etter at deltakeren har vært i Vipps */
+.vipps-hint {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.5;
+  color: #a39b92;
+  text-align: center;
 }
-.vipps-har-betalt:hover { border-color: var(--accent); }
 .vipps-sjekker-ikon {
   display: grid;
   place-items: center;
