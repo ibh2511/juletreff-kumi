@@ -15,7 +15,8 @@ import { kopier, lenker, miljo, qrSvg, valg } from "./vipps.js"
 //    kopiert nummeret. Da har de mest sannsynlig betalt, og stegene med «Åpne Vipps» øverst kunne fått dem
 //    til å betale igjen. Teksten sier «Har du betalt …», så den stemmer også for den som ikke betalte,
 //    og stegene er ett trykk unna.
-// Begge viser at siden følger med, og at den som har betalt ikke trenger å gjøre noe mer.
+// Stegene er bare for å betale. At siden følger med og oppdaterer seg selv, står i steg 4 (og i QR-teksten
+// på PC), og «Venter på betalingen» står bare i venteboksen.
 
 const VENT_KEY = (id) => `jt_betalt_${id}`
 function lesVent(id) {
@@ -378,11 +379,6 @@ export default function VippsPayment({ info, id, k, venter, lead, notis }) {
         </p>
         {endrer && navnSkjema}
         {navnFeil && <p className="vipps-feil">{navnFeil}</p>}
-        <div className="vipps-venter" role="status">
-          {info.automatisk && <span className="prikk" aria-hidden="true" />}
-          <span>{venter || "Venter på betalingen …"}</span>
-        </div>
-        <p className="vipps-hint">Har du betalt, trenger du ikke gjøre noe mer.</p>
         <p className="vipps-ref">Påmeldings-ID: {info.id}</p>
       </div>
       {notis && <p className="epost-notis">{notis}</p>}
