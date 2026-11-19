@@ -1,4 +1,4 @@
-import { Suspense, lazy, useCallback, useEffect, useState } from "react"
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from "react"
 import "./App.css"
 import { setupFloatingLabels } from "./labelFloat.js"
 import { setupFaqAccordion } from "./faqAccordion.js"
@@ -202,9 +202,18 @@ export default function App() {
     }
   }, [view, skjemaSynlig])
 
+  // PC: bildet er like høyt som kolonnen ved siden av. Høyden skjemaet hadde da man meldte seg på, holdes
+  // gjennom betalingen, så bildet ikke blir høyere eller lavere, og dermed mer eller mindre zoomet, når innholdet bytter.
+  // Kommer man rett til betalingen fra e-posten, har man ikke sett skjemaet, og da er det ingenting å holde.
+  const skjemaRef = useRef(null)
+  const [skjemaHoyde, setSkjemaHoyde] = useState(0)
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     const f = new FormData(e.currentTarget)
+    // Bare med bildet ved siden av skjemaet. På mobil står bildet over og påvirkes ikke.
+    const toKolonner = window.matchMedia?.("(min-width: 769px)").matches
+    setSkjemaHoyde(toKolonner ? Math.round(skjemaRef.current?.getBoundingClientRect().height || 0) : 0)
     setStatus("sending")
     setErrorText("")
     try {
@@ -343,7 +352,11 @@ export default function App() {
           </div>
 
           {/* Skjema */}
-          <div className="booking-form">
+          <div
+            ref={skjemaRef}
+            className={`booking-form${betalingPagar ? " betaling" : ""}`}
+            style={!skjemaSynlig && skjemaHoyde ? { "--skjema-h": `${skjemaHoyde}px` } : undefined}
+          >
             {/* Mens betalingen pågår, trengs plassen til betalingen. Overskriften og datoen kommer tilbake når den er registrert. */}
             {!betalingPagar && (
               <>

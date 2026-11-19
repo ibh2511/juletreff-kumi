@@ -47,6 +47,11 @@ body {
   min-width: 0;
   max-width: 100%;
 }
+/* Forsiden er like bred i alle steg. Body er flex, så uten dette blir #root bare så bred som innholdet,
+   og kom man rett til betalingen fra e-posten, ble hele siden smalere enn skjemaet og bildet høyt og smalt. */
+#root:has(> .page) {
+  width: 100%;
+}
 
 /* Legg til desktop padding separat */
 @media (min-width: 769px) {
@@ -825,6 +830,17 @@ textarea {
   border-radius: 8px;
   background: #fff;
 }
+/* QR-koden krymper litt i en smalere kolonne (ned til 116 px), så den kan stå ved siden av teksten lenger */
+@supports (width: 1cqi) {
+  .vipps-qr {
+    --qr: clamp(116px, 30cqi, 150px);
+    grid-template-columns: var(--qr) minmax(0, 1fr);
+  }
+  .vipps-qr-kode {
+    width: var(--qr);
+    height: var(--qr);
+  }
+}
 .vipps-qr-kode svg {
   display: block;
   width: 100%;
@@ -844,8 +860,8 @@ textarea {
     text-align: center;
   }
 }
-/* Smalt kort på PC, for eksempel i et halvt vindu der skjemaet står ved siden av bildet */
-@container (max-width: 430px) {
+/* Smal kolonne på PC, for eksempel i et halvt vindu der skjemaet står ved siden av bildet */
+@container (max-width: 359px) {
   .vipps-qr {
     grid-template-columns: 1fr;
     justify-items: center;
@@ -1258,4 +1274,27 @@ h2.tittel { white-space: nowrap; font-size: clamp(18px, 6.4vw, 34px); letter-spa
 }
 .vipps-tilbake:hover {
   color: var(--accent);
+}
+
+/* PC: betalingen står rett i kolonnen uten en ekstra ramme rundt, så boksene er like brede som skjemaet.
+   Kolonnen holder høyden fra skjemaet (--skjema-h, se App.jsx), så bildet ved siden av beholder størrelsen. */
+@media (min-width: 769px) {
+  .booking-form {
+    min-height: var(--skjema-h, 0px);
+  }
+  .booking-form.betaling {
+    padding-top: 34px;
+    padding-bottom: 34px;
+  }
+  .vipps-card {
+    padding: 0;
+    border: 0;
+    background: none;
+  }
+  .vipps-sjekker {
+    padding-top: 0;
+  }
+  .vipps-lead {
+    text-wrap: balance;
+  }
 }
