@@ -1099,8 +1099,9 @@ function sjekkBankUtloser() {
   // Har alle betalt, trengs ikke banken før noen nye melder seg på.
   if (!alle_().some(function (r) { return r.status === 'UBETALT'; })) return;
   cache.put('bank_sist', '1', 20);
-  sjekkBank_();
-  // Etter banksjekken, så den som nettopp betalte, får bekreftelsen og ikke betalingsinfo.
+  // Etter banksjekken, så den som nettopp betalte, får bekreftelsen og ikke betalingsinfo. Svarer ikke banken,
+  // går betalingsinfoen likevel ut, ellers ville de som ikke har betalt, ventet på en e-post som aldri kom.
+  try { sjekkBank_(); } catch (err) { console.error('Banksjekken feilet: ' + err); }
   sendVentendeBetalingsinfo_(EPOST_VENT_MIN);
 }
 
