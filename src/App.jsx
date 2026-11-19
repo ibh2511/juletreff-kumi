@@ -430,8 +430,9 @@ export default function App() {
                 />
                 {!detaljer?.fraLenke && (
                   <p className="epost-notis">
-                    📬 Betalingsinfoen er også sendt til {detaljer?.epost || "e-posten din"}.
-                    Sjekk søppelpost hvis du ikke finner den.
+                    {detaljer?.epostVent
+                      ? `📬 Betaler du senere? Da sender vi betalingsinfoen til ${detaljer?.epost || "e-posten din"} om ${detaljer.epostVent} minutter. Betaler du nå, får du bare bekreftelsen.`
+                      : `📬 Betalingsinfoen er også sendt til ${detaljer?.epost || "e-posten din"}. Sjekk søppelpost hvis du ikke finner den.`}
                   </p>
                 )}
                 {bindendeBoks}

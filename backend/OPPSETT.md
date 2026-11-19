@@ -81,6 +81,8 @@ Tilgangen lagres bare i Skriptegenskaper (`BANK_CLIENT_ID`, `BANK_CLIENT_SECRET`
 
 **Slik fungerer koblingen:**
 
+- E-posten med betalingsinfo sendes først når betalingen ikke har kommet etter 5 minutter (`EPOST_VENT_MIN` i `Code.gs`). Betaler deltakeren med en gang, får de bare bekreftelsen, så ingen får en «Betal 600 kr»-e-post etter at de har betalt. Uten banken koblet til, og for testpåmeldinger fra admin, sendes den med en gang.
+
 - Innbetalinger kobles på påmeldings-ID-en i meldingen, ellers på fornavn, etternavn og beløp. Mellomnavn i Vipps gjør ingenting. Venter bare én på beløpet, holder det at ett av navnene stemmer.
 - Bare innbetalinger med juletreffets beløp lagres (fanen **Bank**). Unntaket er når noen som ikke har betalt, betaler feil beløp (navnet eller ID-en står i bankteksten). Den lagres som «Feil beløp» med påmeldingen som forslag.
 - Det som ikke kan kobles sikkert, står i adminsiden under **Innbetalinger som ikke ble koblet**, og du får e-post om det. Velg påmeldingen og trykk «Koble», eller «Ignorer».

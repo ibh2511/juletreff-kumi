@@ -395,8 +395,12 @@ function pamelding_(p, test) {
   if (rad.status === 'UBETALT') {
     // Vipps privat: banken sjekkes ofte de neste døgnene, så betalingen blir funnet raskt.
     venterPaBank_();
-    sendBekreftelse_(rad);
+    // Med banken koblet til venter e-posten med betalingsinfo i EPOST_VENT_MIN minutter. Betaler deltakeren
+    // med en gang, får de bare bekreftelsen. Testpåmeldinger fra admin får e-posten med en gang.
+    var vent = bankKlar_() && !(test && !testlenke);
+    if (!vent) sendBekreftelse_(rad);
     return { ok: true, status: 'UBETALT', id: rad.id, k: rad.nokkel, belop: rad.belop, fornavn: rad.fornavn, test: erTest_(rad),
+      epostVent: vent ? EPOST_VENT_MIN : 0,
       epost: maskEmail_(rad.epost), betalingsinfo: betalingsinfo_(rad) };
   }
 
@@ -591,6 +595,8 @@ function pollPending() {
       oppdater_(r._rad, { status: 'AVBRUTT', notat: 'Utløpt' });
     }
   });
+  // Reserve hvis bankutløseren ikke går: betalingsinfoen kommer senest etter et kvarter.
+  try { sendVentendeBetalingsinfo_(15); } catch (err) { console.error(err); }
 }
 
 /* ------------------------------------------------------------------ */
@@ -670,6 +676,8 @@ var SB1_ACCEPT = 'application/vnd.sparebank1.v1+json; charset=utf-8';
 // Betalingssiden spør i tillegg banken selv mens deltakeren står på den. Google gir et vanlig Gmail-konto
 // 90 minutter kjøretid for utløsere i døgnet, og det deles mellom alle skriptene på kontoen.
 var BANK_STRAKS_TIMER = 2;
+// E-posten med betalingsinfo sendes først når betalingen ikke har kommet etter så mange minutter.
+var EPOST_VENT_MIN = 5;
 var BANK_OFTE_TIMER = 48;
 var BANK_OFTE_MIN = 5;
 var BANK_SJELDEN_MIN = 15;
@@ -1092,6 +1100,28 @@ function sjekkBankUtloser() {
   if (!alle_().some(function (r) { return r.status === 'UBETALT'; })) return;
   cache.put('bank_sist', '1', 20);
   sjekkBank_();
+  // Etter banksjekken, så den som nettopp betalte, får bekreftelsen og ikke betalingsinfo.
+  sendVentendeBetalingsinfo_(EPOST_VENT_MIN);
+}
+
+/**
+ * Sender e-posten med betalingsinfo til dem som meldte seg på for mer enn «min» minutter siden og ikke har
+ * betalt ennå. De som betalte med en gang, har fått bekreftelsen i stedet. Bare påmeldinger fra de siste
+ * to døgnene, så en e-post som feilet tidligere ikke sendes igjen og igjen (den står i statusmailen).
+ */
+/** E-posten med betalingsinfo er ikke sendt ennå fordi den venter på at betalingen kanskje kommer først. */
+function epostVenter_(r) {
+  return r.status === 'UBETALT' && r.betaling === 'manuell' && Date.now() - new Date(r.opprettet).getTime() < 20 * 60000;
+}
+
+function sendVentendeBetalingsinfo_(min) {
+  var naa = Date.now();
+  alle_().forEach(function (r) {
+    if (r.status !== 'UBETALT' || r.epost_sendt || r.betaling !== 'manuell') return;
+    var alder = naa - new Date(r.opprettet).getTime();
+    if (alder < min * 60000 || alder > 48 * 36e5) return;
+    sendBekreftelse_(r);
+  });
 }
 
 function sikreBankUtloser_() {
@@ -1601,7 +1631,7 @@ function adminOversikt_(okt) {
         trukket: r.trukket, refundert: r.refundert, refusjon: r.refusjon, notat: r.notat, test: erTest_(r), varslet: r.varslet, purret: r.purret,
         program: r.program, purringer: antallPurringer_(r), mott: r.mott, takket: r.takket,
         vippsNavn: r.vipps_navn, gebyr: r.gebyr, bankId: r.bank_id, vippsNaa: !!aktivRef_(r),
-        utenEpost: HOLDER_PLASS.indexOf(r.status) >= 0 && !r.epost_sendt };
+        utenEpost: HOLDER_PLASS.indexOf(r.status) >= 0 && !r.epost_sendt && !epostVenter_(r) };
     })
   };
 }
@@ -2344,7 +2374,7 @@ function dagligRapport(tvungen) {
   var ubetalte = rader.filter(function (r) { return r.status === 'UBETALT' && Date.now() - new Date(r.opprettet).getTime() > 2 * dogn; });
   var skyldig = function (r) { return r.refusjon === '' || r.refusjon == null ? Number(r.belop) || 0 : Number(r.refusjon) || 0; };
   var refusjon = rader.filter(function (r) { return r.status === 'TRUKKET' && r.betalt && !r.refundert && skyldig(r) > 0; });
-  var utenEpost = rader.filter(function (r) { return HOLDER_PLASS.indexOf(r.status) >= 0 && !r.epost_sendt; });
+  var utenEpost = rader.filter(function (r) { return HOLDER_PLASS.indexOf(r.status) >= 0 && !r.epost_sendt && !epostVenter_(r); });
   var venteliste = (antall.VENTELISTE || 0) > 0 && ledige > 0;
   var ukoblet = [];
   try { ukoblet = bankRader_().filter(function (b) { return b.status !== 'DUPLIKAT'; }); } catch (err) { console.error(err); }
