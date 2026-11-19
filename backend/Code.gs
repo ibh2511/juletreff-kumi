@@ -665,14 +665,23 @@ var SB1_API = 'https://api.sparebank1.no';
 var SB1_ACCEPT = 'application/vnd.sparebank1.v1+json; charset=utf-8';
 // Så lenge etter en ny ubetalt påmelding eller purring spør utløseren banken hvert minutt.
 // Ellers spør den hvert 15. minutt så lenge noen ikke har betalt.
+// Hvor ofte utløseren spør banken. Hvert minutt de første to timene etter en ny ubetalt påmelding (da betaler
+// de fleste), hvert 5. minutt resten av de to døgnene, og ellers hvert 15. minutt så lenge noen ikke har betalt.
+// Betalingssiden spør i tillegg banken selv mens deltakeren står på den. Google gir et vanlig Gmail-konto
+// 90 minutter kjøretid for utløsere i døgnet, og det deles mellom alle skriptene på kontoen.
+var BANK_STRAKS_TIMER = 2;
 var BANK_OFTE_TIMER = 48;
+var BANK_OFTE_MIN = 5;
 var BANK_SJELDEN_MIN = 15;
 
 function bankKlar_() { return !!(cfg_('BANK_REFRESH_TOKEN', '') && cfg_('BANK_ACCOUNT_KEY', '')); }
 
 /** Noen skal betale til nummeret snart: utløseren spør banken hvert minutt de neste døgnene. */
 function venterPaBank_() {
-  PropertiesService.getScriptProperties().setProperty('BANK_VENTER_TIL', String(Date.now() + BANK_OFTE_TIMER * 36e5));
+  PropertiesService.getScriptProperties().setProperties({
+    BANK_STRAKS_TIL: String(Date.now() + BANK_STRAKS_TIMER * 36e5),
+    BANK_VENTER_TIL: String(Date.now() + BANK_OFTE_TIMER * 36e5)
+  });
 }
 
 function qs_(o) {
@@ -1072,12 +1081,15 @@ function sjekkBankUtloser() {
     varsle_(v.emne, v.tekst);
   }
   if (!bankKlar_()) return;
-  var cache = CacheService.getScriptCache();
-  if (Date.now() > Number(props.getProperty('BANK_VENTER_TIL') || 0)) {
-    if (cache.get('bank_sjelden')) return;
-    cache.put('bank_sjelden', '1', BANK_SJELDEN_MIN * 60);
-    if (!alle_().some(function (r) { return r.status === 'UBETALT'; })) return;
+  var cache = CacheService.getScriptCache(), naa = Date.now();
+  var min = naa < Number(props.getProperty('BANK_STRAKS_TIL') || 0) ? 1
+    : naa < Number(props.getProperty('BANK_VENTER_TIL') || 0) ? BANK_OFTE_MIN : BANK_SJELDEN_MIN;
+  if (min > 1) {
+    if (cache.get('bank_neste')) return;
+    cache.put('bank_neste', '1', min * 60 - 30);
   }
+  // Har alle betalt, trengs ikke banken før noen nye melder seg på.
+  if (!alle_().some(function (r) { return r.status === 'UBETALT'; })) return;
   cache.put('bank_sist', '1', 20);
   sjekkBank_();
 }
