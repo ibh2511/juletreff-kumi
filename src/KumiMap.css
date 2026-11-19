@@ -1,0 +1,18 @@
+/* Mens kartet lastes: samme grå som kartgrunnen (Googles #e5e3df i gråtoner),
+   i stedet for en tom flate. Kartet tones inn når det er klart. */
+.kumi-map {
+  background: #e4e4e4;
+}
+.kumi-map iframe {
+  display: block;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+}
+.kumi-map.is-loaded iframe {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  .kumi-map iframe {
+    transition: none;
+  }
+}
