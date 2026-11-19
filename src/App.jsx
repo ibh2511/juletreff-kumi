@@ -10,6 +10,7 @@ import {
   formatPrice,
 } from "./config.js"
 import VippsPayment from "./VippsPayment.jsx"
+import KumiMap from "./KumiMap.jsx"
 
 // Admin og vilkår lastes bare når de åpnes, så forsiden blir mindre og raskere
 const AdminStats = lazy(() => import("./AdminStats.jsx"))
@@ -614,15 +615,7 @@ export default function App() {
           </div>
 
           {/* Kart */}
-          <div className="map-container">
-            <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d7990.0!2d10.689846816215897!3d59.90700408187198!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x46416e62c48b6a31%3A0xdbadeeb694f9f437!2sOperagata%2071B%2C%200194%20Oslo!5e0!3m2!1sen!2sno!4v1600000000000!5m2!1sen!2sno"
-              allowFullScreen=""
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              title="KUMI kart"
-            />
-          </div>
+          <KumiMap />
 
           {/* FAQ */}
           <div className="faq-section">
