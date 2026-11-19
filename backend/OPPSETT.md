@@ -10,10 +10,10 @@ Deltaker → påmeldingssiden (GitHub Pages) → Vipps → tilbake til siden
 
 Ingen hemmeligheter ligger i repoet eller i nettsiden. Vipps-nøkler og adminpassord ligger bare i Skriptegenskaper i Apps Script.
 
-Løsningen virker på to måter:
+Du velger betalingsløsning i adminsiden under **Innstillinger → Betalingsløsning**. Byttet gjelder med en gang.
 
-- **Med Vipps-avtale (ePayment API):** deltakeren sendes rett til Vipps når hen melder seg på. Betalingen sjekkes direkte hos Vipps, beløpet trekkes, og bekreftelsen sendes automatisk.
-- **Uten Vipps-avtale:** deltakeren får et Vipps-kort med beløp, Vipps-nummer og hva som skal stå i meldingen. Du markerer betalingen som mottatt i adminsiden, og da sendes bekreftelsen.
+- **Vipps bedrift (Vipps-avtalen, ePayment API):** deltakeren sendes rett til Vipps når hen melder seg på. Betalingen sjekkes direkte hos Vipps, beløpet trekkes, og bekreftelsen sendes automatisk. Vipps tar et gebyr per salg.
+- **Vipps privat (til mobilnummer):** deltakeren får betalingssiden med «Åpne Vipps» (nummer, beløp og melding fylt ut), kopier-knapp og QR-kode på PC, og det samme på e-post. Er banken koblet til (se steg 5), finner backend betalingen selv og sender bekreftelsen. Ellers markerer du betalingen som mottatt i adminsiden.
 
 ## 1. Lag backend i Apps Script
 
@@ -60,6 +60,40 @@ Nettsiden publiseres av seg selv når noe merges til `main`. Kontakt-e-posten p�
 
 Når du endrer koden senere: **Implementer → Administrer implementeringer → ✏️ → Ny versjon**, så beholder du adressen.
 
+## Vipps privat og banken (SpareBank 1)
+
+Betalingssiden er `…/juletreff-kumi/?betaling=JT-1001&k=…`. Deltakeren havner der etter påmeldingen, og knappen i e-posten går dit. Den virker også i nettleseren inne i Facebook, Instagram, Messenger og andre apper:
+
+- På mobil: kopier nummeret, «Åpne Vipps», skriv inn beløpet og betal, kom tilbake. Android bruker en «intent»-lenke som åpner Vipps-appen direkte, også inne i apper. iPhone inne i apper bruker `vipps://`, ellers vanlig lenke. Det er alltid en reservelenke under knappen. Samme valg som i vegansk juleribbe.
+- På PC: QR-kode som åpner Vipps med nummeret fylt ut.
+- Meldingen fylles ut med «Juletreff JT-1001 Fornavn Etternavn». Lenkeformatet er ikke offisielt dokumentert. Virker det ikke, tar du bort haken for «fyller ut beløp og melding» i adminsiden, så fylles bare nummeret ut.
+- Betaler noen fra en annens Vipps (for eksempel en partner), kan de skrive det navnet på betalingssiden.
+- Bruk et mobilnummer (8 sifre). Et Vipps-nummer (5–6 sifre) virker også, men da må deltakerne søke det opp selv, og det blir ingen «Åpne Vipps» eller QR-kode.
+
+**Slik kobler du til banken (gjøres én gang):**
+
+1. Velg gjerne en egen konto i nettbanken som konto for innbetalinger i Vipps-appen.
+2. Gå til [developer.sparebank1.no](https://developer.sparebank1.no), logg inn og lag en ny klient (eller bruk den fra vegansk juleribbe og legg til en redirect-adresse til). Redirect-adressen står i adminsiden under **Vipps og bank → Banken** (backendadressen med `?action=bank` bak).
+3. I adminsiden: lim inn klient-ID og klienthemmelighet, og bank-ID hvis portalen viser en. Trykk **Koble til banken** og logg inn med BankID i fanen som åpnes.
+4. Velg kontoen Vipps-pengene kommer inn på, og trykk **Test banken**. Da ser du de siste innbetalingene slik banken sender dem.
+
+Tilgangen lagres bare i Skriptegenskaper (`BANK_CLIENT_ID`, `BANK_CLIENT_SECRET`, `BANK_REFRESH_TOKEN` m.fl.) og sendes aldri til nettleseren. Backend leser bare konto- og transaksjonsoppslag og flytter aldri penger.
+
+**Slik fungerer koblingen:**
+
+- Innbetalinger kobles på påmeldings-ID-en i meldingen, ellers på fornavn, etternavn og beløp. Mellomnavn i Vipps gjør ingenting. Venter bare én på beløpet, holder det at ett av navnene stemmer.
+- Bare innbetalinger med juletreffets beløp lagres (fanen **Bank**). Unntaket er når noen som ikke har betalt, betaler feil beløp (navnet eller ID-en står i bankteksten). Den lagres som «Feil beløp» med påmeldingen som forslag.
+- Det som ikke kan kobles sikkert, står i adminsiden under **Innbetalinger som ikke ble koblet**, og du får e-post om det. Velg påmeldingen og trykk «Koble», eller «Ignorer».
+- Mens deltakeren står på betalingssiden, spør siden hvert 10. sekund, og backend spør banken høyst hvert 20. sekund. En utløser spør banken hvert minutt i 48 timer etter en ny ubetalt påmelding eller purring, og ellers hvert 15. minutt så lenge noen ikke har betalt. Utløseren lages når du kobler til banken eller velger Vipps privat.
+- Går banktilgangen ut eller slutter å virke, får du e-post med beskjed om å koble til på nytt. Varslene går til `VARSEL_EPOST`, ellers `ADMIN_EPOST`, ellers `SVAR_EPOST`.
+
+## Vipps bedrift
+
+- **Test Vipps bedrift** i adminsiden lager en betaling på 1 kr, avbryter den med en gang, og sier hva som er galt hvis noe ikke virker. Den vanligste feilen er produksjonsnøkler mens `VIPPS_ENV` ikke er `prod`.
+- Feiler Vipps når noen melder seg på, får du e-post med feilen (høyst én i timen).
+- Gebyret (2,99 % + 1 kr per salg) står i `GEBYR_PROSENT` og `GEBYR_KR` øverst i `Code.gs`. Sjekk at det stemmer med avtalen for juletreffet. Adminsiden viser salg, omsetning, gebyr og netto per løsning.
+- Har noen plass uten å ha betalt (fra ventelisten, eller fordi du byttet løsning), får de «Betal med Vipps» på betalingssiden og i e-posten, og plassen beholdes mens de betaler.
+
 ## 3. Adminsiden
 
 Gå til `…/juletreff-kumi/#admin` og logg inn. Passordet sjekkes i backend, og nettleseren får bare en innloggingsnøkkel som varer i 2 timer. Etter 10 feil forsøk stenges innloggingen i 15 minutter.
@@ -99,5 +133,6 @@ Merk: Secret-et gir tilgang til Apps Script-prosjektene på kontoen din. Koden i
 ## Innstillinger i adminsiden
 
 - **Antall plasser** lagres som skriptegenskapen `KAPASITET`.
-- **Vipps-API av/på** lagres som `VIPPS_MODUS` (`nummer` eller `api`). API-et kan bare slås på når `VIPPS_CLIENT_ID`, `VIPPS_CLIENT_SECRET`, `VIPPS_SUBSCRIPTION_KEY` og `VIPPS_MSN` er lagt inn, og adminsiden sjekker at nøklene virker før det slås på. `VIPPS_ENV=prod` må være satt for ekte betalinger.
+- **Betalingsløsning** lagres som `VIPPS_MODUS` (`nummer` = Vipps privat, `api` = Vipps bedrift). Vipps bedrift kan bare velges når `VIPPS_CLIENT_ID`, `VIPPS_CLIENT_SECRET`, `VIPPS_SUBSCRIPTION_KEY` og `VIPPS_MSN` er lagt inn, og adminsiden sjekker at nøklene virker først. `VIPPS_ENV=prod` må være satt for ekte betalinger.
+- **«Åpne Vipps» fyller ut beløp og melding** lagres som `VIPPS_LENKE_UTFYLT` (`ja` eller `nei`).
 - **Testpåmelding** lager en påmelding merket «test» (kolonnen `test` i regnearket). Den tar ikke plass, telles ikke og kan slettes fra adminsiden.

@@ -1,7 +1,10 @@
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { apiPost } from "./api.js"
-import { formatPrice, vippsTil } from "./config.js"
+import { formatPrice } from "./config.js"
+import AdminBetaling from "./AdminBetaling.jsx"
 import "./AdminStats.css"
+
+const vippsErMobil = (nr) => String(nr || "").replace(/\D/g, "").length === 8
 
 const STATUS = {
   BETALT: { tekst: "Betalt", klasse: "ok" },
@@ -215,6 +218,7 @@ export default function AdminStats({ okt, onLogout }) {
   const a = data.antall
   const noshow = data.arrangement.noshow ?? 300
   const arr = data.arrangement
+  const bank = data.bank || {}
   const opptatt = a.BETALT + a.UBETALT
   // Samme regel som backend: nullstilling er låst når en ekte påmelding har registrert betaling
   const medBetaling = data.deltakere.filter(
@@ -366,41 +370,59 @@ export default function AdminStats({ okt, onLogout }) {
             {vis("plasser")}
           </div>
 
-          <div className="innstilling">
-            <div className="innstilling-tittel">Betaling</div>
-            <label className="bryter">
-              <input
-                type="checkbox"
-                checked={arr.vippsModus === "api"}
-                disabled={jobber || (!arr.harVippsNokler && arr.vippsModus !== "api")}
-                onChange={(e) =>
-                  send(
-                    {
-                      action: "innstillinger",
-                      vippsModus: e.target.checked ? "api" : "nummer",
-                    },
-                    "vipps"
-                  )
-                }
-              />
-              <span className="bryter-spor" aria-hidden="true" />
-              Vipps-API {arr.vippsModus === "api" ? "på" : "av"}
-            </label>
-            <div className="liten">
-              {arr.vippsAktiv
-                ? `Deltakerne sendes rett til Vipps og betaler med en gang${arr.vippsMiljo !== "prod" ? " (testmiljø)" : ""}.`
-                : arr.vippsNummer
-                  ? `Deltakerne betaler med Vipps til ${vippsTil(arr.vippsNummer)}${arr.vippsNavn ? ` (${arr.vippsNavn})` : ""}, og du markerer betalingen som mottatt her.`
-                  : "⚠️ Legg inn Vipps-nummeret under. Uten det får deltakerne ingen betalingsinfo."}
-              {!arr.harVippsNokler &&
-                " API-et kan slås på når Vipps-avtalen er på plass og nøklene er lagt inn i Apps Script."}
+          <div className="innstilling betaling-innstilling">
+            <div className="innstilling-tittel">Betalingsløsning</div>
+            <div className="valgkort-rad" role="radiogroup" aria-label="Betalingsløsning">
+              <label className={`valgkort ${arr.betaling === "privat" ? "valgt" : ""}`}>
+                <input
+                  type="radio"
+                  name="betaling"
+                  checked={arr.betaling === "privat"}
+                  disabled={jobber}
+                  onChange={() => send({ action: "innstillinger", betaling: "privat" }, "vipps")}
+                />
+                <b>Vipps privat</b>
+                <span>
+                  Deltakerne vippser til nummeret under, uten gebyr. «Åpne Vipps»
+                  fyller ut nummer, beløp og melding, og PC viser QR-kode.
+                </span>
+                <em className={arr.vippsNummer ? (bank.klar ? "ok" : "") : "mangler"}>
+                  {!arr.vippsNummer
+                    ? "Mangler nummer"
+                    : bank.klar
+                      ? "Banken er koblet til: betalinger finnes automatisk"
+                      : "Banken er ikke koblet til: du markerer betalinger som mottatt"}
+                </em>
+              </label>
+              <label className={`valgkort ${arr.betaling === "bedrift" ? "valgt" : ""}`}>
+                <input
+                  type="radio"
+                  name="betaling"
+                  checked={arr.betaling === "bedrift"}
+                  disabled={jobber || !arr.harVippsNokler}
+                  onChange={() => send({ action: "innstillinger", betaling: "bedrift" }, "vipps")}
+                />
+                <b>Vipps bedrift</b>
+                <span>
+                  Vipps-avtalen. Deltakerne sendes rett til Vipps, og betalingen
+                  sjekkes og trekkes automatisk. Vipps tar et gebyr per salg.
+                </span>
+                <em className={arr.harVippsNokler ? "ok" : "mangler"}>
+                  {arr.harVippsNokler
+                    ? `Nøklene er lagt inn${arr.vippsMiljo !== "prod" ? " (testmiljø)" : " (produksjon)"}`
+                    : "Mangler Vipps-nøkler i Apps Script"}
+                </em>
+              </label>
             </div>
+            {vis("vipps")}
+
+            <div className="innstilling-tittel">Nummer for Vipps privat</div>
             <div className="innstilling-rad">
               <input
                 type="text"
                 inputMode="numeric"
-                aria-label="Vipps-nummer eller mobilnummer"
-                placeholder="Vipps- eller mobilnummer"
+                aria-label="Mobilnummer eller Vipps-nummer"
+                placeholder="Mobilnummer"
                 value={vipps ? vipps.nummer : arr.vippsNummer || ""}
                 onChange={(e) =>
                   setVipps({ navn: arr.vippsNavn || "", ...vipps, nummer: e.target.value })
@@ -421,7 +443,7 @@ export default function AdminStats({ okt, onLogout }) {
                 onClick={() =>
                   send(
                     { action: "innstillinger", vippsNummer: vipps.nummer, vippsNavn: vipps.navn },
-                    "vipps",
+                    "vippsnr",
                     () => setVipps(null)
                   )
                 }
@@ -429,12 +451,45 @@ export default function AdminStats({ okt, onLogout }) {
                 Lagre
               </button>
             </div>
+            <label className="sjekk liten-sjekk">
+              <input
+                type="checkbox"
+                checked={arr.utfylt !== false}
+                disabled={jobber}
+                onChange={(e) =>
+                  send({ action: "innstillinger", utfylt: e.target.checked }, "vippsnr")
+                }
+              />
+              «Åpne Vipps» fyller ut beløp og melding (ellers bare nummeret)
+            </label>
             <div className="liten">
-              Nummeret vises bare til den som har meldt seg på, i e-posten
-              og på betalingssiden. Navnet står ved siden av, så folk ser at
-              de betaler til riktig person.
+              Bruk et mobilnummer (8 sifre), så får deltakerne «Åpne Vipps» og
+              QR-kode. Et Vipps-nummer (5–6 sifre) må de søke opp selv. Nummeret
+              vises bare til den som har meldt seg på, og navnet står ved
+              siden av, så folk ser at de betaler til riktig person.
+              {arr.vippsNummer && !vippsErMobil(arr.vippsNummer) && " ⚠️ Nummeret er ikke et mobilnummer, så «Åpne Vipps» og QR-koden vises ikke."}
             </div>
-            {vis("vipps")}
+            {vis("vippsnr")}
+
+            <div className="innstilling-tittel">Vipps bedrift</div>
+            <div className="liten">
+              Vipps tar {String(arr.gebyrProsent ?? 2.99).replace(".", ",")} % +{" "}
+              {String(arr.gebyrKr ?? 1).replace(".", ",")} kr per salg. Gebyret
+              lagres på hvert salg og trekkes fra i oversikten under.
+              Får deltakerne «Vi fikk ikke kontakt med Vipps», får du e-post om
+              det, og knappen under sier hva som er galt.
+            </div>
+            <div className="innstilling-rad">
+              <button
+                className="mini"
+                disabled={jobber || !arr.harVippsNokler}
+                onClick={() => send({ action: "vippssjekk" }, "vippssjekk")}
+              >
+                Test Vipps bedrift
+              </button>
+              <span className="liten">Lager en betaling på 1 kr og avbryter den med en gang.</span>
+            </div>
+            {vis("vippssjekk")}
           </div>
 
           <div className="innstilling">
@@ -459,6 +514,11 @@ export default function AdminStats({ okt, onLogout }) {
                 <option value="program">E-post: fellesmail med program</option>
                 <option value="takk">E-post: takkemail</option>
                 <option value="rapport">E-post: daglig statusmail til admin</option>
+                <option value="feilbelop">Varsel til deg: betaling med feil beløp</option>
+                <option value="ikkekoblet">Varsel til deg: betaling som ikke ble koblet</option>
+                <option value="vippsfeil">Varsel til deg: Vipps bedrift virker ikke</option>
+                <option value="utloper">Varsel til deg: banktilgangen går snart ut</option>
+                <option value="frakoblet">Varsel til deg: banken må kobles til på nytt</option>
               </select>
             </div>
             <div className="innstilling-rad">
@@ -618,6 +678,8 @@ export default function AdminStats({ okt, onLogout }) {
           </div>
         </div>
       </section>
+
+      <AdminBetaling data={data} okt={okt} onLogout={onLogout} last={last} />
 
       <section className="panel">
         <h2>Utsendelser</h2>
@@ -983,8 +1045,10 @@ export default function AdminStats({ okt, onLogout }) {
                         {r.test && <span className="badge test">Test</span>}
                         <div className="liten">
                           {formatPrice(r.belop)}
-                          {r.betaling === "vipps" ? " · Vipps" : ""}
-                          {r.betaling === "manuell" ? " · Vipps-nr." : ""}
+                          {r.betaling === "vipps" ? " · Vipps bedrift" : ""}
+                          {r.betaling === "manuell" ? " · Vipps privat" : ""}
+                          {r.vippsNaa ? " · i Vipps nå" : ""}
+                          {r.bankId && r.bankId !== "manuell" ? " · funnet i banken" : ""}
                           {r.refundert
                             ? ` · refundert ${formatPrice(r.refusjon === "" || r.refusjon == null ? r.belop : r.refusjon)}`
                             : r.status === "TRUKKET" && r.betalt
@@ -995,6 +1059,9 @@ export default function AdminStats({ okt, onLogout }) {
                       <td className="liten c-dato">{dato(r.opprettet)}</td>
                       <td className="kommentar c-kommentar">
                         {r.kommentar}
+                        {r.vippsNavn && r.vippsNavn !== r.navn && (
+                          <div className="liten">💳 Betaler fra Vipps-kontoen til {r.vippsNavn}</div>
+                        )}
                         {r.notat && <div className="liten">📝 {r.notat}</div>}
                         {r.utenEpost && (
                           <div className="liten varsel">
@@ -1089,8 +1156,8 @@ export default function AdminStats({ okt, onLogout }) {
                             {aapen.handling === "purring" && (
                               <p>
                                 Sender en vennlig påminnelse til {r.epost} med
-                                Vipps-nummer, beløp og hva som skal stå i
-                                meldingen.
+                                «Betal med Vipps»-knapp, beløp og lenke til
+                                betalingssiden.
                               </p>
                             )}
                             {aapen.handling === "trekk" && (
@@ -1145,7 +1212,7 @@ export default function AdminStats({ okt, onLogout }) {
                               r.status === "BETALT" &&
                               r.betaling !== "vipps" && (
                                 <p>
-                                  Betalt til Vipps-nummeret: send{" "}
+                                  Betalt med Vipps privat: send{" "}
                                   {formatPrice(
                                     sent ? Math.max(0, r.belop - noshow) : r.belop
                                   )}{" "}

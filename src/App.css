@@ -624,36 +624,232 @@ textarea {
   font-size: 14px;
   font-weight: 300;
 }
-.vipps-steps {
+/* Trinnene for Vipps privat */
+.vipps-trinn {
+  list-style: none;
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
   text-align: left;
-  margin: 0 auto;
-  padding-left: 20px;
-  max-width: 320px;
-  font-size: 14px;
+}
+.vipps-trinn li {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+  padding: 14px 12px;
+  border-radius: 10px;
+  background: #222;
+  border: 1px solid rgba(244, 234, 223, 0.12);
+}
+.vipps-trinn li.enkel {
+  grid-template-columns: minmax(0, 1fr);
+}
+.vipps-trinn .nr {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #ff5b24;
+  color: #fff;
+  font-weight: 500;
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.vipps-trinn b {
+  display: block;
+  margin-top: 4px;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.35;
+  color: var(--ink);
+}
+.vipps-trinn small,
+.vipps-qr small {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
   font-weight: 300;
-  line-height: 2.1;
+  line-height: 1.5;
+  color: #cfc5ba;
 }
-.vipps-steps li::marker {
+.vipps-nummer-rad {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 8px;
+}
+.vipps-tlf {
+  font-size: 24px;
+  font-weight: 500;
+  letter-spacing: 1.5px;
   color: var(--accent);
+  white-space: nowrap;
 }
-.vipps-steps b {
+.vipps-melding {
+  margin: 0 !important;
+  font-size: 15px !important;
+  color: var(--accent) !important;
+  overflow-wrap: anywhere;
+}
+.vipps-kopier {
+  min-height: 38px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--accent);
+  background: transparent;
+  color: var(--accent);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+}
+.vipps-kopier.ok {
+  background: #6fbf73;
+  border-color: #6fbf73;
+  color: #111;
+}
+.vipps-btn {
+  display: block;
+  width: 100%;
+  margin-top: 10px;
+  padding: 14px 18px;
+  border: 0;
+  border-radius: 999px;
+  background: #ff5b24;
+  color: #fff !important;
+  font: inherit;
+  font-size: 17px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  box-shadow: 0 6px 18px rgba(255, 91, 36, 0.3);
+}
+.vipps-btn:hover {
+  background: #e64a15;
+}
+.vipps-btn:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+.vipps-reserve {
+  display: inline-block;
+  margin-top: 10px;
+  font-size: 13.5px;
+  color: var(--muted);
+  border-bottom: 0.75px dotted var(--muted);
+}
+.vipps-belop {
+  margin-top: 6px;
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.vipps-qr {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 10px;
+  padding: 14px;
+  border-radius: 10px;
+  background: #222;
+  border: 1px solid rgba(244, 234, 223, 0.12);
+  text-align: left;
+}
+.vipps-qr-kode {
+  width: 150px;
+  height: 150px;
+  padding: 6px;
+  border-radius: 8px;
+  background: #fff;
+}
+.vipps-qr-kode svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.vipps-qr b {
+  display: block;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.35;
+}
+@media (max-width: 520px) {
+  .vipps-qr {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+}
+.vipps-fra {
+  margin: 16px 0 0;
+  font-size: 13.5px;
+  font-weight: 300;
+  line-height: 1.6;
+}
+.vipps-fra b {
   font-weight: 500;
   color: var(--accent);
 }
-.vipps-number {
-  padding: 1px 10px;
+.vipps-nytt-navn {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 10px;
+}
+.vipps-nytt-navn input {
+  flex: 1 1 200px;
+  min-width: 0;
+  padding: 10px 12px;
   border-radius: 6px;
-  border: 1px solid rgba(237, 183, 125, 0.5);
-  background: rgba(237, 183, 125, 0.08);
-  color: var(--accent);
+  border: 1px solid var(--muted);
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 15px;
+}
+.vipps-nytt-navn button {
+  padding: 10px 18px;
+  border-radius: 6px;
+  border: 0;
+  background: var(--accent);
+  color: #111;
   font: inherit;
   font-weight: 500;
   cursor: pointer;
 }
-.vipps-copied {
-  margin-left: 8px;
-  font-size: 12px;
-  color: #8fd18f;
+.vipps-feil {
+  margin: 8px 0 0;
+  font-size: 13px;
+  color: #ffab8a;
+}
+.vipps-venter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 16px;
+  font-size: 13.5px;
+  font-weight: 300;
+}
+.vipps-venter .prikk {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #ff5b24;
+  animation: vippsPuls 1.4s ease-in-out infinite;
+}
+@keyframes vippsPuls {
+  0%, 100% { opacity: 0.25; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.1); }
 }
 
 /* Bindende påmelding */
@@ -796,3 +992,16 @@ h2.tittel { white-space: nowrap; font-size: clamp(18px, 6.4vw, 34px); letter-spa
   .fakta dt { font-size: 8.5px; letter-spacing: 0; }
   .fakta dd { font-size: 16px; }
 }
+
+/* Bilde i FAQ (Matias) */
+.faq-section .faq-bilde {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+  object-position: 50% 30%;
+  margin: 6px 0 4px;
+  border-radius: 8px;
+}
+.faq-section .faq-body h3 + p { margin-top: 0; }

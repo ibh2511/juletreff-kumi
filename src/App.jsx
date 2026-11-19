@@ -16,18 +16,15 @@ const AdminStats = lazy(() => import("./AdminStats.jsx"))
 const AdminLogin = lazy(() => import("./AdminLogin.jsx"))
 const LegalPage = lazy(() => import("./LegalPage.jsx"))
 
-// Bildene i full kvalitet
-const IMAGES = ["images/kumi.jpeg", "images/munch.jpg"]
+// Bildene i full kvalitet. Matias på scenen er med i karusellen, siden han underholder.
+const IMAGES = ["images/kumi.jpeg", "images/matias-konsert.jpg", "images/munch.jpg"]
 
-// Teksten i FAQ-en «Blir det underholdning?»
 // «onsdag 16. desember» → «16. des»
 const kortDato = (t) => {
   const m = String(t || "").match(/(\d{1,2})\.\s*([a-zæøå]{3})/i)
   return m ? `${m[1]}. ${m[2].toLowerCase()}` : t
 }
 
-const UNDERHOLDNING =
-  "Ja! Underholdning er inkludert i prisen. Mer om hva som skjer i løpet av kvelden kommer snart."
 const OKT_KEY = "juletreff-admin-okt"
 
 function viewFromHash() {
@@ -48,6 +45,7 @@ function readOkt() {
 // Statuser som skjuler skjemaet
 const FERDIG = [
   "betalt",
+  "trukket",
   "ubetalt",
   "venter",
   "sjekker",
@@ -92,17 +90,14 @@ export default function App() {
       .catch(() => {})
   }, [])
 
-  // Tilbake fra Vipps: ?betaling=JT-1001&k=...
+  // Betalingssiden: ?betaling=JT-1001&k=... Hit kommer deltakeren tilbake fra Vipps bedrift, fra
+  // betalingslenken i e-posten, og etter påmeldingen med Vipps privat. Adressen beholdes, så siden
+  // viser det samme om den lastes på nytt, for eksempel når nettleseren inne i en app kommer tilbake fra Vipps.
   useEffect(() => {
     const q = new URLSearchParams(window.location.search)
     const id = q.get("betaling")
     const k = q.get("k")
     if (!id || !k) return
-    window.history.replaceState(
-      null,
-      "",
-      window.location.pathname + window.location.hash
-    )
     setStatus("sjekker")
     let forsok = 0
     let timer
@@ -110,12 +105,14 @@ export default function App() {
       apiGet({ action: "status", id, k })
         .then((d) => {
           if (!d.ok) throw new Error(d.error)
-          setDetaljer({ ...d, id })
+          setDetaljer({ ...d, id, k, fraLenke: true })
           if (d.status === "BETALT") setStatus("betalt")
           else if (d.status === "UBETALT") setStatus("ubetalt")
           else if (d.status === "VENTER" && forsok++ < 20)
             timer = setTimeout(sjekk, 2500)
           else if (d.status === "VENTER") setStatus("venter")
+          else if (d.status === "VENTELISTE") setStatus("waitlist")
+          else if (d.status === "TRUKKET") setStatus("trukket")
           else setStatus("avbrutt")
         })
         .catch(() => {
@@ -126,6 +123,51 @@ export default function App() {
     sjekk()
     return () => clearTimeout(timer)
   }, [])
+
+  // Vipps privat: mens betalingsboksen vises, spør siden om betalingen er kommet. Backend spør banken
+  // høyst hvert 20. sekund. Hvert 10. sekund den første timen, deretter hvert minutt, og med en gang
+  // når deltakeren kommer tilbake fra Vipps-appen.
+  const ventId = status === "ubetalt" ? detaljer?.id : null
+  const ventK = status === "ubetalt" ? detaljer?.k : null
+  const automatisk = !!detaljer?.betalingsinfo?.automatisk
+  const [venterTekst, setVenterTekst] = useState("Venter på betalingen …")
+  useEffect(() => {
+    if (!ventId || !ventK) return
+    const startet = Date.now()
+    let timer
+    let stopp = false
+    const planlegg = (ms) => {
+      clearTimeout(timer)
+      if (!stopp) timer = setTimeout(sjekk, ms)
+    }
+    const sjekk = () => {
+      apiGet({ action: "status", id: ventId, k: ventK, sjekk: automatisk ? "1" : "" })
+        .then((d) => {
+          if (stopp || !d.ok) return
+          if (d.status === "BETALT") {
+            setDetaljer((x) => ({ ...x, ...d }))
+            setStatus("betalt")
+            return
+          }
+          setVenterTekst("Venter på betalingen …")
+          if (document.visibilityState !== "hidden")
+            planlegg(automatisk && Date.now() - startet < 36e5 ? 10000 : 60000)
+        })
+        .catch(() => planlegg(15000))
+    }
+    const synlig = () => {
+      if (document.visibilityState !== "visible") return
+      setVenterTekst("Ser om betalingen har kommet …")
+      planlegg(300)
+    }
+    document.addEventListener("visibilitychange", synlig)
+    planlegg(automatisk ? 5000 : 30000)
+    return () => {
+      stopp = true
+      clearTimeout(timer)
+      document.removeEventListener("visibilitychange", synlig)
+    }
+  }, [ventId, ventK, automatisk])
 
   // Fade mellom bilder hvert 4 sekund (bare på forsiden)
   useEffect(() => {
@@ -181,6 +223,15 @@ export default function App() {
         etternavn: f.get("Etternavn"),
       })
       setStatus("ubetalt")
+      // Betalingssiden får sin egen adresse, så den kommer tilbake om siden lastes på nytt.
+      if (d.id && d.k) {
+        window.history.replaceState(
+          null,
+          "",
+          `${window.location.pathname}?betaling=${encodeURIComponent(d.id)}&k=${encodeURIComponent(d.k)}`
+        )
+      }
+      window.scrollTo({ top: 0, behavior: "smooth" })
     } catch (err) {
       setErrorText(err.message)
       setStatus("error")
@@ -256,7 +307,7 @@ export default function App() {
                   index === currentImageIndex ? "active" : ""
                 }`}
                 src={src}
-                alt="Juletreff på KUMI"
+                alt={src.includes("matias") ? "Matias opptrer med mikrofon" : "Juletreff på KUMI"}
                 decoding="async"
                 fetchPriority={index === 0 ? "high" : "low"}
               />
@@ -325,24 +376,41 @@ export default function App() {
 
             {status === "ubetalt" && (
               <>
-                <div className="msg thanks">
-                  <h3>🎉 Takk for påmeldingen! 🎉</h3>
-                  <p>Bekreftelse sendt på e-post 📬</p>
-                  <p>
-                    <small>Sjekk søppelpost/spam</small>
-                  </p>
-                </div>
+                {detaljer?.fraLenke ? (
+                  <div className="msg">
+                    <h3>Hei{detaljer?.fornavn ? ` ${detaljer.fornavn}` : ""}!</h3>
+                    <p>Du har plass, men vi har ikke registrert betalingen ennå.</p>
+                  </div>
+                ) : (
+                  <div className="msg thanks">
+                    <h3>🎉 Takk for påmeldingen! 🎉</h3>
+                    <p>Bekreftelse sendt på e-post 📬</p>
+                    <p>
+                      <small>Sjekk søppelpost/spam</small>
+                    </p>
+                  </div>
+                )}
                 <VippsPayment
-                  belop={detaljer?.belop || info.pris}
-                  vippsNummer={detaljer?.vippsNummer}
-                  vippsNavn={detaljer?.vippsNavn}
-                  navn={[detaljer?.fornavn, detaljer?.etternavn]
-                    .filter(Boolean)
-                    .join(" ")}
+                  info={detaljer?.betalingsinfo}
                   id={detaljer?.id}
+                  k={detaljer?.k}
+                  venter={venterTekst}
                 />
                 {bindendeBoks}
               </>
+            )}
+
+            {status === "trukket" && (
+              <div className="msg wait">
+                <h3>Påmeldingen er trukket</h3>
+                <p>Denne påmeldingen gjelder ikke lenger.</p>
+                {kontakt && (
+                  <p>
+                    Spørsmål? Skriv til{" "}
+                    <a href={`mailto:${kontakt}`}>{kontakt}</a>
+                  </p>
+                )}
+              </div>
             )}
 
             {status === "venter" && (
@@ -617,7 +685,7 @@ export default function App() {
                 <p>
                   {vippsAktiv
                     ? "Du betaler med Vipps når du melder deg på."
-                    : "Når du har meldt deg på, får du Vipps-nummeret i e-posten med påmeldingen, og vippser beløpet selv."}{" "}
+                    : "Når du har meldt deg på, får du en knapp som åpner Vipps med nummeret fylt ut (QR-kode på PC). Du får det samme på e-post."}{" "}
                   Plassen din er sikret når betalingen er mottatt.
                 </p>
                 <p>
@@ -659,7 +727,39 @@ export default function App() {
               </summary>
 
               <div className="faq-body">
-                <p>{UNDERHOLDNING}</p>
+                <p>Ja! Underholdning er inkludert i prisen.</p>
+                <img
+                  className="faq-bilde"
+                  src="images/matias.jpg"
+                  alt="Matias i rød VEGAN-genser"
+                  width="900"
+                  height="600"
+                  loading="lazy"
+                  decoding="async"
+                />
+                <h3>🎤 Matias</h3>
+                <p>
+                  Matias er dyrerettighetsaktivist, youtuber og artist fra
+                  Eidsvoll, bosatt i Oslo. Han blander norskspråklig hiphop og
+                  reggae, og har opptrådt med egen musikk siden tenårene.
+                </p>
+                <p>
+                  Debutalbumet <i>Forandrer fryder</i> kom i fjor sommer, og
+                  engasjementet for dyr går igjen i mange av låtene. Det gjør det
+                  også i coverlåta <i>Hva er forskjellen?</i> fra i vår og i{" "}
+                  <i>Dyrisk</i>, som kom i høst.
+                </p>
+                <p>
+                  Han vil lage musikk som kan inspirere og bety noe for andre,
+                  og som også er terapi og underholdning for ham selv.{" "}
+                  <a
+                    href="https://www.youtube.com/@MatiasHamreSveen"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    Hør ham på YouTube
+                  </a>
+                </p>
               </div>
             </details>
 
