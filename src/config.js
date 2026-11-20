@@ -28,3 +28,14 @@ export const vippsTil = (nr) => {
 }
 
 export const formatPrice = (nok) => `${Number(nok).toLocaleString("nb-NO")} kr`
+
+// Telefonnummeret i skjemaet: 8 sifre. Mellomrom, bindestrek og +47 eller 0047 foran går fint.
+// Gir de 8 sifrene, eller null når nummeret ikke kan være et norsk nummer.
+export const telefonSifre = (verdi) => {
+  const v = String(verdi || "").trim()
+  if (/[^\d\s+().-]/.test(v)) return null
+  let d = v.replace(/\D/g, "")
+  if (d.length === 10 && d.startsWith("47")) d = d.slice(2)
+  else if (d.length === 12 && d.startsWith("0047")) d = d.slice(4)
+  return d.length === 8 ? d : null
+}
