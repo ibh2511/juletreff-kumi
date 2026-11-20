@@ -736,9 +736,9 @@ textarea {
 .vipps-trinn li.knapp .nr {
   margin-top: 12px;
 }
-/* Under knappen står «Åpnet ikke Vipps?» med en pil. Den folder ut reservene, midt under knappen: lenken,
-   og så «Virker ingen av dem?» (dempet) med hva du gjør (lysere). Nummeret og «Kopier» står samlet i et
-   eget felt under, like bredt som knappen. */
+/* Under knappen står «Åpnet ikke Vipps?» med en pil, midt under knappen. Den folder ut reservene,
+   venstrestilt som resten av stegene: lenken, og så «Virker ingen av dem?» (dempet) med hva du gjør
+   (lysere). Nummeret og «Kopier» står samlet i et eget felt under, like bredt som knappen. */
 .vipps-reserver {
   margin-top: 10px;
   text-align: center;
@@ -749,7 +749,9 @@ textarea {
   text-wrap: balance;
 }
 .vipps-mer {
-  margin-top: 4px;
+  margin-top: 8px;
+  text-align: left;
+  text-wrap: pretty;
 }
 .vipps-mer[hidden] {
   display: none;
@@ -793,11 +795,11 @@ textarea {
   border-color: #6fbf73;
   color: #111;
 }
-/* Er kortet for smalt til at nummeret og «Kopier» står ved siden av hverandre (320 px), står de midt i feltet */
+/* Er kortet for smalt til at nummeret og «Kopier» står ved siden av hverandre (320 px), står de over hverandre */
 @container (max-width: 257px) {
   .vipps-trinn li.knapp .vipps-nummer-rad {
-    justify-content: center;
-    padding: 6px;
+    justify-content: flex-start;
+    padding: 8px 10px;
   }
 }
 .vipps-melding {

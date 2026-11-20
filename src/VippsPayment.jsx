@@ -255,7 +255,7 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
                 </p>
                 <p>
                   <span className="vipps-hvis">Virker ingen av dem?</span>
-                  Åpne Vipps selv og lim inn nummeret:
+                  Åpne Vipps selv og <span className="nowrap">lim inn nummeret:</span>
                 </p>
                 {nummerRad}
               </div>
