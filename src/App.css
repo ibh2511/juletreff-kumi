@@ -421,6 +421,12 @@ textarea {
 .faq-section .faq-body > * {
   min-width: 0;
 }
+.faq-section .faq-body p {
+  text-wrap: pretty;
+}
+.faq-section .faq-body a[href^="tel:"] {
+  white-space: nowrap;
+}
 
 .faq-section details[open] .faq-body {
   max-height: 2000px;
@@ -654,6 +660,7 @@ textarea {
   margin: 0 0 18px;
   font-size: 14px;
   font-weight: 300;
+  text-wrap: balance;
 }
 /* Trinnene for Vipps privat */
 .vipps-trinn {
@@ -676,6 +683,13 @@ textarea {
 }
 .vipps-trinn li.enkel {
   grid-template-columns: minmax(0, 1fr);
+}
+/* Steg 2 er selve «Åpne Vipps»-knappen, uten en overskrift som sier det samme, og tallet står midt for knappen */
+.vipps-trinn li.knapp .vipps-btn {
+  margin-top: 0;
+}
+.vipps-trinn li.knapp .nr {
+  margin-top: 12px;
 }
 .vipps-trinn .nr {
   width: 30px;
@@ -705,6 +719,7 @@ textarea {
   font-weight: 300;
   line-height: 1.5;
   color: #cfc5ba;
+  text-wrap: pretty;
 }
 .vipps-nummer-rad {
   display: flex;
@@ -854,7 +869,7 @@ textarea {
 /* QR-koden krymper litt i en smalere kolonne (ned til 116 px), så den kan stå ved siden av teksten lenger */
 @supports (width: 1cqi) {
   .vipps-qr {
-    --qr: clamp(116px, 30cqi, 150px);
+    --qr: clamp(116px, 30cqi, 140px);
     grid-template-columns: var(--qr) minmax(0, 1fr);
   }
   .vipps-qr-kode {
@@ -986,6 +1001,13 @@ textarea {
   margin: 14px 0 0;
   font-size: 12px;
   color: #bebebe;
+}
+/* Påmeldings-ID-en står rett under ingressen: tett på den, og med luft ned til det som kommer etter */
+.vipps-lead + .vipps-ref {
+  margin: -12px 0 18px;
+}
+.vipps-lead + .vipps-ref:last-child {
+  margin-bottom: 0;
 }
 .link-btn {
   background: none;
@@ -1158,6 +1180,7 @@ h2.tittel { white-space: nowrap; font-size: clamp(18px, 6.4vw, 34px); letter-spa
   line-height: 1.5;
   color: #a39b92;
   text-align: center;
+  text-wrap: balance;
 }
 @media (max-width: 360px) {
   .fremdrift { font-size: 12px; gap: 4px; }
@@ -1203,6 +1226,38 @@ h2.tittel { white-space: nowrap; font-size: clamp(18px, 6.4vw, 34px); letter-spa
 @media (prefers-reduced-motion: reduce) {
   .vipps-radar::before { animation: none; opacity: 0.35; transform: scale(0.8); }
   .vipps-radar::after { display: none; }
+}
+/* Liten «Venter på betalingen» nederst i betalingsboksen: samme puls som radaren i venteboksen, bare mye mindre */
+.vipps-venter {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin: 14px 0 0;
+  font-size: 12.5px;
+  letter-spacing: 0.3px;
+  color: #bebebe;
+}
+.vipps-venter-prikk {
+  position: relative;
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ff5b24;
+  box-shadow: 0 0 6px rgba(255, 91, 36, 0.55);
+}
+.vipps-venter-prikk::after {
+  content: "";
+  position: absolute;
+  inset: -5px;
+  border-radius: 50%;
+  border: 1.5px solid rgba(255, 91, 36, 0.75);
+  opacity: 0;
+  animation: vippsRadar 2.4s cubic-bezier(0.2, 0.6, 0.35, 1) infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .vipps-venter-prikk::after { animation: none; opacity: 0.35; transform: scale(0.8); }
 }
 .vipps-sjekker h3 {
   font-size: 22px;
@@ -1259,8 +1314,13 @@ h2.tittel { white-space: nowrap; font-size: clamp(18px, 6.4vw, 34px); letter-spa
   color: #a39b92;
   text-wrap: pretty;
 }
-.vipps-sjekker-tekst .nowrap {
+/* Ord med bindestrek og telefonnumre som ikke skal deles over to linjer */
+.nowrap {
   white-space: nowrap;
+}
+/* Korte setninger som heller brytes mellom setningene enn midt i en */
+.setning {
+  display: inline-block;
 }
 .vipps-hjelp {
   margin-top: 14px;
@@ -1303,9 +1363,10 @@ h2.tittel { white-space: nowrap; font-size: clamp(18px, 6.4vw, 34px); letter-spa
   .booking-form {
     min-height: var(--skjema-h, 0px);
   }
+  /* Mindre luft under enn over, så betalingen med «Venter på betalingen» får plass innenfor skjemaets høyde */
   .booking-form.betaling {
-    padding-top: 34px;
-    padding-bottom: 34px;
+    padding-top: 30px;
+    padding-bottom: 14px;
   }
   .vipps-card {
     padding: 0;
@@ -1314,8 +1375,5 @@ h2.tittel { white-space: nowrap; font-size: clamp(18px, 6.4vw, 34px); letter-spa
   }
   .vipps-sjekker {
     padding-top: 0;
-  }
-  .vipps-lead {
-    text-wrap: balance;
   }
 }

@@ -348,8 +348,8 @@ export default function App() {
   const bindendeBoks = (
     <div className="binding-box">
       Påmeldingen er bindende og kan bare trekkes med legeerklæring. Under 48
-      timer før arrangementet beholder vi {formatPrice(info.noshow)} til KUMIs
-      no-show-gebyr. Se <a href="#vilkar">salgsvilkårene</a>.
+      timer før arrangementet beholder vi {formatPrice(info.noshow)} til KUMIs{" "}
+      <span className="nowrap">no-show-gebyr</span>. Se <a href="#vilkar">salgsvilkårene</a>.
     </div>
   )
 
@@ -391,8 +391,8 @@ export default function App() {
               <div className="test-banner" role="note">
                 <b>Testmodus: {formatPrice(detaljer?.belop || info.pris)}</b>
                 <span>
-                  Påmeldingen merkes som test, tar ikke plass og telles ikke. Alt
-                  annet virker som for ekte, også Vipps, banken og e-postene.
+                  Merkes som test, tar ikke plass og telles ikke. Ellers virker alt
+                  som for ekte, også Vipps, banken og e-postene.
                 </span>
               </div>
             )}
@@ -471,8 +471,8 @@ export default function App() {
                     detaljer?.fraLenke
                       ? ""
                       : detaljer?.epostVent
-                        ? `📬 Har vi ikke fått betalingen om ${detaljer.epostVent} minutter, sender vi betalingsinfoen til ${detaljer?.epost || "e-posten din"}, så du kan betale senere.`
-                        : `📬 Betalingsinfoen er også sendt til ${detaljer?.epost || "e-posten din"}. Sjekk søppelpost hvis du ikke finner den.`
+                        ? `📬 Betaler du ikke nå, sender vi betalingsinfoen til ${detaljer?.epost || "e-posten din"} om ${detaljer.epostVent} minutter.`
+                        : `📬 Betalingsinfoen er også sendt til ${detaljer?.epost || "e-posten din"} (sjekk søppelpost).`
                   }
                 />
               </>
@@ -517,8 +517,8 @@ export default function App() {
               <div className="msg wait">
                 <h3>⚠️ Juletreffet er fullt</h3>
                 <p>
-                  Du står på ventelisten. Blir det ledig plass, får du en
-                  e-post. Du betaler ingenting før du har fått plass.
+                  Du står på ventelisten. Blir det ledig plass, får du e-post, og
+                  du betaler først da.
                 </p>
               </div>
             )}
@@ -668,11 +668,10 @@ export default function App() {
               <div className="faq-body">
                 <p>
                   Oslo vegansamfunn, Vegan Norway og Nordisk vegan arrangerer
-                  juletreff på KUMI i Oslobukta <b>{info.dato},</b> hvor vi har lokalet for oss
-                  selv.
+                  juletreff på KUMI i Oslobukta <b>{info.dato},</b> med lokalet for oss selv.
                 </p>
                 <p>
-                  Etterpå går vi videre til{" "}
+                  Etterpå går vi til{" "}
                   <a
                     href="https://www.munch.no/mat-drikke-MUNCH/munch-bar/"
                     target="_blank"
@@ -684,12 +683,8 @@ export default function App() {
                   <i>20 års aldersgrense</i>).
                 </p>
                 <p>
-                  Ønsker du å bli med? Meld deg på via skjemaet over innen{" "}
-                  <b>{info.fristTekst},</b> og du vil motta en bekreftelse per
-                  e-post.
-                </p>
-                <p>
-                  Det er begrenset antall plasser, så det lønner seg å være
+                  Meld deg på i skjemaet over innen <b>{info.fristTekst},</b> så
+                  får du bekreftelse på <span className="nowrap">e-post</span>. Plassene er begrenset, så vær
                   tidlig ute! Inviter gjerne med deg en venn 💚
                 </p>
               </div>
@@ -727,14 +722,12 @@ export default function App() {
                   <br />
                   🍷 Rødvinssaus
                 </p>
-                <br />
                 <hr />
                 <h3>Dessert</h3>
                 <p>🍫 Marinerte Appelsiner med Sjokolade- og Appelsinkrem</p>
-                <br />
                 <hr />
                 <p>
-                  Har du andre spørsmål om meny? Kontakt KUMI på{" "}
+                  Spørsmål om menyen? Kontakt KUMI på{" "}
                   <a href="mailto:kumi@kumi.no">kumi@kumi.no</a> eller{" "}
                   <a href="tel:+4797302866">973 02 866</a>
                 </p>
@@ -749,41 +742,37 @@ export default function App() {
 
               <div className="faq-body">
                 <p>
-                  {formatPrice(info.pris)} per person for seks utvalgte retter i
-                  sharing-stil, og underholdning.
+                  {formatPrice(info.pris)} per person for seks retter i{" "}
+                  <span className="nowrap">sharing-stil</span> og underholdning.
                 </p>
                 <p>
                   {vippsAktiv
                     ? "Du betaler med Vipps når du melder deg på."
-                    : "Når du har meldt deg på, får du en knapp som åpner Vipps med nummeret fylt ut (QR-kode på PC). Du får det samme på e-post."}{" "}
+                    : "Etter påmeldingen får du en knapp som åpner Vipps med nummeret fylt ut (QR-kode på PC), og det samme på e-post."}{" "}
                   Plassen din er sikret når betalingen er mottatt.
                 </p>
                 <p>
                   Påmeldingen er bindende og kan bare trekkes med
                   legeerklæring. Trekker du deg mer enn 48 timer før, får du
-                  hele beløpet tilbake. Senere enn det beholder vi{" "}
-                  {formatPrice(info.noshow)} til KUMIs no-show-gebyr. Kan du
-                  ikke komme, kan du også gi plassen til en annen. Les mer i{" "}
-                  <a href="#vilkar">salgsvilkårene</a>.
+                  alt tilbake. Senere beholder vi {formatPrice(info.noshow)} til
+                  KUMIs <span className="nowrap">no-show-gebyr</span>. Du kan også gi plassen til en annen. Les
+                  mer i <a href="#vilkar">salgsvilkårene</a>.
                 </p>
                 <p>
-                  Ønsker du vin, øl, eller annen drikke på KUMI kommer dette i
-                  tillegg, snakk med personalet 🍷🍾
-                </p>
-                <p>
-                  Du kjøper det du ønsker på MUNCH bar, drikkemeny finner du{" "}
+                  Vin, øl og annen drikke på KUMI kommer i tillegg, snakk med
+                  personalet 🍷🍾 På MUNCH bar kjøper du det du vil ha, se{" "}
                   <a
                     href="https://www.munch.no/globalassets/foto-munch/mat-og-drikke/menyer/munch-bar-13th-17.10.pdf"
                     target="_blank"
                     rel="noreferrer"
                   >
-                    her
+                    drikkemenyen
                   </a>
+                  .
                 </p>
-                <br />
                 <hr />
                 <p>
-                  Har du andre spørsmål om pris eller tilbud, kontakt KUMI på{" "}
+                  Spørsmål om pris eller tilbud? Kontakt KUMI på{" "}
                   <a href="mailto:kumi@kumi.no">kumi@kumi.no</a> eller{" "}
                   <a href="tel:+4797302866">973 02 866</a>
                 </p>
@@ -797,7 +786,7 @@ export default function App() {
               </summary>
 
               <div className="faq-body">
-                <p>Ja! Underholdning er inkludert i prisen.</p>
+                <p>Ja! Det er inkludert i prisen.</p>
                 <img
                   className="faq-bilde"
                   src="images/matias.jpg"
@@ -811,18 +800,17 @@ export default function App() {
                 <p>
                   Matias er dyrerettighetsaktivist, youtuber og artist fra
                   Eidsvoll, bosatt i Oslo. Han blander norskspråklig hiphop og
-                  reggae, og har opptrådt med egen musikk siden tenårene.
+                  reggae og har opptrådt med egen musikk siden tenårene.
                 </p>
                 <p>
-                  Debutalbumet <i>Forandrer fryder</i> kom i fjor sommer, og
-                  engasjementet for dyr går igjen i mange av låtene. Det gjør det
-                  også i coverlåta <i>Hva er forskjellen?</i> fra i vår og i{" "}
-                  <i>Dyrisk</i>, som kom i høst.
+                  Engasjementet for dyr går igjen i mange av låtene, fra
+                  debutalbumet <i>Forandrer fryder</i> i fjor sommer til
+                  coverlåta <i>Hva er forskjellen?</i> i vår og <i>Dyrisk</i> i
+                  høst.
                 </p>
                 <p>
-                  Han vil lage musikk som kan inspirere og bety noe for andre,
-                  og som også er terapi og underholdning for ham selv. Hør han
-                  på{" "}
+                  Han vil lage musikk som inspirerer og betyr noe for andre, og
+                  som er terapi og underholdning for ham selv. Hør han på{" "}
                   <a
                     href="https://www.youtube.com/@MatiasHamreSveen"
                     target="_blank"
