@@ -229,7 +229,7 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
   if (m.mobil && l) {
     trinn = (
       <ol className="vipps-trinn">
-        <li>
+        <li className="kopier">
           <span className="nr">1</span>
           <div>
             <b>Kopier og åpne Vipps</b>

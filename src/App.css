@@ -728,13 +728,14 @@ textarea {
   color: var(--accent);
   white-space: nowrap;
 }
-/* I stegene på mobil står nummeret og «Kopier» på samme linje når det er plass (fra 390 px), over «Åpne Vipps» */
-.vipps-trinn .vipps-nummer-rad {
+/* I steget «Kopier og åpne Vipps» på mobil står nummeret og «Kopier» på samme linje når det er plass
+   (fra 390 px, med noen piksler å gå på), over «Åpne Vipps» */
+.vipps-trinn li.kopier .vipps-nummer-rad {
   gap: 8px;
 }
-.vipps-trinn .vipps-tlf {
+.vipps-trinn li.kopier .vipps-tlf {
   font-size: 22px;
-  letter-spacing: 1px;
+  letter-spacing: 0.5px;
 }
 .vipps-melding {
   margin: 0 !important;
