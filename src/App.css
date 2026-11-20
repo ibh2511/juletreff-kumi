@@ -684,13 +684,6 @@ textarea {
 .vipps-trinn li.enkel {
   grid-template-columns: minmax(0, 1fr);
 }
-/* Steg 2 er selve «Åpne Vipps»-knappen, uten en overskrift som sier det samme, og tallet står midt for knappen */
-.vipps-trinn li.knapp .vipps-btn {
-  margin-top: 0;
-}
-.vipps-trinn li.knapp .nr {
-  margin-top: 12px;
-}
 .vipps-trinn .nr {
   width: 30px;
   height: 30px;
@@ -734,6 +727,14 @@ textarea {
   letter-spacing: 1.5px;
   color: var(--accent);
   white-space: nowrap;
+}
+/* I stegene på mobil står nummeret og «Kopier» på samme linje når det er plass (fra 390 px), over «Åpne Vipps» */
+.vipps-trinn .vipps-nummer-rad {
+  gap: 8px;
+}
+.vipps-trinn .vipps-tlf {
+  font-size: 22px;
+  letter-spacing: 1px;
 }
 .vipps-melding {
   margin: 0 !important;
