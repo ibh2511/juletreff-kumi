@@ -256,6 +256,27 @@ textarea {
   font-size: 13px;
 }
 
+/* Autoutfylling: etiketten løftes også når nettleseren har fylt ut feltet, eller viser forslaget sitt i det,
+   før siden har fått vite om verdien. Ellers havner «Telefon» og nummeret oppå hverandre. To regler, så en
+   nettleser som ikke kjenner den ene skrivemåten, fortsatt bruker den andre. */
+.form-group input:-webkit-autofill {
+  border-color: var(--accent);
+}
+.form-group input:-webkit-autofill + .form-label {
+  top: 0;
+  background: var(--panel);
+  padding: 0 5px;
+  color: var(--accent);
+  font-size: 13px;
+}
+.form-group input:autofill + .form-label {
+  top: 0;
+  background: var(--panel);
+  padding: 0 5px;
+  color: var(--accent);
+  font-size: 13px;
+}
+
 .form-submit button {
   width: 100%;
   padding: 12px 0;
