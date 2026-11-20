@@ -840,7 +840,7 @@ textarea {
 /* I steg 2 står nummeret og «Kopier» samlet i et felt, for den som må lime inn nummeret selv */
 .vipps-trinn li.nummer .vipps-nummer-rad {
   justify-content: space-between;
-  gap: 6px 8px;
+  gap: 6px;
   margin-top: 10px;
   padding: 4px 4px 4px 10px;
   border-radius: 10px;
@@ -853,7 +853,7 @@ textarea {
 }
 .vipps-trinn li.nummer .vipps-kopier {
   min-height: 30px;
-  padding: 3px 11px;
+  padding: 3px 8px;
   border-color: transparent;
   background: rgba(237, 183, 125, 0.14);
   font-size: 13px;
@@ -863,8 +863,9 @@ textarea {
   border-color: #6fbf73;
   color: #111;
 }
-/* Er kortet for smalt til at nummeret og «Kopier» står ved siden av hverandre (320 px), står de over hverandre */
-@container (max-width: 257px) {
+/* Er kortet for smalt til at nummeret og «Kopiert!» står ved siden av hverandre (skjermer smalere enn 356 px,
+   som iPhone SE), står de over hverandre fra start. Grensen har noen px å gå på, så knappen aldri hopper ned. */
+@container (max-width: 261px) {
   .vipps-trinn li.nummer .vipps-nummer-rad {
     justify-content: flex-start;
     padding: 8px 10px;
@@ -897,6 +898,18 @@ textarea {
   background: #6fbf73;
   border-color: #6fbf73;
   color: #111;
+}
+/* «Kopier» og «Kopiert!» står i samme rute, så knappen er like bred i begge. Den skjulte teksten leses ikke opp. */
+.vipps-kopier-tekst {
+  display: inline-grid;
+  justify-items: center;
+}
+.vipps-kopier-tekst > span {
+  grid-area: 1 / 1;
+}
+.vipps-kopier:not(.ok) .vipps-kopier-tekst > span + span,
+.vipps-kopier.ok .vipps-kopier-tekst > span:first-child {
+  visibility: hidden;
 }
 .vipps-btn {
   display: block;

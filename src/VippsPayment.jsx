@@ -165,17 +165,22 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
       .catch(() => {})
   }
 
+  // «Kopier» og «Kopiert!» ligger oppå hverandre, og bare den ene vises. Da er knappen like bred før og
+  // etter trykket, og den hopper ikke ned under nummeret når teksten blir lengre.
   const kopiKnapp = (tekst, hva) => (
     <button
       type="button"
       className={`vipps-kopier ${kopiert === hva ? "ok" : ""}`}
       onClick={() => kopierTekst(tekst, hva)}
     >
-      {kopiert === hva
-        ? "Kopiert!"
-        : kopiert === `feil-${hva}`
-          ? "Hold inne for å kopiere"
-          : "Kopier"}
+      {kopiert === `feil-${hva}` ? (
+        "Hold inne for å kopiere"
+      ) : (
+        <span className="vipps-kopier-tekst">
+          <span>Kopier</span>
+          <span>Kopiert!</span>
+        </span>
+      )}
     </button>
   )
 
