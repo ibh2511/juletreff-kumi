@@ -235,15 +235,19 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
             <a className="vipps-btn" href={l[v.hoved]} onClick={apneVipps}>
               Åpne Vipps
             </a>
-            <p className="vipps-reserve-rad">
-              Åpnet ikke Vipps?
-              <br />
-              <a className="vipps-reserve" href={l[v.reserve]} onClick={apneVipps}>
-                Prøv denne lenken
-              </a>
-            </p>
-            <small>Virker ingen av dem? Åpne Vipps selv og lim inn nummeret:</small>
-            {nummerRad}
+            <div className="vipps-reserver">
+              <p>
+                <span className="vipps-hvis">Åpnet ikke Vipps?</span>
+                <a className="vipps-reserve" href={l[v.reserve]} onClick={apneVipps}>
+                  Prøv denne lenken
+                </a>
+              </p>
+              <p>
+                <span className="vipps-hvis">Virker ingen av dem?</span>
+                Åpne Vipps selv og lim inn nummeret:
+              </p>
+              {nummerRad}
+            </div>
           </div>
         </li>
         <li>
