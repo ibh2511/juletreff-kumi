@@ -17,7 +17,10 @@ import { kopier, lenker, miljo, qrSvg, valg } from "./vipps.js"
 //    og stegene er ett trykk unna.
 // Stegene er bare for å betale. At siden følger med og oppdaterer seg selv, står i steg 4 (og i QR-teksten
 // på PC), og nederst i betalingsboksen står en liten «Venter på betalingen» med en rolig puls, en mindre
-// utgave av radaren i venteboksen.
+// utgave av radaren i venteboksen. Etter 5 minutter står det «Venter fortsatt på betalingen».
+
+// Så lenge betalingsstegene kan stå på skjermen før den lille linjen nederst sier «Venter fortsatt på betalingen»
+const FORTSATT = 5 * 60000
 
 const VENT_KEY = (id) => `jt_betalt_${id}`
 function lesVent(id) {
@@ -47,6 +50,8 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
   // Når deltakeren kom tilbake fra Vipps (tidspunkt), eller 0 mens betalingsstegene vises
   const [venterFra, setVenterFra] = useState(() => (id ? lesVent(id) : 0))
   const [naa, setNaa] = useState(() => Date.now())
+  // Når betalingsstegene ble vist (ved start, eller etter «Vis betalingen»)
+  const [stegFra, setStegFra] = useState(() => Date.now())
   const forlot = useRef(false)
 
   const visVenting = () => {
@@ -57,6 +62,7 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
   const visBetalingen = () => {
     setVenterFra(0)
     lagreVent(id, 0)
+    setStegFra(Date.now())
   }
 
   // Når stegene og venteboksen bytter plass, ber vi siden rulle det nye opp i skjermen (på mobil)
@@ -87,6 +93,13 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
     const t = setInterval(() => setNaa(Date.now()), 30000)
     return () => clearInterval(t)
   }, [venterFra])
+
+  // Med betalingsstegene på skjermen: én oppdatering når det har gått 5 minutter, så linjen nederst kan bytte tekst
+  useEffect(() => {
+    if (venterFra) return
+    const t = setTimeout(() => setNaa(Date.now()), Math.max(0, stegFra + FORTSATT - Date.now()) + 100)
+    return () => clearTimeout(t)
+  }, [venterFra, stegFra])
 
   if (!info) {
     return (
@@ -419,9 +432,9 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
         </p>
         {endrer && navnSkjema}
         {navnFeil && <p className="vipps-feil">{navnFeil}</p>}
-        <p className="vipps-venter">
+        <p className="vipps-venter" role="status">
           <span className="vipps-venter-prikk" aria-hidden="true" />
-          Venter på betalingen
+          {naa - stegFra >= FORTSATT ? "Venter fortsatt på betalingen" : "Venter på betalingen"}
         </p>
       </div>
       {notis && <p className="epost-notis">{notis}</p>}
