@@ -153,7 +153,7 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
   }
 
   // «Åpne Vipps» kopierer også nummeret, i tilfelle det ikke blir fylt ut i Vipps. Går det ikke, sier vi ingenting:
-  // nummeret og «Kopier» står under knappen.
+  // nummeret og «Kopier» står i steg 2.
   const apneVipps = () => {
     forlot.current = true
     if (kopiert === "nr") return
@@ -235,25 +235,23 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
             <a className="vipps-btn" href={l[v.hoved]} onClick={apneVipps}>
               Åpne Vipps
             </a>
-            <p className="vipps-reserve-rad">
-              Åpnet ikke Vipps?
-              <br />
+            <p className="vipps-under-knapp">
+              <span className="vipps-hvis">Åpnet ikke Vipps?</span>
               <a className="vipps-reserve" href={l[v.reserve]} onClick={apneVipps}>
                 Prøv denne lenken
               </a>
             </p>
-            <small>Virker ingen av dem? Åpne Vipps selv og lim inn nummeret:</small>
-            {nummerRad}
           </div>
         </li>
-        <li>
+        <li className="nummer">
           <span className="nr">2</span>
           <div>
             <b>Skriv inn {kr} og betal</b>
             <small>
-              Nummeret er fylt ut, beløpet skriver du selv. Mangler nummeret? Lim det inn
-              fra steg 1.
+              Nummeret er fylt ut, beløpet skriver du selv. Mangler nummeret?{" "}
+              <span className="nowrap">Lim det inn:</span>
             </small>
+            {nummerRad}
           </div>
         </li>
         <li>

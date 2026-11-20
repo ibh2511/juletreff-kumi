@@ -736,18 +736,54 @@ textarea {
 .vipps-trinn li.knapp .nr {
   margin-top: 12px;
 }
-.vipps-trinn li.knapp .vipps-nummer-rad {
-  gap: 10px;
-  margin-top: 6px;
+/* Rett under «Åpne Vipps» står «Åpnet ikke Vipps?» (dempet) og «Prøv denne lenken», midt under knappen */
+.vipps-under-knapp {
+  margin: 10px 0 0;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 300;
+  line-height: 1.55;
+  color: var(--muted);
 }
-.vipps-trinn li.knapp .vipps-tlf {
-  font-size: 17px;
+.vipps-under-knapp .vipps-reserve {
+  font-weight: 400;
+}
+.vipps-hvis {
+  display: block;
+  color: #aaa198;
+}
+/* I steg 2 står nummeret og «Kopier» samlet i et felt, for den som må lime inn nummeret selv */
+.vipps-trinn li.nummer .vipps-nummer-rad {
+  justify-content: space-between;
+  gap: 6px 8px;
+  margin-top: 10px;
+  padding: 4px 4px 4px 10px;
+  border-radius: 10px;
+  background: #1b1b1b;
+  border: 1px solid rgba(244, 234, 223, 0.12);
+}
+.vipps-trinn li.nummer .vipps-tlf {
+  font-size: 16px;
   letter-spacing: 0.5px;
 }
-.vipps-trinn li.knapp .vipps-kopier {
+.vipps-trinn li.nummer .vipps-kopier {
   min-height: 30px;
-  padding: 3px 13px;
+  padding: 3px 11px;
+  border-color: transparent;
+  background: rgba(237, 183, 125, 0.14);
   font-size: 13px;
+}
+.vipps-trinn li.nummer .vipps-kopier.ok {
+  background: #6fbf73;
+  border-color: #6fbf73;
+  color: #111;
+}
+/* Er kortet for smalt til at nummeret og «Kopier» står ved siden av hverandre (320 px), står de over hverandre */
+@container (max-width: 257px) {
+  .vipps-trinn li.nummer .vipps-nummer-rad {
+    justify-content: flex-start;
+    padding: 8px 10px;
+  }
 }
 .vipps-melding {
   margin: 0 !important;
@@ -804,12 +840,6 @@ textarea {
 }
 /* «Åpnet ikke Vipps?» på én linje og lenken på linjen under. Lenken er inline, så den stiplede
    linjen følger bare teksten og aldri går over hele bredden. */
-.vipps-reserve-rad {
-  margin: 10px 0 0;
-  font-size: 13.5px;
-  line-height: 1.7;
-  color: var(--muted);
-}
 .vipps-reserve {
   color: var(--muted);
   text-decoration-line: underline;
