@@ -736,41 +736,24 @@ textarea {
 .vipps-trinn li.knapp .nr {
   margin-top: 12px;
 }
-/* Under knappen står «Åpnet ikke Vipps?» med en pil, midt under knappen. Den folder ut reservene,
-   venstrestilt som resten av stegene: lenken, og så «Virker ingen av dem?» (dempet) med hva du gjør
-   (lysere). Nummeret og «Kopier» står samlet i et eget felt under, like bredt som knappen. */
-.vipps-reserver {
-  margin-top: 10px;
+/* Rett under «Åpne Vipps» står «Åpnet ikke Vipps?» (dempet) og «Prøv denne lenken», midt under knappen */
+.vipps-under-knapp {
+  margin: 10px 0 0;
   text-align: center;
   font-size: 13px;
   font-weight: 300;
   line-height: 1.55;
   color: var(--muted);
-  text-wrap: balance;
 }
-.vipps-mer {
-  margin-top: 8px;
-  text-align: left;
-  text-wrap: pretty;
-}
-.vipps-mer[hidden] {
-  display: none;
-}
-.vipps-mer p {
-  margin: 0;
-}
-.vipps-mer p + p {
-  margin-top: 10px;
+.vipps-under-knapp .vipps-reserve {
+  font-weight: 400;
 }
 .vipps-hvis {
   display: block;
   color: #aaa198;
 }
-.vipps-reserver .vipps-reserve {
-  color: var(--muted);
-  font-weight: 400;
-}
-.vipps-trinn li.knapp .vipps-nummer-rad {
+/* I steg 2 står nummeret og «Kopier» samlet i et felt, for den som må lime inn nummeret selv */
+.vipps-trinn li.nummer .vipps-nummer-rad {
   justify-content: space-between;
   gap: 6px 8px;
   margin-top: 10px;
@@ -779,25 +762,25 @@ textarea {
   background: #1b1b1b;
   border: 1px solid rgba(244, 234, 223, 0.12);
 }
-.vipps-trinn li.knapp .vipps-tlf {
+.vipps-trinn li.nummer .vipps-tlf {
   font-size: 16px;
   letter-spacing: 0.5px;
 }
-.vipps-trinn li.knapp .vipps-kopier {
+.vipps-trinn li.nummer .vipps-kopier {
   min-height: 30px;
   padding: 3px 11px;
   border-color: transparent;
   background: rgba(237, 183, 125, 0.14);
   font-size: 13px;
 }
-.vipps-trinn li.knapp .vipps-kopier.ok {
+.vipps-trinn li.nummer .vipps-kopier.ok {
   background: #6fbf73;
   border-color: #6fbf73;
   color: #111;
 }
 /* Er kortet for smalt til at nummeret og «Kopier» står ved siden av hverandre (320 px), står de over hverandre */
 @container (max-width: 257px) {
-  .vipps-trinn li.knapp .vipps-nummer-rad {
+  .vipps-trinn li.nummer .vipps-nummer-rad {
     justify-content: flex-start;
     padding: 8px 10px;
   }
@@ -975,8 +958,8 @@ textarea {
   font-weight: 500;
   color: var(--accent);
 }
-/* «Åpnet ikke Vipps?» og «Betaler du fra en annens Vipps?» folder ut mer. Pilen viser at noe åpner seg,
-   og snur når det er åpent. */
+/* «Betaler du fra en annens Vipps?» folder ut navnefeltet. Pilen viser at noe åpner seg, og snur når det
+   er åpent. */
 .vipps-fold {
   display: block;
   width: fit-content;

@@ -1,4 +1,4 @@
-import { useEffect, useId, useMemo, useRef, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { apiPost } from "./api.js"
 import { formatPrice } from "./config.js"
 import { kopier, lenker, miljo, qrSvg, valg } from "./vipps.js"
@@ -43,8 +43,6 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
   const [kopiert, setKopiert] = useState("")
   const [fraNavn, setFraNavn] = useState(info?.fraNavn || "")
   const [endrer, setEndrer] = useState(false)
-  const [hjelp, setHjelp] = useState(false) // «Åpnet ikke Vipps?» er lukket til man trykker på den
-  const hjelpId = useId()
   const [nyttNavn, setNyttNavn] = useState("")
   const [navnFeil, setNavnFeil] = useState("")
   const [sender, setSender] = useState(false)
@@ -155,7 +153,7 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
   }
 
   // «Åpne Vipps» kopierer også nummeret, i tilfelle det ikke blir fylt ut i Vipps. Går det ikke, sier vi ingenting:
-  // nummeret og «Kopier» står under knappen.
+  // nummeret og «Kopier» står i steg 2.
   const apneVipps = () => {
     forlot.current = true
     if (kopiert === "nr") return
@@ -237,39 +235,23 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
             <a className="vipps-btn" href={l[v.hoved]} onClick={apneVipps}>
               Åpne Vipps
             </a>
-            <div className="vipps-reserver">
-              <button
-                type="button"
-                className="vipps-fold"
-                aria-expanded={hjelp}
-                aria-controls={hjelpId}
-                onClick={() => setHjelp(!hjelp)}
-              >
-                Åpnet ikke Vipps?
-              </button>
-              <div id={hjelpId} className="vipps-mer" hidden={!hjelp}>
-                <p>
-                  <a className="vipps-reserve" href={l[v.reserve]} onClick={apneVipps}>
-                    Prøv denne lenken
-                  </a>
-                </p>
-                <p>
-                  <span className="vipps-hvis">Virker ingen av dem?</span>
-                  Åpne Vipps selv og <span className="nowrap">lim inn nummeret:</span>
-                </p>
-                {nummerRad}
-              </div>
-            </div>
+            <p className="vipps-under-knapp">
+              <span className="vipps-hvis">Åpnet ikke Vipps?</span>
+              <a className="vipps-reserve" href={l[v.reserve]} onClick={apneVipps}>
+                Prøv denne lenken
+              </a>
+            </p>
           </div>
         </li>
-        <li>
+        <li className="nummer">
           <span className="nr">2</span>
           <div>
             <b>Skriv inn {kr} og betal</b>
             <small>
-              Nummeret er fylt ut, beløpet skriver du selv. Mangler nummeret? Lim det inn eller
-              skriv <span className="nowrap">{info.mottaker}</span>.
+              Nummeret er fylt ut, beløpet skriver du selv. Mangler nummeret?{" "}
+              <span className="nowrap">Lim det inn:</span>
             </small>
+            {nummerRad}
           </div>
         </li>
         <li>
