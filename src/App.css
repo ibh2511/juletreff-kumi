@@ -958,9 +958,8 @@ textarea {
   font-weight: 500;
   color: var(--accent);
 }
-/* «Betaler du fra en annens Vipps?» folder ut navnefeltet. Pilen viser at noe åpner seg, og snur når det
-   er åpent. */
-.vipps-fold {
+/* «Betaler du fra en annens Vipps?» folder ut navnefeltet. Pilen viser at noe åpner seg, og snur når det er åpent. */
+.vipps-annen {
   display: block;
   width: fit-content;
   max-width: 100%;
@@ -978,7 +977,7 @@ textarea {
   cursor: pointer;
 }
 /* Pilen står rett etter teksten, også når teksten deler seg på smale skjermer */
-.vipps-fold::after {
+.vipps-annen::after {
   content: "";
   position: relative;
   top: -3px;
@@ -991,20 +990,20 @@ textarea {
   transform: rotate(45deg);
   transition: transform 0.2s ease, top 0.2s ease;
 }
-.vipps-fold[aria-expanded="true"]::after {
+.vipps-annen[aria-expanded="true"]::after {
   top: 1px;
   transform: rotate(-135deg);
 }
 @media (hover: hover) {
-  .vipps-fold:hover {
+  .vipps-annen:hover {
     color: #fff;
   }
 }
-.vipps-fold:focus:not(:focus-visible) {
+.vipps-annen:focus:not(:focus-visible) {
   outline: none;
 }
 @media (prefers-reduced-motion: reduce) {
-  .vipps-fold::after {
+  .vipps-annen::after {
     transition: none;
   }
 }

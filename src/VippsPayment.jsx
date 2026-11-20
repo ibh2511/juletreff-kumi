@@ -434,7 +434,7 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
         </p>
         <button
           type="button"
-          className="vipps-fold vipps-annen"
+          className="vipps-annen"
           aria-expanded={endrer}
           onClick={() => setEndrer(!endrer)}
         >
