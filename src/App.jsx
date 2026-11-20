@@ -9,6 +9,7 @@ import {
   KONTAKT_EPOST,
   formatPrice,
 } from "./config.js"
+import { googleKalender } from "./kalender.js"
 import VippsPayment from "./VippsPayment.jsx"
 import KumiMap from "./KumiMap.jsx"
 
@@ -417,14 +418,10 @@ export default function App() {
             {/* Mens betalingen pågår, trengs plassen til betalingen. Overskriften og datoen kommer tilbake når den er registrert. */}
             {!betalingPagar && (
               <>
+                {/* Hva kvelden er, smått over navnet. Datoen og faktastripen sier resten. */}
+                <p className="overtittel">Vegansk julebord</p>
                 <h2 className="tittel">✨Juletreff på KUMI🥂</h2>
                 <div className="subheader">{info.dato}</div>
-                {/* Hva kvelden er, for den som kommer fra en delt lenke og ikke har åpnet «Om kvelden» */}
-                {skjemaSynlig && (
-                  <p className="om-kvelden">
-                    Vegansk julebord med seks retter, underholdning og MUNCH bar etterpå.
-                  </p>
-                )}
               </>
             )}
 
@@ -488,6 +485,19 @@ export default function App() {
                   </p>
                   <p>
                     <small>Sjekk søppelpost/spam</small>
+                  </p>
+                  {/* iPhone, Mac og Outlook åpner .ics-fila. Google får sin egen lenke, som også virker på Android. */}
+                  <p className="kalender">
+                    <span>📅 Legg i kalenderen:</span>{" "}
+                    <span className="kalender-valg">
+                      <a href={`${import.meta.env.BASE_URL}juletreff.ics`}>Apple</a>
+                      {" · "}
+                      <a href={googleKalender()} target="_blank" rel="noreferrer">
+                        Google
+                      </a>
+                      {" · "}
+                      <a href={`${import.meta.env.BASE_URL}juletreff.ics`}>Outlook</a>
+                    </span>
                   </p>
                   <p className="del">
                     <button type="button" className="del-knapp" onClick={delMedVenn} aria-live="polite">

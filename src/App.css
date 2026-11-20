@@ -137,22 +137,14 @@ h2 {
   margin-bottom: 30px;
   letter-spacing: 1.5px;
 }
-/* Én linje under datoen om hva kvelden er */
-.subheader:has(+ .om-kvelden) {
-  margin-bottom: 8px;
-}
-.om-kvelden {
-  max-width: 30em;
-  margin: 0 0 28px;
-  font-size: 15px;
-  line-height: 1.5;
-  color: var(--muted);
-  text-wrap: balance;
-}
-@media (max-width: 350px) {
-  .om-kvelden {
-    font-size: 14px;
-  }
+/* Hva kvelden er, smått over navnet. Kontrast 8,5:1 mot panelet. */
+.overtittel {
+  margin: 0 0 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: rgba(244, 234, 223, 0.72);
 }
 
 form {
@@ -346,6 +338,17 @@ textarea {
   font-size: 18px;
   font-weight: 700;
   line-height: 1;
+}
+/* «Legg i kalenderen» etter betalingen. Lenkene holdes samlet, så linjen brytes etter kolonet. */
+.msg .kalender {
+  margin: 16px 0 0;
+}
+.kalender-valg {
+  white-space: nowrap;
+}
+.kalender-valg a {
+  display: inline-block;
+  padding: 6px 2px;
 }
 /* «Del med en venn» etter betalingen */
 .msg .del {
