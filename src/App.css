@@ -736,10 +736,11 @@ textarea {
 .vipps-trinn li.knapp .nr {
   margin-top: 12px;
 }
-/* Reservene under knappen står midt under den, som to like par: hva som gikk galt (dempet) og hva du
-   gjør (lysere). Nummeret og «Kopier» står samlet i et eget felt under, like bredt som knappen. */
+/* Under knappen står «Åpnet ikke Vipps?» med en pil. Den folder ut reservene, midt under knappen: lenken,
+   og så «Virker ingen av dem?» (dempet) med hva du gjør (lysere). Nummeret og «Kopier» står samlet i et
+   eget felt under, like bredt som knappen. */
 .vipps-reserver {
-  margin-top: 14px;
+  margin-top: 10px;
   text-align: center;
   font-size: 13px;
   font-weight: 300;
@@ -747,10 +748,16 @@ textarea {
   color: var(--muted);
   text-wrap: balance;
 }
-.vipps-reserver p {
+.vipps-mer {
+  margin-top: 4px;
+}
+.vipps-mer[hidden] {
+  display: none;
+}
+.vipps-mer p {
   margin: 0;
 }
-.vipps-reserver p + p {
+.vipps-mer p + p {
   margin-top: 10px;
 }
 .vipps-hvis {
@@ -966,8 +973,9 @@ textarea {
   font-weight: 500;
   color: var(--accent);
 }
-/* «Betaler du fra en annens Vipps?» folder ut navnefeltet. Pilen viser at noe åpner seg, og snur når det er åpent. */
-.vipps-annen {
+/* «Åpnet ikke Vipps?» og «Betaler du fra en annens Vipps?» folder ut mer. Pilen viser at noe åpner seg,
+   og snur når det er åpent. */
+.vipps-fold {
   display: block;
   width: fit-content;
   max-width: 100%;
@@ -985,7 +993,7 @@ textarea {
   cursor: pointer;
 }
 /* Pilen står rett etter teksten, også når teksten deler seg på smale skjermer */
-.vipps-annen::after {
+.vipps-fold::after {
   content: "";
   position: relative;
   top: -3px;
@@ -998,20 +1006,20 @@ textarea {
   transform: rotate(45deg);
   transition: transform 0.2s ease, top 0.2s ease;
 }
-.vipps-annen[aria-expanded="true"]::after {
+.vipps-fold[aria-expanded="true"]::after {
   top: 1px;
   transform: rotate(-135deg);
 }
 @media (hover: hover) {
-  .vipps-annen:hover {
+  .vipps-fold:hover {
     color: #fff;
   }
 }
-.vipps-annen:focus:not(:focus-visible) {
+.vipps-fold:focus:not(:focus-visible) {
   outline: none;
 }
 @media (prefers-reduced-motion: reduce) {
-  .vipps-annen::after {
+  .vipps-fold::after {
     transition: none;
   }
 }
