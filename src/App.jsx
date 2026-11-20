@@ -8,6 +8,7 @@ import {
   DEFAULTS,
   KONTAKT_EPOST,
   formatPrice,
+  telefonSifre,
 } from "./config.js"
 import { googleKalender } from "./kalender.js"
 import VippsPayment from "./VippsPayment.jsx"
@@ -91,6 +92,8 @@ export default function App() {
   const [igjenSendt, setIgjenSendt] = useState(false)
   // «Del med en venn»: "" | "kopiert" | lenken, når den verken kunne deles eller kopieres
   const [delt, setDelt] = useState("")
+  // Feilen under telefonfeltet. Vises når feltet forlates eller skjemaet sendes, og går bort så snart nummeret er riktig.
+  const [telefonFeil, setTelefonFeil] = useState("")
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
 
   // Enkel ruting med #admin, #vilkar og #personvern
@@ -235,9 +238,24 @@ export default function App() {
     rullTilKolonnen()
   }, [status, rullTilKolonnen])
 
+  const TELEFON_FEIL = "Telefonnummeret må ha 8 sifre"
+  // Tomt felt er ikke en feil her: da sier nettleseren fra ved innsending, som for de andre feltene.
+  const sjekkTelefon = (verdi) => {
+    const feil = String(verdi || "").trim() && !telefonSifre(verdi) ? TELEFON_FEIL : ""
+    setTelefonFeil(feil)
+    return !feil
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     const f = new FormData(e.currentTarget)
+    // Telefonnummeret sjekkes før noe sendes. Feilen står under feltet, og markøren settes i feltet.
+    const telefon = telefonSifre(f.get("Telefon"))
+    if (!telefon) {
+      setTelefonFeil(TELEFON_FEIL)
+      e.currentTarget.elements.namedItem("Telefon")?.focus()
+      return
+    }
     // Bare med bildet ved siden av skjemaet. På mobil står bildet over og påvirkes ikke.
     const toKolonner = window.matchMedia?.("(min-width: 769px)").matches
     setSkjemaHoyde(toKolonner ? Math.round(skjemaRef.current?.getBoundingClientRect().height || 0) : 0)
@@ -249,7 +267,7 @@ export default function App() {
         action: "pamelding",
         fornavn: f.get("Fornavn"),
         etternavn: f.get("Etternavn"),
-        telefon: f.get("Telefon"),
+        telefon,
         epost: f.get("Email"),
         kommentar: f.get("Message"),
         bindende: f.get("Bindende") === "ja",
@@ -680,7 +698,7 @@ export default function App() {
                 </div>
 
                 <div className="form-group-row">
-                  <div className="form-group">
+                  <div className={`form-group${telefonFeil ? " har-feil" : ""}`}>
                     <input
                       type="tel"
                       name="Telefon"
@@ -688,10 +706,18 @@ export default function App() {
                       autoComplete="tel"
                       inputMode="tel"
                       required
+                      aria-invalid={telefonFeil ? "true" : undefined}
+                      aria-describedby={telefonFeil ? "phone-feil" : undefined}
+                      onBlur={(e) => sjekkTelefon(e.target.value)}
+                      onInput={(e) => telefonFeil && sjekkTelefon(e.target.value)}
                     />
                     <label htmlFor="phone" className="form-label">
                       Telefon
                     </label>
+                    {/* Står alltid i siden, så skjermlesere leser opp feilen når den kommer */}
+                    <p id="phone-feil" className="felt-feil" aria-live="polite">
+                      {telefonFeil}
+                    </p>
                   </div>
                   <div className="form-group">
                     <input
