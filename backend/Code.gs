@@ -342,49 +342,56 @@ function pamelding_(p, test) {
 
   var lock = LockService.getScriptLock();
   lock.waitLock(15000);
-  var rad;
+  var rad, ubetalt;
   try {
     var rader = alle_();
     var grense = Date.now() - VENTER_MINUTTER * 60000;
     // Testpåmeldinger sjekkes ikke mot ekte påmeldinger, og ekte påmeldinger ikke mot tester.
     var tidligere = test ? [] : rader.filter(function (r) { return r.epost === d.epost && !erTest_(r); });
-    if (tidligere.some(function (r) { return HOLDER_PLASS.indexOf(r.status) >= 0; })) {
-      return { ok: true, duplicate: true };
-    }
-    // En tidligere påbegynt Vipps-betaling som ikke ble fullført, avbrytes før vi lager en ny.
-    tidligere.forEach(function (r) {
-      if (r.status === 'VENTER') {
-        if (new Date(r.opprettet).getTime() > grense) avbrytVipps_(aktivRef_(r) || r.id);
-        oppdater_(r._rad, { status: 'AVBRUTT' });
-        r.status = 'AVBRUTT'; // så plassen ikke telles som opptatt under
-      }
-    });
-
-    var fullt = !test && opptatte_(rader) >= a.kapasitet;
-    if (fullt && tidligere.some(function (r) { return r.status === 'VENTELISTE'; })) {
-      return { ok: true, waitlist: true };
-    }
-
-    rad = {}; KOLONNER.forEach(function (k) { rad[k] = ''; });
-    Object.assign(rad, d);
-    rad.id = nesteId_();
-    rad.opprettet = new Date();
-    rad.belop = testlenke ? TESTPRIS_KR : a.pris;
-    rad.nokkel = nyNokkel_();
-    rad.bindende_godtatt = test ? '' : new Date();
-    rad.kilde = testlenke ? 'testlenke' : test ? 'admin-test' : tekst_(p.kilde, 60);
-    rad.test = test ? 'ja' : '';
-    if (test) rad.notat = testlenke ? 'Test med ' + TESTPRIS_KR + ' kr fra testlenken' : 'Testpåmelding fra admin';
-    rad.status = fullt ? 'VENTELISTE' : a.vippsAktiv ? 'VENTER' : 'UBETALT';
-    rad.betaling = fullt ? '' : a.vippsAktiv ? 'vipps' : 'manuell';
-    if (rad.status === 'VENTER') rad.vipps_ref = rad.id;
-    sheet_(PAMELDING_ARK).appendRow(KOLONNER.map(function (k) { return celle_(rad[k]); }));
-    if (rad.status !== 'VENTELISTE') {
+    var holder = tidligere.filter(function (r) { return HOLDER_PLASS.indexOf(r.status) >= 0; });
+    if (holder.some(function (r) { return r.status === 'BETALT'; })) return { ok: true, duplicate: true };
+    // Påmeldt, men ikke betalt: betalingslenken sendes på nytt etter låsen (under).
+    ubetalt = holder[0];
+    if (!ubetalt) {
+      // En tidligere påbegynt Vipps-betaling som ikke ble fullført, avbrytes før vi lager en ny.
       tidligere.forEach(function (r) {
-        if (r.status === 'VENTELISTE') oppdater_(r._rad, { status: 'AVBRUTT', notat: [r.notat, 'Meldte seg på igjen og fikk plass (' + rad.id + ')'].filter(String).join(' | ') });
+        if (r.status === 'VENTER') {
+          if (new Date(r.opprettet).getTime() > grense) avbrytVipps_(aktivRef_(r) || r.id);
+          oppdater_(r._rad, { status: 'AVBRUTT' });
+          r.status = 'AVBRUTT'; // så plassen ikke telles som opptatt under
+        }
       });
+
+      var fullt = !test && opptatte_(rader) >= a.kapasitet;
+      if (fullt && tidligere.some(function (r) { return r.status === 'VENTELISTE'; })) {
+        return { ok: true, waitlist: true };
+      }
+
+      rad = {}; KOLONNER.forEach(function (k) { rad[k] = ''; });
+      Object.assign(rad, d);
+      rad.id = nesteId_();
+      rad.opprettet = new Date();
+      rad.belop = testlenke ? TESTPRIS_KR : a.pris;
+      rad.nokkel = nyNokkel_();
+      rad.bindende_godtatt = test ? '' : new Date();
+      rad.kilde = testlenke ? 'testlenke' : test ? 'admin-test' : tekst_(p.kilde, 60);
+      rad.test = test ? 'ja' : '';
+      if (test) rad.notat = testlenke ? 'Test med ' + TESTPRIS_KR + ' kr fra testlenken' : 'Testpåmelding fra admin';
+      rad.status = fullt ? 'VENTELISTE' : a.vippsAktiv ? 'VENTER' : 'UBETALT';
+      rad.betaling = fullt ? '' : a.vippsAktiv ? 'vipps' : 'manuell';
+      if (rad.status === 'VENTER') rad.vipps_ref = rad.id;
+      sheet_(PAMELDING_ARK).appendRow(KOLONNER.map(function (k) { return celle_(rad[k]); }));
+      if (rad.status !== 'VENTELISTE') {
+        tidligere.forEach(function (r) {
+          if (r.status === 'VENTELISTE') oppdater_(r._rad, { status: 'AVBRUTT', notat: [r.notat, 'Meldte seg på igjen og fikk plass (' + rad.id + ')'].filter(String).join(' | ') });
+        });
+      }
     }
   } finally { lock.releaseLock(); }
+
+  // Den som melder seg på igjen uten å ha betalt, får betalingslenken på e-post på nytt, og siden sier fra om det.
+  // Siden viser ikke selve betalingen, for den viser navnet til hvem som helst som skriver inn e-postadressen.
+  if (ubetalt) return { ok: true, duplicate: true, ubetalt: true, sendt: sendBetalingIgjen_(ubetalt) };
 
   if (rad.status === 'VENTELISTE') {
     sendVentelisteEpost_(rad);
@@ -412,6 +419,19 @@ function pamelding_(p, test) {
     vippsFeilVarsel_(err);
     throw new Brukerfeil('Vi fikk ikke kontakt med Vipps. Prøv igjen om litt.');
   }
+}
+
+/**
+ * Sender e-posten med betalingslenken på nytt til en påmelding som ikke er betalt. Høyst én gang i kvarteret
+ * per påmelding, så skjemaet ikke kan brukes til å fylle innboksen til noen. Svarer true når den er sendt nå
+ * eller nylig.
+ */
+function sendBetalingIgjen_(r) {
+  var cache = CacheService.getScriptCache(), nokkel = 'betaling_igjen_' + r.id;
+  if (cache.get(nokkel)) return true;
+  var sendt = sendBekreftelse_(r) === true;
+  if (sendt) cache.put(nokkel, '1', 15 * 60);
+  return sendt;
 }
 
 /** Lager en betaling hos Vipps bedrift. ref er påmeldings-ID-en, eller ID-2, ID-3 … når samme plass betales på nytt. */
