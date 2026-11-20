@@ -9,6 +9,7 @@ import {
   KONTAKT_EPOST,
   formatPrice,
 } from "./config.js"
+import { googleKalender } from "./kalender.js"
 import VippsPayment from "./VippsPayment.jsx"
 import KumiMap from "./KumiMap.jsx"
 
@@ -64,6 +65,7 @@ const FERDIG = [
   "sjekker",
   "waitlist",
   "duplicate",
+  "igjen",
   "stengt",
   "redirect",
 ]
@@ -81,10 +83,14 @@ export default function App() {
   const [okt, setOkt] = useState(readOkt)
   const [testpris] = useState(readTestpris)
   const [info, setInfo] = useState({ ...DEFAULTS, ledige: null, fullt: false })
-  // null | sending | redirect | sjekker | betalt | ubetalt | venter | avbrutt | waitlist | duplicate | stengt | error
+  // null | sending | redirect | sjekker | betalt | ubetalt | venter | avbrutt | waitlist | duplicate | igjen | stengt | error
   const [status, setStatus] = useState(null)
   const [errorText, setErrorText] = useState("")
   const [detaljer, setDetaljer] = useState(null)
+  // «igjen»: påmeldt fra før uten å ha betalt. Backend sender betalingslenken på nytt, og sier om den ble sendt.
+  const [igjenSendt, setIgjenSendt] = useState(false)
+  // «Del med en venn»: "" | "kopiert" | lenken, når den verken kunne deles eller kopieres
+  const [delt, setDelt] = useState("")
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
 
   // Enkel ruting med #admin, #vilkar og #personvern
@@ -251,6 +257,10 @@ export default function App() {
         nettside: f.get("Nettside"), // felle for roboter, skal være tom
         testpris,
       })
+      if (d.duplicate && d.ubetalt) {
+        setIgjenSendt(!!d.sendt)
+        return setStatus("igjen")
+      }
       if (d.duplicate) return setStatus("duplicate")
       if (d.waitlist) return setStatus("waitlist")
       if (d.stengt) return setStatus("stengt")
@@ -330,6 +340,32 @@ export default function App() {
       ? `Meld meg på og betal ${formatPrice(info.pris)}`
       : `Meld meg på · ${formatPrice(info.pris)}`
 
+  // «Del med en venn»: åpner delingen på telefonen. Uten den (de fleste PC-er) kopieres lenken.
+  // Lenken er alltid forsiden, aldri adressen med betalingsnøkkelen som står i nettleseren nå.
+  const delMedVenn = async () => {
+    const url = new URL(import.meta.env.BASE_URL, window.location.origin).href
+    const naar = info.dato ? ` ${info.dato.charAt(0).toLowerCase()}${info.dato.slice(1)}` : ""
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: "Juletreff på KUMI",
+          text: `Jeg skal på Juletreff på KUMI${naar}. Blir du med?`,
+          url,
+        })
+        return
+      } catch (err) {
+        if (err?.name === "AbortError") return
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url)
+      setDelt("kopiert")
+      setTimeout(() => setDelt(""), 3000)
+    } catch {
+      setDelt(url)
+    }
+  }
+
   // Påmeldt → Betal → Plassen er din. Vises over betalingsboksen, så det er tydelig hva som gjenstår.
   const fremdrift = (betalt) => (
     <ol className="fremdrift" aria-label="Påmeldingen">
@@ -382,6 +418,8 @@ export default function App() {
             {/* Mens betalingen pågår, trengs plassen til betalingen. Overskriften og datoen kommer tilbake når den er registrert. */}
             {!betalingPagar && (
               <>
+                {/* Hva kvelden er, smått over navnet. Datoen og faktastripen sier resten. */}
+                <p className="overtittel">Vegansk julebord</p>
                 <h2 className="tittel">✨Juletreff på KUMI🥂</h2>
                 <div className="subheader">{info.dato}</div>
               </>
@@ -448,6 +486,25 @@ export default function App() {
                   <p>
                     <small>Sjekk søppelpost/spam</small>
                   </p>
+                  {/* iPhone, Mac og Outlook åpner .ics-fila. Google får sin egen lenke, som også virker på Android. */}
+                  <p className="kalender">
+                    <span>📅 Legg i kalenderen:</span>{" "}
+                    <span className="kalender-valg">
+                      <a href={`${import.meta.env.BASE_URL}juletreff.ics`}>Apple</a>
+                      {" · "}
+                      <a href={googleKalender()} target="_blank" rel="noreferrer">
+                        Google
+                      </a>
+                      {" · "}
+                      <a href={`${import.meta.env.BASE_URL}juletreff.ics`}>Outlook</a>
+                    </span>
+                  </p>
+                  <p className="del">
+                    <button type="button" className="del-knapp" onClick={delMedVenn} aria-live="polite">
+                      {delt === "kopiert" ? "Lenken er kopiert" : "Del med en venn"}
+                    </button>
+                  </p>
+                  {delt && delt !== "kopiert" && <p className="del-lenke">{delt}</p>}
                 </div>
                 {bindendeBoks}
               </>
@@ -514,11 +571,12 @@ export default function App() {
             )}
 
             {status === "waitlist" && (
-              <div className="msg wait">
-                <h3>⚠️ Juletreffet er fullt</h3>
+              <div className="msg">
+                <span className="msg-hake" aria-hidden="true">✓</span>
+                <h3>Du står på ventelisten</h3>
                 <p>
-                  Du står på ventelisten. Blir det ledig plass, får du e-post, og
-                  du betaler først da.
+                  Juletreffet er fullt akkurat nå. Blir det ledig plass, får du
+                  e-post, og du betaler først da.
                 </p>
               </div>
             )}
@@ -532,6 +590,39 @@ export default function App() {
                     Spørsmål? Skriv til{" "}
                     <a href={`mailto:${kontakt}`}>{kontakt}</a>
                   </p>
+                )}
+              </div>
+            )}
+
+            {status === "igjen" && (
+              <div className="msg">
+                {igjenSendt ? (
+                  <>
+                    <h3>Sjekk e-posten din</h3>
+                    <p>
+                      Du er påmeldt, men vi har ikke fått betalingen ennå. Vi har
+                      sendt betalingslenken til e-posten din.
+                    </p>
+                    <p>
+                      <small>Sjekk søppelpost/spam</small>
+                    </p>
+                  </>
+                ) : (
+                  <>
+                    <h3>Du er påmeldt</h3>
+                    <p>
+                      Men vi har ikke fått betalingen ennå, og vi fikk ikke sendt
+                      betalingslenken akkurat nå.{" "}
+                      {kontakt ? (
+                        <>
+                          Skriv til <a href={`mailto:${kontakt}`}>{kontakt}</a>,
+                          så hjelper vi deg.
+                        </>
+                      ) : (
+                        "Prøv igjen om litt."
+                      )}
+                    </p>
+                  </>
                 )}
               </div>
             )}
@@ -661,7 +752,7 @@ export default function App() {
 
             <details>
               <summary className="faq">
-                <span>Hvem arrangerer?</span>
+                <span>Om kvelden</span>
                 <span className="icon">+</span>
               </summary>
 

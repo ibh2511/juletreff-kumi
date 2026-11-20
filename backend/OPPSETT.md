@@ -29,6 +29,8 @@ Du velger betalingsløsning i adminsiden under **Innstillinger → Betalingsløs
 | `STED` | `KUMI, Operagata 71B, Oslobukta` |
 | `PAMELDINGSFRIST` | `2026-12-16T23:59:59+01:00` (påmeldingen stenger automatisk) |
 | `FRIST_TEKST` | `onsdag 16. desember` |
+| `ARR_START` | `2026-12-18T18:30:00+01:00` (48-timersgrensen for trekk, og «Legg i kalenderen») |
+| `ARR_SLUTT` | `2026-12-18T23:00:00+01:00` (når kvelden er slutt i «Legg i kalenderen»). Endrer du tidene, endre også `src/kalender.js` |
 | `KAPASITET` | `30` |
 | `VIPPS_NUMMER` | Vipps-nummeret eller mobilnummeret det betales til uten Vipps-avtale. Settes enklest i adminsiden |
 | `AVSENDER_NAVN` | `Juletreff på KUMI` |

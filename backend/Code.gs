@@ -169,6 +169,8 @@ function arrangement_() {
     kapasitet: Number(cfg_('KAPASITET', '30')),
     // Trekk med legeerklæring under 48 timer før start: vi beholder no-show-gebyret til KUMI
     start: new Date(cfg_('ARR_START', '2026-12-18T18:30:00+01:00')),
+    // Når kvelden er slutt, for «Legg i kalenderen»: middagen på KUMI og MUNCH bar etterpå
+    slutt: new Date(cfg_('ARR_SLUTT', '2026-12-18T23:00:00+01:00')),
     noshow: Number(cfg_('NOSHOW_GEBYR', '300')),
     vippsNummer: cfg_('VIPPS_NUMMER', STANDARD_VIPPS_NUMMER),
     vippsNavn: cfg_('VIPPS_NAVN', STANDARD_VIPPS_NAVN),
@@ -342,49 +344,56 @@ function pamelding_(p, test) {
 
   var lock = LockService.getScriptLock();
   lock.waitLock(15000);
-  var rad;
+  var rad, ubetalt;
   try {
     var rader = alle_();
     var grense = Date.now() - VENTER_MINUTTER * 60000;
     // Testpåmeldinger sjekkes ikke mot ekte påmeldinger, og ekte påmeldinger ikke mot tester.
     var tidligere = test ? [] : rader.filter(function (r) { return r.epost === d.epost && !erTest_(r); });
-    if (tidligere.some(function (r) { return HOLDER_PLASS.indexOf(r.status) >= 0; })) {
-      return { ok: true, duplicate: true };
-    }
-    // En tidligere påbegynt Vipps-betaling som ikke ble fullført, avbrytes før vi lager en ny.
-    tidligere.forEach(function (r) {
-      if (r.status === 'VENTER') {
-        if (new Date(r.opprettet).getTime() > grense) avbrytVipps_(aktivRef_(r) || r.id);
-        oppdater_(r._rad, { status: 'AVBRUTT' });
-        r.status = 'AVBRUTT'; // så plassen ikke telles som opptatt under
-      }
-    });
-
-    var fullt = !test && opptatte_(rader) >= a.kapasitet;
-    if (fullt && tidligere.some(function (r) { return r.status === 'VENTELISTE'; })) {
-      return { ok: true, waitlist: true };
-    }
-
-    rad = {}; KOLONNER.forEach(function (k) { rad[k] = ''; });
-    Object.assign(rad, d);
-    rad.id = nesteId_();
-    rad.opprettet = new Date();
-    rad.belop = testlenke ? TESTPRIS_KR : a.pris;
-    rad.nokkel = nyNokkel_();
-    rad.bindende_godtatt = test ? '' : new Date();
-    rad.kilde = testlenke ? 'testlenke' : test ? 'admin-test' : tekst_(p.kilde, 60);
-    rad.test = test ? 'ja' : '';
-    if (test) rad.notat = testlenke ? 'Test med ' + TESTPRIS_KR + ' kr fra testlenken' : 'Testpåmelding fra admin';
-    rad.status = fullt ? 'VENTELISTE' : a.vippsAktiv ? 'VENTER' : 'UBETALT';
-    rad.betaling = fullt ? '' : a.vippsAktiv ? 'vipps' : 'manuell';
-    if (rad.status === 'VENTER') rad.vipps_ref = rad.id;
-    sheet_(PAMELDING_ARK).appendRow(KOLONNER.map(function (k) { return celle_(rad[k]); }));
-    if (rad.status !== 'VENTELISTE') {
+    var holder = tidligere.filter(function (r) { return HOLDER_PLASS.indexOf(r.status) >= 0; });
+    if (holder.some(function (r) { return r.status === 'BETALT'; })) return { ok: true, duplicate: true };
+    // Påmeldt, men ikke betalt: betalingslenken sendes på nytt etter låsen (under).
+    ubetalt = holder[0];
+    if (!ubetalt) {
+      // En tidligere påbegynt Vipps-betaling som ikke ble fullført, avbrytes før vi lager en ny.
       tidligere.forEach(function (r) {
-        if (r.status === 'VENTELISTE') oppdater_(r._rad, { status: 'AVBRUTT', notat: [r.notat, 'Meldte seg på igjen og fikk plass (' + rad.id + ')'].filter(String).join(' | ') });
+        if (r.status === 'VENTER') {
+          if (new Date(r.opprettet).getTime() > grense) avbrytVipps_(aktivRef_(r) || r.id);
+          oppdater_(r._rad, { status: 'AVBRUTT' });
+          r.status = 'AVBRUTT'; // så plassen ikke telles som opptatt under
+        }
       });
+
+      var fullt = !test && opptatte_(rader) >= a.kapasitet;
+      if (fullt && tidligere.some(function (r) { return r.status === 'VENTELISTE'; })) {
+        return { ok: true, waitlist: true };
+      }
+
+      rad = {}; KOLONNER.forEach(function (k) { rad[k] = ''; });
+      Object.assign(rad, d);
+      rad.id = nesteId_();
+      rad.opprettet = new Date();
+      rad.belop = testlenke ? TESTPRIS_KR : a.pris;
+      rad.nokkel = nyNokkel_();
+      rad.bindende_godtatt = test ? '' : new Date();
+      rad.kilde = testlenke ? 'testlenke' : test ? 'admin-test' : tekst_(p.kilde, 60);
+      rad.test = test ? 'ja' : '';
+      if (test) rad.notat = testlenke ? 'Test med ' + TESTPRIS_KR + ' kr fra testlenken' : 'Testpåmelding fra admin';
+      rad.status = fullt ? 'VENTELISTE' : a.vippsAktiv ? 'VENTER' : 'UBETALT';
+      rad.betaling = fullt ? '' : a.vippsAktiv ? 'vipps' : 'manuell';
+      if (rad.status === 'VENTER') rad.vipps_ref = rad.id;
+      sheet_(PAMELDING_ARK).appendRow(KOLONNER.map(function (k) { return celle_(rad[k]); }));
+      if (rad.status !== 'VENTELISTE') {
+        tidligere.forEach(function (r) {
+          if (r.status === 'VENTELISTE') oppdater_(r._rad, { status: 'AVBRUTT', notat: [r.notat, 'Meldte seg på igjen og fikk plass (' + rad.id + ')'].filter(String).join(' | ') });
+        });
+      }
     }
   } finally { lock.releaseLock(); }
+
+  // Den som melder seg på igjen uten å ha betalt, får betalingslenken på e-post på nytt, og siden sier fra om det.
+  // Siden viser ikke selve betalingen, for den viser navnet til hvem som helst som skriver inn e-postadressen.
+  if (ubetalt) return { ok: true, duplicate: true, ubetalt: true, sendt: sendBetalingIgjen_(ubetalt) };
 
   if (rad.status === 'VENTELISTE') {
     sendVentelisteEpost_(rad);
@@ -412,6 +421,19 @@ function pamelding_(p, test) {
     vippsFeilVarsel_(err);
     throw new Brukerfeil('Vi fikk ikke kontakt med Vipps. Prøv igjen om litt.');
   }
+}
+
+/**
+ * Sender e-posten med betalingslenken på nytt til en påmelding som ikke er betalt. Høyst én gang i kvarteret
+ * per påmelding, så skjemaet ikke kan brukes til å fylle innboksen til noen. Svarer true når den er sendt nå
+ * eller nylig.
+ */
+function sendBetalingIgjen_(r) {
+  var cache = CacheService.getScriptCache(), nokkel = 'betaling_igjen_' + r.id;
+  if (cache.get(nokkel)) return true;
+  var sendt = sendBekreftelse_(r) === true;
+  if (sendt) cache.put(nokkel, '1', 15 * 60);
+  return sendt;
 }
 
 /** Lager en betaling hos Vipps bedrift. ref er påmeldings-ID-en, eller ID-2, ID-3 … når samme plass betales på nytt. */
@@ -1205,7 +1227,7 @@ function sendBekreftelse_(r) {
     tabell(
       rad('Sted:', '<a href="' + kart + '" style="color: #edb77d; text-decoration: none; border-bottom: 1px dotted #edb77d;">' +
         e(a.sted) + '</a>') +
-      rad('Tid:', e(a.dato)) +
+      rad('Tid:', e(a.dato) + (betalt ? kalenderLenker_(a, site) : '')) +
       rad('Påmelding:', r.id, true), 'margin: 30px 0; ') +
 
     (betalt ? epostKnapp_(fb, 'Trykk «Skal» på Facebook-eventet 📅') : '') +
@@ -1230,6 +1252,7 @@ function sendBekreftelse_(r) {
       : vippsTekst_(r) + '\nPlassen din er sikret når betalingen er mottatt.\n' +
         'Har du allerede betalt? Da trenger du ikke gjøre noe mer. Du får en ny e-post når betalingen er registrert.') + '\n\n' +
     'Sted: ' + a.sted + '\nTid: ' + a.dato + '\nPåmelding: ' + r.id + '\n\n' +
+    (betalt ? 'Legg i kalenderen:\nGoogle: ' + googleKalender_(a, site) + '\nApple eller Outlook: ' + site + '/juletreff.ics\n\n' : '') +
     (betalt ? 'Trykk «Skal» på Facebook-eventet: ' + fb + '\n\n' : '') +
     (betalt ? bindendeTekst_(r.belop) + '\n\n' : '') +
     bunn + '\n' +
@@ -1238,13 +1261,76 @@ function sendBekreftelse_(r) {
   var emne = (erTest_(r) ? '[TEST] ' : '') +
     (betalt ? '✨ Du er påmeldt Juletreff på KUMI 🥂' : '✨ Juletreff på KUMI 🥂 Betal ' + r.belop + ' kr med Vipps');
 
+  var valg = { htmlBody: html, name: cfg_('AVSENDER_NAVN', 'Juletreff på KUMI'), replyTo: cfg_('SVAR_EPOST', '') || undefined };
+  // Kalenderfila som vedlegg: Apple Mail og Outlook legger den i kalenderen med ett trykk.
+  // Bekreftelsen er viktigere enn vedlegget, så den sendes uten hvis fila feiler.
+  if (betalt) {
+    try { valg.attachments = [Utilities.newBlob(kalenderIcs_(a, site), 'text/calendar', 'juletreff.ics')]; }
+    catch (err) { console.error('Kalenderfila feilet for ' + r.id + ': ' + err); }
+  }
+
   try {
-    MailApp.sendEmail(r.epost, emne, tekst,
-      { htmlBody: html, name: cfg_('AVSENDER_NAVN', 'Juletreff på KUMI'), replyTo: cfg_('SVAR_EPOST', '') || undefined });
+    MailApp.sendEmail(r.epost, emne, tekst, valg);
     var o = finn_('id', r.id);
     if (o) oppdater_(o._rad, { epost_sendt: new Date() });
     return true;
   } catch (err) { console.error('E-post feilet for ' + r.id + ': ' + err); return false; }
+}
+
+/* «Legg i kalenderen» i bekreftelsen. Samme hendelse som src/kalender.js lager på siden og i juletreff.ics der. */
+var KALENDER_TITTEL = 'Juletreff på KUMI';
+var KALENDER_STED = 'KUMI, Operagata 71B, Oslo';
+var KALENDER_OM = 'Vegansk julebord med seks retter, underholdning og MUNCH bar etterpå.';
+// Samme UID som på siden, så kalenderen kjenner igjen hendelsen i stedet for å lage en til
+var KALENDER_UID = 'juletreff-kumi-2026-12-18@ibh2511.github.io';
+
+/** 20261218T173000Z. Slutter kvelden ikke etter start (feil i ARR_SLUTT), brukes 4,5 timer. */
+function kalenderTider_(a) {
+  var utc = function (d) { return d.toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, ''); };
+  var slutt = a.slutt > a.start ? a.slutt : new Date(a.start.getTime() + 4.5 * 36e5);
+  return { start: utc(a.start), slutt: utc(slutt), naa: utc(new Date()) };
+}
+
+function googleKalender_(a, site) {
+  var t = kalenderTider_(a);
+  return 'https://calendar.google.com/calendar/render?action=TEMPLATE' +
+    '&text=' + encodeURIComponent(KALENDER_TITTEL) +
+    '&dates=' + t.start + '/' + t.slutt +
+    '&details=' + encodeURIComponent(KALENDER_OM + '\n\n' + site + '/') +
+    '&location=' + encodeURIComponent(KALENDER_STED) +
+    '&ctz=Europe%2FOslo';
+}
+
+/** Kalenderfil (RFC 5545). Tekst får \ foran \ ; , og linjeskift. Lange linjer brytes ved 75 byte, aldri midt i en bokstav. */
+function kalenderIcs_(a, site) {
+  var t = kalenderTider_(a);
+  var tekst = function (s) { return String(s).replace(/[\\;,]/g, '\\$&').replace(/\r?\n/g, '\\n'); };
+  var brett = function (linje) {
+    var ut = '', n = 0;
+    for (var i = 0; i < linje.length; i++) {
+      var c = linje.charCodeAt(i), tegn = linje.charAt(i), b = c < 0x80 ? 1 : c < 0x800 ? 2 : 3;
+      if (c >= 0xD800 && c <= 0xDBFF) { tegn += linje.charAt(++i); b = 4; }
+      if (n + b > 75) { ut += '\r\n '; n = 1; }
+      ut += tegn; n += b;
+    }
+    return ut;
+  };
+  return ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//juletreff-kumi//NO', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+    'BEGIN:VEVENT', 'UID:' + KALENDER_UID, 'DTSTAMP:' + t.naa, 'DTSTART:' + t.start, 'DTEND:' + t.slutt,
+    'SUMMARY:' + tekst(KALENDER_TITTEL), 'LOCATION:' + tekst(KALENDER_STED),
+    'DESCRIPTION:' + tekst(KALENDER_OM + '\n\n' + site + '/'), 'URL:' + site + '/',
+    'END:VEVENT', 'END:VCALENDAR'].map(brett).join('\r\n') + '\r\n';
+}
+
+/** Under klokkeslettet i bekreftelsen: Apple og Outlook åpner fila på siden, Google får sin egen lenke. */
+function kalenderLenker_(a, site) {
+  var e = escapeHtml_, ics = site + '/juletreff.ics';
+  var lenke = function (href, tekst) {
+    return '<a href="' + e(href) + '" style="color: #edb77d; text-decoration: none; border-bottom: 1px dotted #edb77d;">' + tekst + '</a>';
+  };
+  return '<br><span style="display: inline-block; margin-top: 6px; font-size: .9rem; color: #bdb3a8;">📅 Legg i kalenderen: ' +
+    '<span style="white-space: nowrap;">' + lenke(ics, 'Apple') + ' · ' + lenke(googleKalender_(a, site), 'Google') + ' · ' +
+    lenke(ics, 'Outlook') + '</span></span>';
 }
 
 // Hvor langt bakgrunnsfargen tegnes ut i e-postappens egen marg på mobil. Gmail-appen har 16 px og kan skalere

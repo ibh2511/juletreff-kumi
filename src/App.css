@@ -137,6 +137,15 @@ h2 {
   margin-bottom: 30px;
   letter-spacing: 1.5px;
 }
+/* Hva kvelden er, smått over navnet. Kontrast 8,5:1 mot panelet. */
+.overtittel {
+  margin: 0 0 6px;
+  font-size: 12.5px;
+  font-weight: 600;
+  letter-spacing: 2.5px;
+  text-transform: uppercase;
+  color: rgba(244, 234, 223, 0.72);
+}
 
 form {
   width: 100%;
@@ -314,6 +323,55 @@ textarea {
 .msg.wait h3,
 .msg.error h3 {
   color: #d9534f;
+}
+/* Gode nyheter, som ventelisten: grønn hake over overskriften, i samme grønn som fremdriften */
+.msg-hake {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  margin-top: 4px;
+  border-radius: 50%;
+  background: #2f6b3a;
+  color: #fff;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+}
+/* «Legg i kalenderen» etter betalingen. Lenkene holdes samlet, så linjen brytes etter kolonet. */
+.msg .kalender {
+  margin: 16px 0 0;
+}
+.kalender-valg {
+  white-space: nowrap;
+}
+.kalender-valg a {
+  display: inline-block;
+  padding: 6px 2px;
+}
+/* «Del med en venn» etter betalingen */
+.msg .del {
+  margin: 18px 0 4px;
+}
+.del-knapp {
+  padding: 10px 22px;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.del-knapp:hover {
+  background: rgba(237, 183, 125, 0.12);
+}
+.del-lenke {
+  font-size: 13px;
+  overflow-wrap: anywhere;
+  user-select: all;
 }
 /* Stiplede lenker bruker understreking, ikke kantlinje. Da følger den stiplede linjen ordene,
    også når lenken brytes over to linjer, og går aldri over hele bredden. */
@@ -734,7 +792,7 @@ textarea {
   margin-top: 0;
 }
 .vipps-trinn li.knapp .nr {
-  margin-top: 12px;
+  margin-top: 13px;
 }
 /* Rett under «Åpne Vipps» står «Åpnet ikke Vipps?» (dempet) og «Prøv denne lenken», midt under knappen */
 .vipps-under-knapp {
@@ -823,8 +881,9 @@ textarea {
   background: #ff5b24;
   color: #fff !important;
   font: inherit;
-  font-size: 17px;
-  font-weight: 500;
+  /* 19 px fet, så kontrasten holder (se .vipps-submit) */
+  font-size: 19px;
+  font-weight: 700;
   letter-spacing: 0.5px;
   text-align: center;
   text-decoration: none;
@@ -1083,9 +1142,15 @@ textarea {
 .form-error {
   margin-bottom: 24px;
 }
+/* Hvit på Vipps-oransje har kontrast 3,1:1. 19 px fet regnes som stor tekst, og da holder 3:1. */
 .form-submit button.vipps-submit {
   background: #ff5b24;
   color: #fff;
+  font-size: 19px;
+  line-height: 1.3;
+  /* Luft på sidene, så teksten deler seg i to jevne linjer på de minste telefonene i stedet for å gå helt ut i kanten */
+  padding: 14px 16px;
+  text-wrap: balance;
 }
 .form-submit button.vipps-submit:hover {
   background: #e64a15;
