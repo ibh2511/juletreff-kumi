@@ -15,7 +15,7 @@ import { kopier, lenker, miljo, qrSvg, valg } from "./vipps.js"
 //    kopiert nummeret. Da har de mest sannsynlig betalt, og stegene med «Åpne Vipps» øverst kunne fått dem
 //    til å betale igjen. Teksten sier «Har du betalt …», så den stemmer også for den som ikke betalte,
 //    og stegene er ett trykk unna.
-// Stegene er bare for å betale. At siden følger med og oppdaterer seg selv, står i steg 4 (og i QR-teksten
+// Stegene er bare for å betale. At siden følger med og oppdaterer seg selv, står i det siste steget (og i QR-teksten
 // på PC), og nederst i betalingsboksen står en liten «Venter på betalingen» med en rolig puls, en mindre
 // utgave av radaren i venteboksen. Etter 5 minutter står det «Venter fortsatt på betalingen».
 
@@ -152,6 +152,19 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
       .catch(() => setKopiert(`feil-${hva}`))
   }
 
+  // «Åpne Vipps» kopierer også nummeret, i tilfelle det ikke blir fylt ut i Vipps. Går det ikke, sier vi ingenting:
+  // nummeret og «Kopier» står under knappen.
+  const apneVipps = () => {
+    forlot.current = true
+    if (kopiert === "nr") return
+    kopier(nr)
+      .then(() => {
+        setKopiert("nr")
+        setTimeout(() => setKopiert(""), 2500)
+      })
+      .catch(() => {})
+  }
+
   const kopiKnapp = (tekst, hva) => (
     <button
       type="button"
@@ -216,31 +229,25 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
   if (m.mobil && l) {
     trinn = (
       <ol className="vipps-trinn">
-        <li>
+        <li className="knapp">
           <span className="nr">1</span>
           <div>
-            <b>Kopier mobilnummeret</b>
-            {nummerRad}
-          </div>
-        </li>
-        <li className="knapp">
-          <span className="nr">2</span>
-          <div>
-            <a className="vipps-btn" href={l[v.hoved]} onClick={() => (forlot.current = true)}>
+            <a className="vipps-btn" href={l[v.hoved]} onClick={apneVipps}>
               Åpne Vipps
             </a>
             <p className="vipps-reserve-rad">
               Åpnet ikke Vipps?
               <br />
-              <a className="vipps-reserve" href={l[v.reserve]} onClick={() => (forlot.current = true)}>
+              <a className="vipps-reserve" href={l[v.reserve]} onClick={apneVipps}>
                 Prøv denne lenken
               </a>
             </p>
-            <small>Virker ingen av dem? Åpne Vipps selv og lim inn nummeret.</small>
+            <small>Virker ingen av dem? Åpne Vipps selv og lim inn nummeret:</small>
+            {nummerRad}
           </div>
         </li>
         <li>
-          <span className="nr">3</span>
+          <span className="nr">2</span>
           <div>
             <b>Skriv inn {kr} og betal</b>
             <small>
@@ -250,7 +257,7 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
           </div>
         </li>
         <li>
-          <span className="nr">4</span>
+          <span className="nr">3</span>
           <div>
             <b>Kom tilbake hit</b>
             <small>{naar}</small>
@@ -425,11 +432,16 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
         <p className="vipps-ref">Påmeldings-ID: {info.id}</p>
         {trinn}
         <p className="vipps-fra">
-          Betal fra Vipps-kontoen til <b>{fraNavn}</b>, så finner vi betalingen.{" "}
-          <button type="button" className="link-btn" onClick={() => setEndrer(!endrer)}>
-            Betaler du fra en annens Vipps?
-          </button>
+          Betal fra Vipps-kontoen til <b>{fraNavn}</b>, så finner vi betalingen.
         </p>
+        <button
+          type="button"
+          className="vipps-annen"
+          aria-expanded={endrer}
+          onClick={() => setEndrer(!endrer)}
+        >
+          Betaler du fra en annens Vipps?
+        </button>
         {endrer && navnSkjema}
         {navnFeil && <p className="vipps-feil">{navnFeil}</p>}
         <p className="vipps-venter" role="status">
