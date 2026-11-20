@@ -1,0 +1,17 @@
+BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//juletreff-kumi//NO
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+BEGIN:VEVENT
+UID:juletreff-kumi-2026-12-18@ibh2511.github.io
+DTSTAMP:20261120T181642Z
+DTSTART:20261218T173000Z
+DTEND:20261218T220000Z
+SUMMARY:Juletreff på KUMI
+LOCATION:KUMI\, Operagata 71B\, Oslo
+DESCRIPTION:Vegansk julebord med seks retter\, underholdning og MUNCH bar e
+ tterpå.\n\nhttps://ibh2511.github.io/juletreff-kumi/
+URL:https://ibh2511.github.io/juletreff-kumi/
+END:VEVENT
+END:VCALENDAR
