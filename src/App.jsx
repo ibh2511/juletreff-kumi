@@ -68,6 +68,14 @@ const FERDIG = [
   "redirect",
 ]
 
+// Mobil: bildet står over skjemaet. Når innholdet i kolonnen bytter, rulles toppen av kolonnen opp i
+// skjermen, så det nye er det man ser. På PC står bildet ved siden av, og der rulles det ikke.
+function rullFram(el) {
+  if (!el || window.matchMedia?.("(min-width: 769px)").matches) return
+  const rolig = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+  el.scrollIntoView({ behavior: rolig ? "auto" : "smooth", block: "start" })
+}
+
 export default function App() {
   const [view, setView] = useState(viewFromHash)
   const [okt, setOkt] = useState(readOkt)
@@ -208,6 +216,19 @@ export default function App() {
   const skjemaRef = useRef(null)
   const [skjemaHoyde, setSkjemaHoyde] = useState(0)
 
+  // Mobil: det nye innholdet rulles opp i skjermen når kolonnen bytter: betalingen etter påmeldingen,
+  // «Du er påmeldt» når betalingen er kommet, og meldinger som «E-post allerede påmeldt». Kommer man fra
+  // betalingslenken i e-posten og har begynt å rulle selv mens siden lastet, blir man der man er.
+  const rullTilKolonnen = useCallback(() => rullFram(skjemaRef.current), [])
+  const forrigeStatus = useRef(status)
+  useEffect(() => {
+    const fra = forrigeStatus.current
+    forrigeStatus.current = status
+    if (fra === status || ["sending", "redirect", "sjekker"].includes(status)) return
+    if (fra === "sjekker" && window.scrollY > 40) return
+    rullTilKolonnen()
+  }, [status, rullTilKolonnen])
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     const f = new FormData(e.currentTarget)
@@ -253,7 +274,8 @@ export default function App() {
           `${window.location.pathname}?betaling=${encodeURIComponent(d.id)}&k=${encodeURIComponent(d.k)}`
         )
       }
-      window.scrollTo({ top: 0, behavior: "smooth" })
+      // PC: til toppen, der betalingen står ved siden av bildet. Mobil rulles til betalingen (se over).
+      if (toKolonner) window.scrollTo({ top: 0, behavior: "smooth" })
     } catch (err) {
       setErrorText(err.message)
       setStatus("error")
@@ -435,6 +457,7 @@ export default function App() {
               <>
                 {fremdrift(false)}
                 <VippsPayment
+                  onBytt={rullTilKolonnen}
                   info={detaljer?.betalingsinfo}
                   id={detaljer?.id}
                   k={detaljer?.k}

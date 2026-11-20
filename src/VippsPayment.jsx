@@ -34,7 +34,7 @@ function lagreVent(id, t) {
     // privat modus: gjelder til siden lastes på nytt
   }
 }
-export default function VippsPayment({ info, id, k, lead, notis }) {
+export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
   const m = useMemo(() => miljo(), [])
   const [kopiert, setKopiert] = useState("")
   const [fraNavn, setFraNavn] = useState(info?.fraNavn || "")
@@ -57,6 +57,14 @@ export default function VippsPayment({ info, id, k, lead, notis }) {
     setVenterFra(0)
     lagreVent(id, 0)
   }
+
+  // Når stegene og venteboksen bytter plass, ber vi siden rulle det nye opp i skjermen (på mobil)
+  const varVenting = useRef(!!venterFra)
+  useEffect(() => {
+    if (varVenting.current === !!venterFra) return
+    varVenting.current = !!venterFra
+    onBytt?.()
+  }, [venterFra, onBytt])
 
   // Trykket «Åpne Vipps» eller kopierte nummeret og forlot siden: når den vises igjen, viser vi ventingen.
   useEffect(() => {
