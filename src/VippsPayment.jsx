@@ -153,7 +153,7 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
   }
 
   // «Åpne Vipps» kopierer også nummeret, i tilfelle det ikke blir fylt ut i Vipps. Går det ikke, sier vi ingenting:
-  // nummeret og «Kopier» står rett over knappen.
+  // nummeret og «Kopier» står under knappen.
   const apneVipps = () => {
     forlot.current = true
     if (kopiert === "nr") return
@@ -229,11 +229,9 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
   if (m.mobil && l) {
     trinn = (
       <ol className="vipps-trinn">
-        <li className="kopier">
+        <li className="knapp">
           <span className="nr">1</span>
           <div>
-            <b>Kopier og åpne Vipps</b>
-            {nummerRad}
             <a className="vipps-btn" href={l[v.hoved]} onClick={apneVipps}>
               Åpne Vipps
             </a>
@@ -244,7 +242,8 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
                 Prøv denne lenken
               </a>
             </p>
-            <small>Virker ingen av dem? Åpne Vipps selv og lim inn nummeret.</small>
+            <small>Virker ingen av dem? Åpne Vipps selv og lim inn nummeret:</small>
+            {nummerRad}
           </div>
         </li>
         <li>
@@ -252,8 +251,8 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
           <div>
             <b>Skriv inn {kr} og betal</b>
             <small>
-              Nummeret er fylt ut, beløpet skriver du selv. Mangler nummeret? Lim inn det du
-              kopierte.
+              Nummeret er fylt ut, beløpet skriver du selv. Mangler nummeret? Lim det inn
+              fra steg 1.
             </small>
           </div>
         </li>
@@ -433,11 +432,16 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
         <p className="vipps-ref">Påmeldings-ID: {info.id}</p>
         {trinn}
         <p className="vipps-fra">
-          Betal fra Vipps-kontoen til <b>{fraNavn}</b>, så finner vi betalingen.{" "}
-          <button type="button" className="link-btn" onClick={() => setEndrer(!endrer)}>
-            Betaler du fra en annens Vipps?
-          </button>
+          Betal fra Vipps-kontoen til <b>{fraNavn}</b>, så finner vi betalingen.
         </p>
+        <button
+          type="button"
+          className="vipps-annen"
+          aria-expanded={endrer}
+          onClick={() => setEndrer(!endrer)}
+        >
+          Betaler du fra en annens Vipps?
+        </button>
         {endrer && navnSkjema}
         {navnFeil && <p className="vipps-feil">{navnFeil}</p>}
         <p className="vipps-venter" role="status">

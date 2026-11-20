@@ -728,14 +728,26 @@ textarea {
   color: var(--accent);
   white-space: nowrap;
 }
-/* I steget «Kopier og åpne Vipps» på mobil står nummeret og «Kopier» på samme linje når det er plass
-   (fra 390 px, med noen piksler å gå på), over «Åpne Vipps» */
-.vipps-trinn li.kopier .vipps-nummer-rad {
-  gap: 8px;
+/* Steg 1 på mobil er selve «Åpne Vipps»-knappen, uten en overskrift som sier det samme, og tallet står midt
+   for knappen. Nummeret og «Kopier» står mindre under, som reserve hvis Vipps ikke fyller ut nummeret. */
+.vipps-trinn li.knapp .vipps-btn {
+  margin-top: 0;
 }
-.vipps-trinn li.kopier .vipps-tlf {
-  font-size: 22px;
+.vipps-trinn li.knapp .nr {
+  margin-top: 12px;
+}
+.vipps-trinn li.knapp .vipps-nummer-rad {
+  gap: 10px;
+  margin-top: 6px;
+}
+.vipps-trinn li.knapp .vipps-tlf {
+  font-size: 17px;
   letter-spacing: 0.5px;
+}
+.vipps-trinn li.knapp .vipps-kopier {
+  min-height: 30px;
+  padding: 3px 13px;
+  font-size: 13px;
 }
 .vipps-melding {
   margin: 0 !important;
@@ -915,6 +927,55 @@ textarea {
 .vipps-fra b {
   font-weight: 500;
   color: var(--accent);
+}
+/* «Betaler du fra en annens Vipps?» folder ut navnefeltet. Pilen viser at noe åpner seg, og snur når det er åpent. */
+.vipps-annen {
+  display: block;
+  width: fit-content;
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 2px 8px;
+  border: 0;
+  background: none;
+  color: var(--muted);
+  font: inherit;
+  font-size: 13.5px;
+  font-weight: 400;
+  line-height: 1.6;
+  text-align: center;
+  text-wrap: balance;
+  cursor: pointer;
+}
+/* Pilen står rett etter teksten, også når teksten deler seg på smale skjermer */
+.vipps-annen::after {
+  content: "";
+  position: relative;
+  top: -3px;
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  margin-left: 9px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 0.2s ease, top 0.2s ease;
+}
+.vipps-annen[aria-expanded="true"]::after {
+  top: 1px;
+  transform: rotate(-135deg);
+}
+@media (hover: hover) {
+  .vipps-annen:hover {
+    color: #fff;
+  }
+}
+.vipps-annen:focus:not(:focus-visible) {
+  outline: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .vipps-annen::after {
+    transition: none;
+  }
 }
 .vipps-nytt-navn {
   display: flex;
@@ -1229,12 +1290,13 @@ h2.tittel { white-space: nowrap; font-size: clamp(18px, 6.4vw, 34px); letter-spa
   .vipps-radar::before { animation: none; opacity: 0.35; transform: scale(0.8); }
   .vipps-radar::after { display: none; }
 }
-/* Liten «Venter på betalingen» nederst i betalingsboksen: samme puls som radaren i venteboksen, bare mye mindre */
+/* Liten «Venter på betalingen» nederst i betalingsboksen: samme ring som radaren i venteboksen, bare mindre.
+   Prikken svulmer litt idet ringen går ut, så pulsen synes også der den er minst. */
 .vipps-venter {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 9px;
+  gap: 11px;
   margin: 14px 0 0;
   font-size: 12.5px;
   letter-spacing: 0.3px;
@@ -1243,22 +1305,33 @@ h2.tittel { white-space: nowrap; font-size: clamp(18px, 6.4vw, 34px); letter-spa
 .vipps-venter-prikk {
   position: relative;
   flex: none;
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #ff5b24;
-  box-shadow: 0 0 6px rgba(255, 91, 36, 0.55);
+  width: 9px;
+  height: 9px;
 }
+.vipps-venter-prikk::before,
 .vipps-venter-prikk::after {
   content: "";
   position: absolute;
-  inset: -5px;
   border-radius: 50%;
-  border: 1.5px solid rgba(255, 91, 36, 0.75);
+}
+.vipps-venter-prikk::before {
+  inset: 0;
+  background: #ff5b24;
+  box-shadow: 0 0 6px rgba(255, 91, 36, 0.55);
+  animation: vippsPrikk 2.4s ease-in-out infinite;
+}
+.vipps-venter-prikk::after {
+  inset: -7px;
+  border: 2px solid rgba(255, 91, 36, 0.8);
   opacity: 0;
   animation: vippsRadar 2.4s cubic-bezier(0.2, 0.6, 0.35, 1) infinite;
 }
+@keyframes vippsPrikk {
+  0%, 45%, 100% { transform: scale(1); box-shadow: 0 0 6px rgba(255, 91, 36, 0.55); }
+  14% { transform: scale(1.3); box-shadow: 0 0 10px rgba(255, 91, 36, 0.9); }
+}
 @media (prefers-reduced-motion: reduce) {
+  .vipps-venter-prikk::before { animation: none; }
   .vipps-venter-prikk::after { animation: none; opacity: 0.35; transform: scale(0.8); }
 }
 .vipps-sjekker h3 {
