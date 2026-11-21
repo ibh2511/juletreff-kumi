@@ -1047,8 +1047,9 @@ textarea {
     text-align: center;
   }
 }
+/* Litt ekstra luft over «Betal fra Vipps-kontoen til …», så den skiller seg fra stegene over */
 .vipps-fra {
-  margin: 16px 0 0;
+  margin: 26px 0 0;
   font-size: 13.5px;
   font-weight: 300;
   line-height: 1.6;
