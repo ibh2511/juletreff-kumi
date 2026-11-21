@@ -821,7 +821,8 @@ textarea {
 .vipps-trinn li.knapp .nr {
   margin-top: 13px;
 }
-/* Rett under «Åpne Vipps» står «Åpnet ikke Vipps?» (dempet) og «Prøv denne lenken», midt under knappen */
+/* Rett under «Åpne Vipps» står «Åpnet ikke Vipps?», midt under knappen. Selve spørsmålet er lenken som prøver
+   Vipps på en annen måte. */
 .vipps-under-knapp {
   margin: 10px 0 0;
   text-align: center;
@@ -832,10 +833,6 @@ textarea {
 }
 .vipps-under-knapp .vipps-reserve {
   font-weight: 400;
-}
-.vipps-hvis {
-  display: block;
-  color: #aaa198;
 }
 /* I steg 2 står nummeret og «Kopier» samlet i et felt, for den som må lime inn nummeret selv */
 .vipps-trinn li.nummer .vipps-nummer-rad {
@@ -937,8 +934,8 @@ textarea {
   opacity: 0.7;
   cursor: default;
 }
-/* «Åpnet ikke Vipps?» på én linje og lenken på linjen under. Lenken er inline, så den stiplede
-   linjen følger bare teksten og aldri går over hele bredden. */
+/* «Åpnet ikke Vipps?» er lenken. Den er inline, så den stiplede linjen følger bare teksten og aldri går over
+   hele bredden. */
 .vipps-reserve {
   color: var(--muted);
   text-decoration-line: underline;
@@ -1047,13 +1044,8 @@ textarea {
     text-align: center;
   }
 }
-.vipps-fra {
-  margin: 16px 0 0;
-  font-size: 13.5px;
-  font-weight: 300;
-  line-height: 1.6;
-}
-.vipps-fra b {
+/* Navnet i introteksten («Betal fra Vipps-kontoen til …»), i samme farge som ellers når navnet står i teksten */
+.vipps-fra-lead {
   font-weight: 500;
   color: var(--accent);
 }
@@ -1062,7 +1054,7 @@ textarea {
   display: block;
   width: fit-content;
   max-width: 100%;
-  margin: 0 auto;
+  margin: 12px auto 0;
   padding: 2px 8px;
   border: 0;
   background: none;
@@ -1206,6 +1198,21 @@ textarea {
 }
 .vipps-lead + .vipps-ref:last-child {
   margin-bottom: 0;
+}
+/* På betalingssiden står påmeldings-ID-en over overskriften, liten og dempet */
+.vipps-ref-topp {
+  margin: 0 0 8px;
+}
+/* «Mottaker: …» rett over «Åpne Vipps» (eller QR-koden på PC), så man ser hvem pengene går til der man betaler */
+.vipps-mottaker {
+  margin: -6px 0 10px;
+  font-size: 12.5px;
+  font-weight: 300;
+  color: #a39b92;
+}
+/* På venteskjermen står ID-en øverst, over radaren, med litt luft ned */
+.vipps-sjekker .vipps-ref-topp {
+  margin-bottom: 18px;
 }
 .link-btn {
   background: none;
@@ -1543,9 +1550,9 @@ h2.tittel { white-space: nowrap; font-size: clamp(18px, 6.4vw, 34px); letter-spa
   color: var(--ink);
   text-align: left;
 }
-/* Samme mønster som «Åpnet ikke Vipps?»: spørsmålet på én linje og den stiplede lenken på linjen under */
+/* Spørsmålet på én linje og den stiplede lenken på linjen under */
 .vipps-tilbake-rad {
-  margin: 18px 0 0;
+  margin: 28px 0 0;
   font-size: 14px;
   line-height: 1.7;
   color: var(--muted);

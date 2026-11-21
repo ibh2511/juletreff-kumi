@@ -213,7 +213,7 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
   )
 
   const naar = info.automatisk
-    ? "Siden oppdaterer seg selv når betalingen er kommet, som regel raskt."
+    ? "Siden oppdaterer seg selv når betalingen er kommet."
     : "Du får bekreftelse på e-post når betalingen er registrert."
 
   const nummerRad = (
@@ -241,9 +241,8 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
               Åpne Vipps
             </a>
             <p className="vipps-under-knapp">
-              <span className="vipps-hvis">Åpnet ikke Vipps?</span>
               <a className="vipps-reserve" href={l[v.reserve]} onClick={apneVipps}>
-                Prøv denne lenken
+                Åpnet ikke Vipps?
               </a>
             </p>
           </div>
@@ -253,8 +252,7 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
           <div>
             <b>Skriv inn {kr} og betal</b>
             <small>
-              Nummeret er fylt ut, beløpet skriver du selv. Mangler nummeret?{" "}
-              <span className="nowrap">Lim det inn:</span>
+              Nummeret er fylt ut, beløpet skriver du selv. Mangler nummeret?
             </small>
             {nummerRad}
           </div>
@@ -358,6 +356,7 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
     const lenge = naa - venterFra > 20 * 60000
     return (
       <div className="vipps-card vipps-sjekker">
+        <p className="vipps-ref vipps-ref-topp">Påmeldings-ID: {info.id}</p>
         <div className="vipps-radar" aria-hidden="true">
           <span />
         </div>
@@ -366,7 +365,6 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
           <span className="setning">Har du betalt, er du ferdig.</span>{" "}
           <span className="setning">Ikke betal igjen.</span>
         </p>
-        <p className="vipps-ref">Påmeldings-ID: {info.id}</p>
         <dl className="vipps-fakta vipps-sjekker-kort">
           <div>
             <dt>Beløp</dt>
@@ -396,7 +394,7 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
         <p className="vipps-sjekker-tekst">
           {info.automatisk ? (
             <>
-              Siden oppdaterer seg selv når betalingen er registrert, som regel raskt. Du får også
+              Siden oppdaterer seg selv når betalingen er registrert. Du får også
               bekreftelse på <span className="nowrap">e-post</span>.
             </>
           ) : (
@@ -427,16 +425,14 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
   return (
     <>
       <div className="vipps-card">
+        <p className="vipps-ref vipps-ref-topp">Påmeldings-ID: {info.id}</p>
         <h3>Betal {kr} med Vipps</h3>
         <p className="vipps-lead">
-          {lead || "Plassen din er sikret når betalingen er mottatt."}
-          {info.vippsNavn && l && <> Mottaker: {info.vippsNavn}.</>}
+          {lead || "Plassen din er sikret når betalingen er mottatt."} Betal fra <span className="nowrap">Vipps-kontoen</span> til{" "}
+          <b className="vipps-fra-lead nowrap">{fraNavn}</b>, så finner vi betalingen.
         </p>
-        <p className="vipps-ref">Påmeldings-ID: {info.id}</p>
+        {info.vippsNavn && l && <p className="vipps-mottaker">Mottaker: {info.vippsNavn}</p>}
         {trinn}
-        <p className="vipps-fra">
-          Betal fra Vipps-kontoen til <b>{fraNavn}</b>, så finner vi betalingen.
-        </p>
         <button
           type="button"
           className="vipps-annen"
