@@ -11,6 +11,7 @@ import {
   telefonSifre,
 } from "./config.js"
 import { googleKalender } from "./kalender.js"
+import ApneINettleser from "./ApneINettleser.jsx"
 import VippsPayment from "./VippsPayment.jsx"
 import KumiMap from "./KumiMap.jsx"
 
@@ -409,6 +410,7 @@ export default function App() {
 
   return (
     <>
+      <ApneINettleser />
       <div className="page">
         <div className="container">
           {/* Bilde med fade */}
@@ -866,14 +868,11 @@ export default function App() {
                   {vippsAktiv
                     ? "Du betaler med Vipps når du melder deg på."
                     : "Etter påmeldingen får du en knapp som åpner Vipps med nummeret fylt ut (QR-kode på PC), og det samme på e-post."}{" "}
-                  Plassen din er sikret når betalingen er mottatt.
+                  Plassen din er sikret når betalingen er mottatt!
                 </p>
                 <p>
-                  Påmeldingen er bindende og kan bare trekkes med
-                  legeerklæring. Trekker du deg mer enn 48 timer før, får du
-                  alt tilbake. Senere beholder vi {formatPrice(info.noshow)} til
-                  KUMIs <span className="nowrap">no-show-gebyr</span>. Du kan også gi plassen til en annen. Les
-                  mer i <a href="#vilkar">salgsvilkårene</a>.
+                  Påmeldingen er bindende og kan bare trekkes med legeerklæring. Les mer i{" "}
+                  <a href="#vilkar">salgsvilkårene</a>.
                 </p>
                 <p>
                   Vin, øl og annen drikke på KUMI kommer i tillegg, snakk med
