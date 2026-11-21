@@ -780,7 +780,7 @@ export default function App() {
 
             <details>
               <summary className="faq">
-                <span>Program</span>
+                <span>Kvelden</span>
                 <span className="icon">+</span>
               </summary>
 
