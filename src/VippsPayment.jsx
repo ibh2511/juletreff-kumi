@@ -152,17 +152,11 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
       .catch(() => setKopiert(`feil-${hva}`))
   }
 
-  // «Åpne Vipps» kopierer også nummeret, i tilfelle det ikke blir fylt ut i Vipps. Går det ikke, sier vi ingenting:
-  // nummeret og «Kopier» står i steg 2.
+  // «Åpne Vipps» kopierer beløpet: nummeret fylles ut av lenken, men beløpet må de skrive selv, så da kan
+  // de lime det inn i Vipps. Går kopieringen ikke, sier vi ingenting: beløpet står i steg 2.
   const apneVipps = () => {
     forlot.current = true
-    if (kopiert === "nr") return
-    kopier(nr)
-      .then(() => {
-        setKopiert("nr")
-        setTimeout(() => setKopiert(""), 2500)
-      })
-      .catch(() => {})
+    kopier(String(Math.round(Number(info.belop) || 0))).catch(() => {})
   }
 
   // «Kopier» og «Kopiert!» ligger oppå hverandre, og bare den ene vises. Da er knappen like bred før og
@@ -252,7 +246,7 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
           <div>
             <b>Skriv inn {kr} og betal</b>
             <small>
-              Nummeret er fylt ut, beløpet skriver du selv. Mangler nummeret?
+              Nummeret er fylt ut, og beløpet er kopiert. Mangler nummeret?
             </small>
             {nummerRad}
           </div>
