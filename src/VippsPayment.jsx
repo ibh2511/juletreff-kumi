@@ -127,9 +127,9 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
     }
     return (
       <div className="vipps-card">
+        <p className="vipps-ref vipps-ref-topp">Påmeldings-ID: {info.id}</p>
         <h3>Betal {kr} med Vipps</h3>
         <p className="vipps-lead">{lead || "Plassen din er sikret når betalingen er mottatt."}</p>
-        <p className="vipps-ref">Påmeldings-ID: {info.id}</p>
         <button type="button" className="vipps-btn" onClick={betal} disabled={sender}>
           {sender ? "Sender deg til Vipps …" : `Betal ${kr} med Vipps`}
         </button>
@@ -427,8 +427,8 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
         <p className="vipps-ref vipps-ref-topp">Påmeldings-ID: {info.id}</p>
         <h3>Betal {kr} med Vipps</h3>
         <p className="vipps-lead">
-          {lead || "Plassen din er sikret når betalingen er mottatt."} Betal fra <span className="nowrap">Vipps-kontoen</span> til{" "}
-          <b className="vipps-fra-lead nowrap">{fraNavn}</b>, så finner vi betalingen.
+          {lead || "Plassen din er reservert."} Betal fra <span className="nowrap">Vipps-kontoen</span> til{" "}
+          <b className="vipps-fra-lead">{fraNavn}</b>, så finner vi betalingen.
         </p>
         {info.vippsNavn && l && <p className="vipps-mottaker">Mottaker: {info.vippsNavn}</p>}
         {trinn}
