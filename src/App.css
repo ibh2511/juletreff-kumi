@@ -1543,7 +1543,7 @@ h2.tittel { white-space: nowrap; font-size: clamp(18px, 6.4vw, 34px); letter-spa
 }
 /* Spørsmålet på én linje og den stiplede lenken på linjen under */
 .vipps-tilbake-rad {
-  margin: 18px 0 0;
+  margin: 28px 0 0;
   font-size: 14px;
   line-height: 1.7;
   color: var(--muted);
