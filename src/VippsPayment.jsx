@@ -241,9 +241,8 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
               Åpne Vipps
             </a>
             <p className="vipps-under-knapp">
-              <span className="vipps-hvis">Åpnet ikke Vipps?</span>
               <a className="vipps-reserve" href={l[v.reserve]} onClick={apneVipps}>
-                Prøv denne lenken
+                Åpnet ikke Vipps?
               </a>
             </p>
           </div>
