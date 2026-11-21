@@ -509,7 +509,7 @@ textarea {
 .faq-section .faq-body p {
   text-wrap: pretty;
 }
-/* «Plassen din er sikret …» i «Hva koster det?»: egen linje i fet skrift, med litt ekstra luft over */
+/* «Plassen din er sikret …» i «Pris»: egen linje i fet skrift, med litt ekstra luft over */
 .faq-section .faq-body p.faq-uthevet {
   margin-top: 1.6em;
 }

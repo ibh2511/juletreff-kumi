@@ -811,7 +811,7 @@ export default function App() {
 
             <details>
               <summary className="faq">
-                <span>Hva står på menyen?</span>
+                <span>Meny</span>
                 <span className="icon">+</span>
               </summary>
 
@@ -855,7 +855,7 @@ export default function App() {
 
             <details>
               <summary className="faq">
-                <span>Hva koster det?</span>
+                <span>Pris</span>
                 <span className="icon">+</span>
               </summary>
 
@@ -899,12 +899,12 @@ export default function App() {
 
             <details>
               <summary className="faq">
-                <span>Blir det underholdning?</span>
+                <span>Underholdning</span>
                 <span className="icon">+</span>
               </summary>
 
               <div className="faq-body">
-                <p>Ja! Det er inkludert i prisen.</p>
+                <p>Underholdningen er inkludert i prisen.</p>
                 <img
                   className="faq-bilde"
                   src="images/matias.jpg"
