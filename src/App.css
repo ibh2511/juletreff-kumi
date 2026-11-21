@@ -513,8 +513,7 @@ textarea {
 .faq-section .faq-body p.faq-uthevet {
   margin-top: 1.6em;
 }
-.faq-section .faq-body p.faq-uthevet b,
-.faq-section .faq-body p.faq-hvit b {
+.faq-section .faq-body p.faq-uthevet b {
   font-weight: 600;
   color: #fff;
 }

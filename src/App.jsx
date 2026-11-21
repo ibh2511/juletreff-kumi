@@ -907,7 +907,7 @@ export default function App() {
               </summary>
 
               <div className="faq-body">
-                <p className="faq-hvit"><b>Ja! Underholdning er inkludert i prisen.</b></p>
+                <p><b>Ja! Underholdning er inkludert i prisen.</b></p>
                 <img
                   className="faq-bilde"
                   src="images/matias.jpg"
