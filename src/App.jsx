@@ -878,7 +878,10 @@ export default function App() {
                 </p>
                 <p>
                   Vin, øl og annen drikke på KUMI kommer i tillegg, snakk med
-                  personalet 🍷🍾 På MUNCH bar kjøper du det du vil ha, se{" "}
+                  personalet 🍷🍾
+                </p>
+                <p>
+                  På MUNCH bar kjøper du det du vil ha, se{" "}
                   <a
                     href="https://www.munch.no/globalassets/foto-munch/mat-og-drikke/menyer/munch-bar-13th-17.10.pdf"
                     target="_blank"
