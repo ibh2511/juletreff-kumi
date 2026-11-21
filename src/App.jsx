@@ -855,6 +855,49 @@ export default function App() {
 
             <details>
               <summary className="faq">
+                <span>Underholdning</span>
+                <span className="icon">+</span>
+              </summary>
+
+              <div className="faq-body">
+                <p><b>Ja! Underholdning er inkludert i prisen.</b></p>
+                <img
+                  className="faq-bilde"
+                  src="images/matias.jpg"
+                  alt="Matias i rød VEGAN-genser"
+                  width="900"
+                  height="600"
+                  loading="lazy"
+                  decoding="async"
+                />
+                <h3>🎤 Matias</h3>
+                <p>
+                  Matias er dyrerettighetsaktivist, youtuber og artist fra
+                  Eidsvoll, bosatt i Oslo. Han blander norskspråklig hiphop og
+                  reggae og har opptrådt med egen musikk siden tenårene.
+                </p>
+                <p>
+                  Engasjementet for dyr går igjen i mange av låtene, fra
+                  debutalbumet <i>Forandrer fryder</i> i fjor sommer til
+                  coverlåta <i>Hva er forskjellen?</i> i vår og <i>Dyrisk</i> i
+                  høst.
+                </p>
+                <p>
+                  Han vil lage musikk som inspirerer og betyr noe for andre, og
+                  som er terapi og underholdning for ham selv. Hør han på{" "}
+                  <a
+                    href="https://www.youtube.com/@MatiasHamreSveen"
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    YouTube
+                  </a>
+                </p>
+              </div>
+            </details>
+
+            <details>
+              <summary className="faq">
                 <span>Pris</span>
                 <span className="icon">+</span>
               </summary>
@@ -896,49 +939,6 @@ export default function App() {
                   Spørsmål om pris eller tilbud? Kontakt KUMI på{" "}
                   <a href="mailto:kumi@kumi.no">kumi@kumi.no</a> eller{" "}
                   <a href="tel:+4797302866">973 02 866</a>
-                </p>
-              </div>
-            </details>
-
-            <details>
-              <summary className="faq">
-                <span>Underholdning</span>
-                <span className="icon">+</span>
-              </summary>
-
-              <div className="faq-body">
-                <p><b>Ja! Underholdning er inkludert i prisen.</b></p>
-                <img
-                  className="faq-bilde"
-                  src="images/matias.jpg"
-                  alt="Matias i rød VEGAN-genser"
-                  width="900"
-                  height="600"
-                  loading="lazy"
-                  decoding="async"
-                />
-                <h3>🎤 Matias</h3>
-                <p>
-                  Matias er dyrerettighetsaktivist, youtuber og artist fra
-                  Eidsvoll, bosatt i Oslo. Han blander norskspråklig hiphop og
-                  reggae og har opptrådt med egen musikk siden tenårene.
-                </p>
-                <p>
-                  Engasjementet for dyr går igjen i mange av låtene, fra
-                  debutalbumet <i>Forandrer fryder</i> i fjor sommer til
-                  coverlåta <i>Hva er forskjellen?</i> i vår og <i>Dyrisk</i> i
-                  høst.
-                </p>
-                <p>
-                  Han vil lage musikk som inspirerer og betyr noe for andre, og
-                  som er terapi og underholdning for ham selv. Hør han på{" "}
-                  <a
-                    href="https://www.youtube.com/@MatiasHamreSveen"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    YouTube
-                  </a>
                 </p>
               </div>
             </details>
