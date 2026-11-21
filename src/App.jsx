@@ -811,7 +811,7 @@ export default function App() {
 
             <details>
               <summary className="faq">
-                <span>Hva står på menyen?</span>
+                <span>Meny</span>
                 <span className="icon">+</span>
               </summary>
 
@@ -855,7 +855,7 @@ export default function App() {
 
             <details>
               <summary className="faq">
-                <span>Hva koster det?</span>
+                <span>Pris</span>
                 <span className="icon">+</span>
               </summary>
 
@@ -867,10 +867,10 @@ export default function App() {
                 <p>
                   {vippsAktiv
                     ? "Du betaler med Vipps når du melder deg på."
-                    : "Etter påmeldingen får du en knapp som åpner Vipps med nummeret fylt ut (QR-kode på PC), og det samme på e-post."}
+                    : "Etter påmeldingen får du en knapp som åpner Vipps (QR-kode på PC)."}
                 </p>
                 <p className="faq-uthevet">
-                  <b>Plassen din er sikret når betalingen er mottatt!</b>
+                  <b>Plassen din er sikret når betalingen er mottatt – du får en e-post!</b>
                 </p>
                 <p>
                   Påmeldingen er bindende og kan bare trekkes med legeerklæring. Les mer i{" "}
@@ -878,7 +878,10 @@ export default function App() {
                 </p>
                 <p>
                   Vin, øl og annen drikke på KUMI kommer i tillegg, snakk med
-                  personalet 🍷🍾 På MUNCH bar kjøper du det du vil ha, se{" "}
+                  personalet 🍷🍾
+                </p>
+                <p>
+                  På MUNCH bar kjøper du det du vil ha, se{" "}
                   <a
                     href="https://www.munch.no/globalassets/foto-munch/mat-og-drikke/menyer/munch-bar-13th-17.10.pdf"
                     target="_blank"
@@ -899,12 +902,12 @@ export default function App() {
 
             <details>
               <summary className="faq">
-                <span>Blir det underholdning?</span>
+                <span>Underholdning</span>
                 <span className="icon">+</span>
               </summary>
 
               <div className="faq-body">
-                <p>Ja! Det er inkludert i prisen.</p>
+                <p><b>Ja! Underholdning er inkludert i prisen.</b></p>
                 <img
                   className="faq-bilde"
                   src="images/matias.jpg"
