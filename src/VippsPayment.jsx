@@ -213,7 +213,7 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
   )
 
   const naar = info.automatisk
-    ? "Siden oppdaterer seg selv når betalingen er kommet, som regel raskt."
+    ? "Siden oppdaterer seg selv når betalingen er kommet."
     : "Du får bekreftelse på e-post når betalingen er registrert."
 
   const nummerRad = (
@@ -252,8 +252,7 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
           <div>
             <b>Skriv inn {kr} og betal</b>
             <small>
-              Nummeret er fylt ut, beløpet skriver du selv. Mangler nummeret?{" "}
-              <span className="nowrap">Lim det inn:</span>
+              Nummeret er fylt ut, beløpet skriver du selv. Mangler nummeret?
             </small>
             {nummerRad}
           </div>
@@ -395,7 +394,7 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
         <p className="vipps-sjekker-tekst">
           {info.automatisk ? (
             <>
-              Siden oppdaterer seg selv når betalingen er registrert, som regel raskt. Du får også
+              Siden oppdaterer seg selv når betalingen er registrert. Du får også
               bekreftelse på <span className="nowrap">e-post</span>.
             </>
           ) : (
