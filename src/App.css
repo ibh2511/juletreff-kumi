@@ -1199,6 +1199,17 @@ textarea {
 .vipps-lead + .vipps-ref:last-child {
   margin-bottom: 0;
 }
+/* På betalingssiden står påmeldings-ID-en over overskriften, liten og dempet */
+.vipps-ref-topp {
+  margin: 0 0 8px;
+}
+/* «Mottaker: …» rett over «Åpne Vipps» (eller QR-koden på PC), så man ser hvem pengene går til der man betaler */
+.vipps-mottaker {
+  margin: -6px 0 10px;
+  font-size: 13px;
+  font-weight: 300;
+  color: var(--muted);
+}
 .link-btn {
   background: none;
   border: 0;

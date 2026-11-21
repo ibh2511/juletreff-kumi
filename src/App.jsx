@@ -538,7 +538,7 @@ export default function App() {
                   k={detaljer?.k}
                   lead={
                     detaljer?.fraLenke
-                      ? `Hei${detaljer?.fornavn ? ` ${detaljer.fornavn}` : ""}! Du har plass, men vi har ikke fått betalingen ennå.`
+                      ? "Du har plass, men vi har ikke fått betalingen ennå."
                       : ""
                   }
                   // Bare under betalingsstegene: den som venter på at betalingen skal bli registrert, trenger ikke lese om e-posten.
