@@ -538,7 +538,7 @@ export default function App() {
                   k={detaljer?.k}
                   lead={
                     detaljer?.fraLenke
-                      ? "Plassen din er reservert, men vi har ikke fått betalingen ennå."
+                      ? "Plassen din er reservert."
                       : ""
                   }
                   // Bare under betalingsstegene: den som venter på at betalingen skal bli registrert, trenger ikke lese om e-posten.
