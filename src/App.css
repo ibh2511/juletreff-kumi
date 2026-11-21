@@ -1602,3 +1602,51 @@ h2.tittel { white-space: nowrap; font-size: clamp(18px, 6.4vw, 34px); letter-spa
     padding-top: 0;
   }
 }
+
+/* Stripe øverst når siden er åpnet inne i Instagram, Facebook o.l. (se ApneINettleser.jsx) */
+.nettleser-stripe {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  padding: 14px 44px 14px 16px;
+  background: #1b1b1b;
+  border-bottom: 1px solid rgba(244, 234, 223, 0.12);
+  color: var(--muted);
+  font-size: 13.5px;
+  line-height: 1.5;
+  text-align: center;
+}
+.nettleser-stripe p {
+  margin: 0;
+  text-wrap: balance;
+}
+.nettleser-stripe small {
+  font-size: 12px;
+  font-weight: 300;
+  color: #a39b92;
+}
+.nettleser-knapp {
+  padding: 7px 16px;
+  border-radius: 999px;
+  background: var(--accent);
+  color: #111;
+  font-weight: 500;
+}
+.nettleser-knapp:hover {
+  color: #111;
+}
+.nettleser-lukk {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: #a39b92;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
