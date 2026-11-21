@@ -776,11 +776,11 @@ export default function App() {
 
           {/* FAQ */}
           <div className="faq-section">
-            <h3 style={{ textAlign: "center" }}>❓ FAQ</h3>
+            <h3 style={{ textAlign: "center" }}>🎄 Om juletreffet</h3>
 
             <details>
               <summary className="faq">
-                <span>Om kvelden</span>
+                <span>Program</span>
                 <span className="icon">+</span>
               </summary>
 
