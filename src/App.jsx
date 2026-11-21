@@ -867,10 +867,10 @@ export default function App() {
                 <p>
                   {vippsAktiv
                     ? "Du betaler med Vipps når du melder deg på."
-                    : "Etter påmeldingen får du en knapp som åpner Vipps med nummeret fylt ut (QR-kode på PC), og det samme på e-post."}
+                    : "Etter påmeldingen får du en knapp som åpner Vipps (QR-kode på PC)."}
                 </p>
                 <p className="faq-uthevet">
-                  <b>Plassen din er sikret når betalingen er mottatt!</b>
+                  <b>Plassen din er sikret når betalingen er mottatt – du får en e-post!</b>
                 </p>
                 <p>
                   Påmeldingen er bindende og kan bare trekkes med legeerklæring. Les mer i{" "}
