@@ -754,7 +754,7 @@ export default function App() {
                   <input type="checkbox" name="Bindende" value="ja" required />
                   <span>
                     Jeg godtar <a href="#vilkar">salgsvilkårene</a> og at
-                    påmeldingen er bindende (unntak ved legeerklæring).
+                    påmeldingen er bindende.
                   </span>
                 </label>
 
