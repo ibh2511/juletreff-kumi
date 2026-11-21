@@ -427,14 +427,12 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
       <div className="vipps-card">
         <h3>Betal {kr} med Vipps</h3>
         <p className="vipps-lead">
-          {lead || "Plassen din er sikret når betalingen er mottatt."}
+          {lead || "Plassen din er sikret når betalingen er mottatt."} Betal fra <span className="nowrap">Vipps-kontoen</span> til{" "}
+          <b className="vipps-fra-lead">{fraNavn}</b>, så finner vi betalingen.
           {info.vippsNavn && l && <> Mottaker: {info.vippsNavn}.</>}
         </p>
         <p className="vipps-ref">Påmeldings-ID: {info.id}</p>
         {trinn}
-        <p className="vipps-fra">
-          Betal fra Vipps-kontoen til <b>{fraNavn}</b>, så finner vi betalingen.
-        </p>
         <button
           type="button"
           className="vipps-annen"
