@@ -356,6 +356,7 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
     const lenge = naa - venterFra > 20 * 60000
     return (
       <div className="vipps-card vipps-sjekker">
+        <p className="vipps-ref vipps-ref-topp">Påmeldings-ID: {info.id}</p>
         <div className="vipps-radar" aria-hidden="true">
           <span />
         </div>
@@ -364,7 +365,6 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
           <span className="setning">Har du betalt, er du ferdig.</span>{" "}
           <span className="setning">Ikke betal igjen.</span>
         </p>
-        <p className="vipps-ref">Påmeldings-ID: {info.id}</p>
         <dl className="vipps-fakta vipps-sjekker-kort">
           <div>
             <dt>Beløp</dt>
