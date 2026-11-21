@@ -1063,7 +1063,7 @@ textarea {
   display: block;
   width: fit-content;
   max-width: 100%;
-  margin: 0 auto;
+  margin: 12px auto 0;
   padding: 2px 8px;
   border: 0;
   background: none;
