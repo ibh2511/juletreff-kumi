@@ -405,10 +405,9 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
         </p>
         {lenge && (
           <div className="vipps-hjelp">
-            Gått mer enn 20 minutter? Sjekk i Vipps at du betalte {kr} til{" "}
-            <span className="nowrap">{info.mottaker}</span>. Betalte du
-            fra en annens Vipps, trykk «Endre» og skriv navnet. Ellers svar på e-posten fra oss, så ser
-            vi på det. Ikke betal på nytt.
+            <b>Tar det lang tid?</b>
+            Sjekk i Vipps at du betalte {kr} til <span className="nowrap">{info.mottaker}</span>. Brukte du
+            en annens Vipps, trykk «Endre». Ellers kan du svare på <span className="nowrap">e-posten</span> fra oss.
           </div>
         )}
         <p className="vipps-tilbake-rad">
