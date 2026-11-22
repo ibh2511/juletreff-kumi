@@ -10,7 +10,7 @@
  *                    fylt ut, QR-kode på PC). Backend kan lese innbetalingene i SpareBank 1
  *                    og koble dem til påmeldingen på påmeldings-ID, navn og beløp. Uten bankkobling markerer
  *                    du betalingen som mottatt i adminsiden.
- *  - Sender bekreftelse på e-post (med beskjed om at påmeldingen er bindende)
+ *  - Sender bekreftelse på e-post
  *  - Logger sidebesøk uten informasjonskapsler og uten personopplysninger
  *  - Gir oversikt over påmeldinger, betaling og besøk til adminsiden, bak passord
  *
@@ -1187,14 +1187,6 @@ function bankCallback_(p) {
 /* E-post                                                              */
 /* ------------------------------------------------------------------ */
 
-function bindendeTekst_(belop) {
-  var a = arrangement_();
-  return 'Påmeldingen er bindende og kan bare trekkes med legeerklæring. Trekker du deg mer enn 48 timer før ' +
-    'arrangementet, får du hele beløpet tilbake. Trekker du deg senere, får du ' + Math.max(0, belop - a.noshow) +
-    ' kr tilbake, fordi vi beholder ' + a.noshow + ' kr til KUMIs no-show-gebyr. Kan du ikke komme, kan du også gi plassen ' +
-    'til en annen. Svar på denne e-posten med navn, e-post og telefonnummer til den nye deltakeren.';
-}
-
 /** Bekreftelse i samme stil som den opprinnelige e-posten: fersken ramme, mørkt kort, bilde øverst. */
 function sendBekreftelse_(r) {
   if (!r.epost) return;
@@ -1238,11 +1230,7 @@ function sendBekreftelse_(r) {
       rad('Telefon:', e(r.telefon)) +
       rad('E-post:', '<span style="color: #F4EADF; text-decoration: none;">' +
         e(r.epost).replace('@', '&#8203;@').replace(/\./g, '&#8203;.') + '</span>', !r.kommentar) +
-      (r.kommentar ? rad('Melding:', e(r.kommentar), true) : '')) +
-
-    // Vilkårene står bare i e-posten etter betaling. Den første skal handle om å betale.
-    (betalt ? '<p style="font-size: .85rem; line-height: 1.5; margin: 30px 0 0 0; color: #bdb3a8; text-align: center;">' +
-      e(bindendeTekst_(r.belop)) + '</p>' : ''),
+      (r.kommentar ? rad('Melding:', e(r.kommentar), true) : '')),
     bunn);
 
   var tekst =
@@ -1254,7 +1242,6 @@ function sendBekreftelse_(r) {
     'Sted: ' + a.sted + '\nTid: ' + a.dato + '\nPåmelding: ' + r.id + '\n\n' +
     (betalt ? 'Legg i kalenderen:\nGoogle: ' + googleKalender_(a, site) + '\nApple eller Outlook: ' + site + '/juletreff.ics\n\n' : '') +
     (betalt ? 'Trykk «Skal» på Facebook-eventet: ' + fb + '\n\n' : '') +
-    (betalt ? bindendeTekst_(r.belop) + '\n\n' : '') +
     bunn + '\n' +
     'Salgsvilkår: ' + site + '/#vilkar\nPersonvern: ' + site + '/#personvern';
 
