@@ -1442,7 +1442,7 @@ h2.tittel { white-space: nowrap; font-size: clamp(18px, 6.4vw, 34px); letter-spa
   border-radius: 50%;
   border: 2px solid rgba(255, 91, 36, 0.7);
   opacity: 0;
-  animation: vippsRadar 2.4s cubic-bezier(0.2, 0.6, 0.35, 1) infinite;
+  animation: vippsRadar 3s cubic-bezier(0.2, 0.6, 0.35, 1) infinite;
 }
 .vipps-radar::after {
   animation-delay: 1.2s;
@@ -1490,13 +1490,13 @@ h2.tittel { white-space: nowrap; font-size: clamp(18px, 6.4vw, 34px); letter-spa
   inset: 0;
   background: #ff5b24;
   box-shadow: 0 0 6px rgba(255, 91, 36, 0.55);
-  animation: vippsPrikk 2.4s ease-in-out infinite;
+  animation: vippsPrikk 3s ease-in-out infinite;
 }
 .vipps-venter-prikk::after {
   inset: -7px;
   border: 2px solid rgba(255, 91, 36, 0.8);
   opacity: 0;
-  animation: vippsRadar 2.4s cubic-bezier(0.2, 0.6, 0.35, 1) infinite;
+  animation: vippsRadar 3s cubic-bezier(0.2, 0.6, 0.35, 1) infinite;
 }
 @keyframes vippsPrikk {
   0%, 45%, 100% { transform: scale(1); box-shadow: 0 0 6px rgba(255, 91, 36, 0.55); }
