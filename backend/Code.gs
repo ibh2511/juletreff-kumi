@@ -1438,7 +1438,7 @@ function vippsBoks_(r, undertekst) {
     innhold = (b.lenke
         ? knapp(b.lenke, 'Åpne Vipps og betal ' + r.belop + ' kr') +
           // Som på betalingssiden: åpner ikke lenken appen, har betalingssiden flere måter å åpne Vipps på.
-          '<p style="text-align: center; margin: 4px 0 0 0; font-size: .95rem;"><a href="' + e(side) + '" style="' + lenkeStil + '">Åpnet ikke Vipps?</a></p>' +
+          '<p style="text-align: center; margin: 4px 0 0 0; font-size: .8rem;"><a href="' + e(side) + '" style="color: #ffffff; text-decoration: none; border-bottom: 1px dotted #ffffff;">Åpnet ikke Vipps?</a></p>' +
           '<p style="text-align: center; margin: 10px 0 15px 0; font-size: .85rem; color: #bdb3a8;">Knappen åpner Vipps med nummeret fylt ut. ' +
           'Er du på PC, kan du skanne QR-koden på <a href="' + e(side) + '" style="' + lenkeStil + '">betalingssiden</a>.</p>'
         : b.nr ? knapp(side, 'Åpne betalingssiden') : '') +
