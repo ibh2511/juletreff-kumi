@@ -368,7 +368,7 @@ textarea {
 }
 /* «Del med en venn» etter betalingen */
 .takk .del {
-  margin: 22px 0 0;
+  margin: 20px 0 0;
 }
 .del-knapp {
   padding: 10px 22px;
@@ -1690,8 +1690,18 @@ h2.tittel { white-space: nowrap; font-size: clamp(18px, 6.4vw, 34px); letter-spa
 .takk-kort dd {
   font-size: 17px;
 }
-.takk-kort .takk-epost {
-  font-size: 15px;
+/* E-posten får hele bredden på egen linje under etiketten, så den holder seg på én linje på mobil */
+.takk-kort .takk-epost-rad {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 12px 0;
+}
+.takk-kort .takk-epost-rad dd {
+  margin: 0;
+  max-width: 100%;
+  font-size: 16px;
+  text-align: left;
   overflow-wrap: anywhere;
 }
 .takk-tekst {

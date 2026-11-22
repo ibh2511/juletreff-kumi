@@ -500,12 +500,18 @@ export default function App() {
                       <dt>Betalt</dt>
                       <dd>{pris}</dd>
                     </div>
-                    <div>
-                      <dt>Bekreftelse</dt>
-                      <dd className="takk-epost">{detaljer?.epost || "Sendt på e-post"}</dd>
+                    <div className="takk-epost-rad">
+                      <dt>Bekreftelse sendt til</dt>
+                      <dd>{detaljer?.epost || "e-posten din"}</dd>
                     </div>
                   </dl>
                   <p className="takk-tekst">Finner du ikke e-posten, sjekk søppelpost.</p>
+                  <p className="del">
+                    <button type="button" className="del-knapp" onClick={delMedVenn} aria-live="polite">
+                      {delt === "kopiert" ? "Lenken er kopiert" : "Del med en venn"}
+                    </button>
+                  </p>
+                  {delt && delt !== "kopiert" && <p className="del-lenke">{delt}</p>}
                   {/* iPhone, Mac og Outlook åpner .ics-fila. Google får sin egen lenke, som også virker på Android. */}
                   <p className="takk-kalender">Legg i kalenderen</p>
                   <div className="takk-valg">
@@ -513,12 +519,6 @@ export default function App() {
                     <a href={googleKalender()} target="_blank" rel="noreferrer">Google</a>
                     <a href={`${import.meta.env.BASE_URL}juletreff.ics`}>Outlook</a>
                   </div>
-                  <p className="del">
-                    <button type="button" className="del-knapp" onClick={delMedVenn} aria-live="polite">
-                      {delt === "kopiert" ? "Lenken er kopiert" : "Del med en venn"}
-                    </button>
-                  </p>
-                  {delt && delt !== "kopiert" && <p className="del-lenke">{delt}</p>}
                 </div>
               </>
             )}
