@@ -400,14 +400,6 @@ export default function App() {
     </ol>
   )
 
-  const bindendeBoks = (
-    <div className="binding-box">
-      Påmeldingen er bindende og kan bare trekkes med legeerklæring. Under 48
-      timer før arrangementet beholder vi {formatPrice(info.noshow)} til KUMIs{" "}
-      <span className="nowrap">no-show-gebyr</span>. Se <a href="#vilkar">salgsvilkårene</a>.
-    </div>
-  )
-
   return (
     <>
       <ApneINettleser />
@@ -497,36 +489,37 @@ export default function App() {
             {status === "betalt" && (
               <>
                 {fremdrift(true)}
-                <div className="msg thanks">
-                  <h3>🎉 Du er påmeldt! 🎉</h3>
-                  <p>Betalingen på {pris} er mottatt.</p>
-                  <p>
-                    Bekreftelse sendt til {detaljer?.epost || "e-posten din"} 📬
-                  </p>
-                  <p>
-                    <small>Sjekk søppelpost/spam</small>
-                  </p>
-                  {/* iPhone, Mac og Outlook åpner .ics-fila. Google får sin egen lenke, som også virker på Android. */}
-                  <p className="kalender">
-                    <span>📅 Legg i kalenderen:</span>{" "}
-                    <span className="kalender-valg">
-                      <a href={`${import.meta.env.BASE_URL}juletreff.ics`}>Apple</a>
-                      {" · "}
-                      <a href={googleKalender()} target="_blank" rel="noreferrer">
-                        Google
-                      </a>
-                      {" · "}
-                      <a href={`${import.meta.env.BASE_URL}juletreff.ics`}>Outlook</a>
-                    </span>
-                  </p>
+                {/* Samme kort som betalings- og venteskjermen, med grønn hake der radaren stod */}
+                <div className="vipps-card takk">
+                  {detaljer?.id && <p className="vipps-ref vipps-ref-topp">Påmeldings-ID: {detaljer.id}</p>}
+                  <span className="takk-hake" aria-hidden="true">✓</span>
+                  <h3 role="status">Du er påmeldt! 🎉</h3>
+                  <p className="vipps-lead">Betalingen er mottatt, og plassen er din.</p>
+                  <dl className="vipps-fakta takk-kort">
+                    <div>
+                      <dt>Betalt</dt>
+                      <dd>{pris}</dd>
+                    </div>
+                    <div className="takk-epost-rad">
+                      <dt>Bekreftelse sendt til</dt>
+                      <dd>{detaljer?.epost || "e-posten din"}</dd>
+                    </div>
+                  </dl>
+                  <p className="takk-tekst">Finner du ikke e-posten, sjekk søppelpost.</p>
                   <p className="del">
                     <button type="button" className="del-knapp" onClick={delMedVenn} aria-live="polite">
                       {delt === "kopiert" ? "Lenken er kopiert" : "Del med en venn"}
                     </button>
                   </p>
                   {delt && delt !== "kopiert" && <p className="del-lenke">{delt}</p>}
+                  {/* iPhone, Mac og Outlook åpner .ics-fila. Google får sin egen lenke, som også virker på Android. */}
+                  <p className="takk-kalender">Legg i kalenderen</p>
+                  <div className="takk-valg">
+                    <a href={`${import.meta.env.BASE_URL}juletreff.ics`}>Apple</a>
+                    <a href={googleKalender()} target="_blank" rel="noreferrer">Google</a>
+                    <a href={`${import.meta.env.BASE_URL}juletreff.ics`}>Outlook</a>
+                  </div>
                 </div>
-                {bindendeBoks}
               </>
             )}
 
