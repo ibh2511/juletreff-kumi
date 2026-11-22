@@ -938,6 +938,22 @@ textarea {
 .vipps-btn:hover {
   background: #e64a15;
 }
+/* Et rolig hjerteslag rundt «Åpne Vipps» (dunk-dunk, så lang pause) som trekker blikket til neste steg */
+a.vipps-btn {
+  animation: vippsPuls 3s ease-in-out infinite;
+}
+@keyframes vippsPuls {
+  0% { transform: scale(1); box-shadow: 0 6px 18px rgba(255, 91, 36, 0.3), 0 0 0 0 rgba(255, 91, 36, 0.28); }
+  6% { transform: scale(1.025); }
+  12% { transform: scale(1); }
+  18% { transform: scale(1.02); }
+  30% { transform: scale(1); }
+  40% { box-shadow: 0 6px 18px rgba(255, 91, 36, 0.3), 0 0 0 9px rgba(255, 91, 36, 0); }
+  41%, 100% { transform: scale(1); box-shadow: 0 6px 18px rgba(255, 91, 36, 0.3), 0 0 0 0 rgba(255, 91, 36, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  a.vipps-btn { animation: none; }
+}
 .vipps-btn:disabled {
   opacity: 0.7;
   cursor: default;
@@ -950,6 +966,12 @@ textarea {
   text-decoration-style: dotted;
   text-decoration-thickness: 0.75px;
   text-underline-offset: 3px;
+}
+/* Gul ved hover og trykk, ikke nettleserens blå */
+.vipps-reserve:hover,
+.vipps-reserve:active,
+.vipps-reserve:focus-visible {
+  color: var(--accent);
 }
 .vipps-belop {
   margin-top: 6px;
