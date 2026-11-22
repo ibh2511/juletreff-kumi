@@ -938,6 +938,17 @@ textarea {
 .vipps-btn:hover {
   background: #e64a15;
 }
+/* En rolig puls rundt «Åpne Vipps» som trekker blikket til neste steg */
+a.vipps-btn {
+  animation: vippsPuls 2.2s ease-out infinite;
+}
+@keyframes vippsPuls {
+  0% { box-shadow: 0 6px 18px rgba(255, 91, 36, 0.3), 0 0 0 0 rgba(255, 91, 36, 0.45); }
+  70%, 100% { box-shadow: 0 6px 18px rgba(255, 91, 36, 0.3), 0 0 0 10px rgba(255, 91, 36, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  a.vipps-btn { animation: none; }
+}
 .vipps-btn:disabled {
   opacity: 0.7;
   cursor: default;
