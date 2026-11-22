@@ -951,6 +951,12 @@ textarea {
   text-decoration-thickness: 0.75px;
   text-underline-offset: 3px;
 }
+/* Gul ved hover og trykk, ikke nettleserens blå */
+.vipps-reserve:hover,
+.vipps-reserve:active,
+.vipps-reserve:focus-visible {
+  color: var(--accent);
+}
 .vipps-belop {
   margin-top: 6px;
   font-size: 22px;
