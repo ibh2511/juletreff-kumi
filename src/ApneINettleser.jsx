@@ -5,7 +5,8 @@ import { inApp } from "./vipps.js"
 // autoutfylling dårligere, så vi sender folk til standardnettleseren.
 //  - Android: siden åpnes i standardnettleseren med en gang (intent-lenke), én gang per økt, så det ikke går i ring.
 //  - iPhone: apper kan ikke åpnes i Safari automatisk. Øverst står en stripe med «Åpne i Safari»
-//    (x-safari-https, iOS 17 og nyere) og hvordan man gjør det selv via menyen.
+//    (x-safari-https, iOS 17 og nyere), «Chrome» ved siden av (googlechromes://) og hvordan man gjør det selv
+//    via menyen. Siden kan ikke se om Chrome er installert, så skjer det ingenting, sier vi fra etter litt.
 const NOKKEL = "jt_apnet_i_nettleser"
 
 function lesFlagg() {
@@ -26,12 +27,22 @@ function settFlagg() {
 export default function ApneINettleser() {
   const [app] = useState(() => inApp())
   const [lukket, setLukket] = useState(false)
+  const [ingenChrome, setIngenChrome] = useState(false)
   const url = window.location.href
   const uten = url.replace(/^https?:\/\//, "")
   const android = app && !app.ios
   const lenke = android
     ? `intent://${uten}#Intent;scheme=https;action=android.intent.action.VIEW;S.browser_fallback_url=${encodeURIComponent(url)};end`
     : `x-safari-${url}`
+  const chrome = url.replace(/^http/, "googlechrome")
+
+  // Forlater vi ikke siden innen 1,5 s, åpnet ikke Chrome (ikke installert)
+  function provChrome() {
+    const t = setTimeout(() => setIngenChrome(true), 1500)
+    const borte = () => document.hidden && clearTimeout(t)
+    document.addEventListener("visibilitychange", borte, { once: true })
+    window.addEventListener("pagehide", () => clearTimeout(t), { once: true })
+  }
 
   useEffect(() => {
     if (!android || lesFlagg()) return
@@ -46,10 +57,21 @@ export default function ApneINettleser() {
         Du er i nettleseren til {app.app}. Vipps og kalenderen virker best i{" "}
         {app.ios ? "Safari" : "nettleseren din"}.
       </p>
-      <a className="nettleser-knapp" href={lenke}>
-        Åpne i {app.ios ? "Safari" : "nettleseren"}
-      </a>
-      <small>Eller trykk {app.ios ? "⋯" : "⋮"} øverst og velg «Åpne i nettleser».</small>
+      <div className="nettleser-knapper">
+        <a className="nettleser-knapp" href={lenke}>
+          Åpne i {app.ios ? "Safari" : "nettleseren"}
+        </a>
+        {app.ios && (
+          <a className="nettleser-knapp sekundar" href={chrome} onClick={provChrome}>
+            Chrome
+          </a>
+        )}
+      </div>
+      <small aria-live="polite">
+        {ingenChrome
+          ? "Fant ikke Chrome. Bruk Safari i stedet."
+          : `Eller trykk ${app.ios ? "⋯" : "⋮"} øverst og velg «Åpne i nettleser».`}
+      </small>
       <button type="button" className="nettleser-lukk" aria-label="Lukk" onClick={() => setLukket(true)}>
         ×
       </button>

@@ -677,6 +677,7 @@ export default function App() {
                       name="Fornavn"
                       id="firstName"
                       autoComplete="given-name"
+                      autoCapitalize="words"
                       required
                     />
                     <label htmlFor="firstName" className="form-label">
@@ -689,6 +690,7 @@ export default function App() {
                       name="Etternavn"
                       id="lastName"
                       autoComplete="family-name"
+                      autoCapitalize="words"
                       required
                     />
                     <label htmlFor="lastName" className="form-label">

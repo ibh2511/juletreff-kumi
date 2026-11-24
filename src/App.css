@@ -1649,6 +1649,21 @@ h2.tittel { white-space: nowrap; font-size: clamp(18px, 6.4vw, 34px); letter-spa
 .nettleser-knapp:hover {
   color: #111;
 }
+.nettleser-knapper {
+  display: flex;
+  gap: 8px;
+}
+.nettleser-knapp.sekundar {
+  padding: 6px 15px;
+  background: none;
+  border: 1px solid rgba(244, 234, 223, 0.28);
+  color: var(--muted);
+  font-weight: 400;
+}
+.nettleser-knapp.sekundar:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
 .nettleser-lukk {
   position: absolute;
   top: 6px;
