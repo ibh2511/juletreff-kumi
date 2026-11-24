@@ -92,9 +92,6 @@ export default function ApneINettleser() {
           </a>
         </>
       )}
-      <button type="button" className="vipps-reserve nettleser-hjelp" onClick={visSteg}>
-        Virker det ikke? Vis meg hvordan
-      </button>
       <button type="button" className="nettleser-lukk" aria-label="Lukk" onClick={() => setLukket(true)}>
         ×
       </button>
