@@ -5,9 +5,9 @@ import { inApp, kopier, META } from "./vipps.js"
 // autoutfylling dårligere, så vi sender folk til standardnettleseren.
 //  - Android: siden åpnes i standardnettleseren med en gang (intent-lenke), én gang per økt, så det ikke går i ring.
 //  - iPhone: apper kan ikke åpnes i Safari automatisk. Øverst står en stripe med «Åpne i Safari»
-//    (x-safari-https, iOS 17 og nyere) og «Chrome» (googlechromes://). Siden kan ikke se om lenken virket,
+//    (x-safari-https, iOS 17 og nyere). Siden kan ikke se om lenken virket,
 //    men forlater vi ikke siden innen 1,5 s, gjorde den det ikke. Da vises stegene for å gjøre det via menyen.
-//    Appene til Meta stopper begge lenkene (testet i Messenger på iPhone 14 med Chrome installert), så der
+//    Appene til Meta stopper lenken (testet i Messenger på iPhone 14), så der
 //    står stegene og «Kopier lenken» i stedet for knappene.
 const NOKKEL = "jt_apnet_i_nettleser"
 
@@ -36,7 +36,6 @@ function provLenke(feilet) {
 export default function ApneINettleser() {
   const [app] = useState(() => inApp())
   const [lukket, setLukket] = useState(false)
-  const [ingenChrome, setIngenChrome] = useState(false)
   const [kopiert, setKopiert] = useState(false)
   const dialog = useRef(null)
   const url = window.location.href
@@ -45,7 +44,6 @@ export default function ApneINettleser() {
   const lenke = android
     ? `intent://${uten}#Intent;scheme=https;action=android.intent.action.VIEW;S.browser_fallback_url=${encodeURIComponent(url)};end`
     : `x-safari-${url}`
-  const chrome = url.replace(/^http/, "googlechrome")
 
   useEffect(() => {
     if (!android || lesFlagg()) return
@@ -89,21 +87,9 @@ export default function ApneINettleser() {
         </>
       ) : (
         <>
-          <div className="nettleser-knapper">
-            <a className="nettleser-knapp" href={lenke} onClick={() => provLenke(visSteg)}>
-              Åpne i {app.ios ? "Safari" : "nettleseren"}
-            </a>
-            {app.ios && (
-              <a
-                className="nettleser-knapp sekundar"
-                href={chrome}
-                onClick={() => provLenke(() => setIngenChrome(true))}
-              >
-                Chrome
-              </a>
-            )}
-          </div>
-          {ingenChrome && <small aria-live="polite">Fant ikke Chrome. Bruk Safari i stedet.</small>}
+          <a className="nettleser-knapp" href={lenke} onClick={() => provLenke(visSteg)}>
+            Åpne i {app.ios ? "Safari" : "nettleseren"}
+          </a>
         </>
       )}
       <button type="button" className="vipps-reserve nettleser-hjelp" onClick={visSteg}>
@@ -119,7 +105,7 @@ export default function ApneINettleser() {
         aria-labelledby="nettleser-dialog-tittel"
         onClick={(e) => e.target === dialog.current && dialog.current.close()}
       >
-        <h2 id="nettleser-dialog-tittel">Slik åpner du siden i {app.ios ? "Safari" : "nettleseren"}</h2>
+        <h2 id="nettleser-dialog-tittel">Slik åpner du siden i nettleseren</h2>
         <ol className="nettleser-illustrasjon">
           <li>
             <div className="mock mock-topp" aria-hidden="true">
@@ -138,7 +124,7 @@ export default function ApneINettleser() {
               <span>Del</span>
             </div>
             <p>
-              Velg <b>«Åpne i nettleser»</b>. Noen apper kaller det «Åpne i {app.ios ? "Safari" : "Chrome"}» eller
+              Velg <b>«Åpne i nettleser»</b>. Noen apper kaller det «Åpne i Safari», «Åpne i Chrome» eller
               «Åpne i ekstern nettleser».
             </p>
           </li>
@@ -147,11 +133,11 @@ export default function ApneINettleser() {
               <span className="mock-adresse">🔒 {window.location.host}</span>
               <span className="mock-hake">✓</span>
             </div>
-            <p>Siden åpnes i {app.ios ? "Safari" : "nettleseren"}, og Vipps og kalenderen virker.</p>
+            <p>Siden åpnes i nettleseren din, og Vipps og kalenderen virker.</p>
           </li>
         </ol>
         <p className="nettleser-dialog-reserve">
-          Finner du det ikke? Kopier lenken og lim den inn i {app.ios ? "Safari" : "nettleseren"}.
+          Finner du det ikke? Kopier lenken og lim den inn i nettleseren din.
         </p>
         <div className="nettleser-knapper">
           {kopierKnapp}
