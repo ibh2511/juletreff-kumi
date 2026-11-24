@@ -886,6 +886,23 @@ export default function App() {
                     YouTube
                   </a>
                 </p>
+                <hr />
+                <img
+                  className="faq-bilde"
+                  src="images/birger-berenice.jpg"
+                  alt="Birger og Berenice, hun med nisselue, foran KUMI"
+                  width="900"
+                  height="600"
+                  loading="lazy"
+                  decoding="async"
+                />
+                <h3>🎸 Musikalsk julestemning med Birger &amp; Berenice</h3>
+                <p>
+                  Kjæresteparet Birger og Berenice inntar scenen med vakre
+                  harmonier, akustisk gitar og musikalsk samspill. Med Birger på
+                  gitar og vokal, og Berenice på vokal og koring, byr duoen på et
+                  stemningsfullt musikalsk innslag.
+                </p>
               </div>
             </details>
 

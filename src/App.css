@@ -1317,7 +1317,7 @@ h2.tittel { white-space: nowrap; font-size: clamp(18px, 6.4vw, 34px); letter-spa
   .fakta dd { font-size: 16px; }
 }
 
-/* Bilde i FAQ (Matias) */
+/* Bilder i FAQ (Matias, Birger & Berenice) */
 .faq-section .faq-bilde {
   display: block;
   width: 100%;
@@ -1329,6 +1329,7 @@ h2.tittel { white-space: nowrap; font-size: clamp(18px, 6.4vw, 34px); letter-spa
   border-radius: 8px;
 }
 .faq-section .faq-body h3 + p { margin-top: 0; }
+.faq-section .faq-body hr + .faq-bilde { margin-top: 18px; }
 
 /* Testlenke fra admin */
 .test-banner {
