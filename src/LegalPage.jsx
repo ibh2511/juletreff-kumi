@@ -32,7 +32,7 @@ function Vilkar({ info }) {
       <p>
         En plass på juletreffet på KUMI i Oslobukta, {info.dato}. Prisen er{" "}
         {formatPrice(info.pris)} per person og gjelder en vegansk
-        julemeny med seks retter i sharing-stil og underholdning. Drikke på KUMI og MUNCH bar
+        julemeny med seks retter i sharing-stil og underholdning. Eventuell drikke på KUMI og MUNCH bar
         kommer i tillegg og betales direkte der.
       </p>
 
