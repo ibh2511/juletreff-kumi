@@ -3,7 +3,7 @@ import { KONTAKT_EPOST, formatPrice } from "./config.js"
 // Fyll inn før lansering (se backend/OPPSETT.md)
 const ARRANGOR = "Nordisk vegan"
 const KONTAKTPERSON = "Isabelle Haugan"
-const OPPDATERT = "15. november 2026"
+const OPPDATERT = "24. november 2026"
 
 // Kontaktadressen kommer fra backend (SVAR_EPOST), med .env som reserve
 function Epost({ info }) {
@@ -41,7 +41,7 @@ function Vilkar({ info }) {
         Du melder deg på via skjemaet på nettsiden og betaler med Vipps
         {info.vippsAktiv
           ? ", der du sendes rett til betalingen."
-          : ". Når du har meldt deg på, får du opp nummeret og en knapp som åpner Vipps, og det samme på e-post. Du vippser beløpet selv."}{" "}
+          : ". Når du har meldt deg på, får du opp Vipps-nummeret og en knapp som åpner Vipps, og du vippser beløpet selv. Betaler du ikke med en gang, får du en e-post med betalingsopplysningene."}{" "}
         Plassen din er sikret når betalingen er mottatt, og du får en
         bekreftelse på e-post. Påmeldingsfristen er {info.fristTekst}, eller
         tidligere hvis det blir fullt. Er det fullt, kan du sette deg på
