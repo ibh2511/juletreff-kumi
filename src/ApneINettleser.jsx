@@ -75,7 +75,7 @@ export default function ApneINettleser() {
   return (
     <div className="nettleser-stripe" role="note">
       <p>
-        Du er i nettleseren til {app.app}. Vipps og kalenderen virker best i{" "}
+        Du er i nettleseren til {app.app}. Påmeldingen og Vipps virker best i{" "}
         {app.ios ? "Safari" : "nettleseren din"}.
       </p>
       {meta ? (
@@ -133,7 +133,7 @@ export default function ApneINettleser() {
               <span className="mock-adresse">🔒 {window.location.host}</span>
               <span className="mock-hake">✓</span>
             </div>
-            <p>Siden åpnes i nettleseren din, og Vipps og kalenderen virker.</p>
+            <p>Siden åpnes i nettleseren din, og påmeldingen og Vipps virker.</p>
           </li>
         </ol>
         <p className="nettleser-dialog-reserve">
