@@ -826,7 +826,7 @@ export default function App() {
                 </p>
                 <hr />
                 <h3>Hovedretter</h3>
-                <p>
+                <p className="meny-retter">
                   🌰 Nøttestek
                   <br />
                   🥬 Hjemmelaget Rødkål
@@ -841,7 +841,7 @@ export default function App() {
                 </p>
                 <hr />
                 <h3>Dessert</h3>
-                <p>🍫 Marinerte Appelsiner med Sjokolade- og Appelsinkrem</p>
+                <p className="meny-retter">🍫 Marinerte Appelsiner med Sjokolade- og Appelsinkrem</p>
                 <hr />
                 <p>
                   Spørsmål om menyen? Kontakt KUMI på{" "}
