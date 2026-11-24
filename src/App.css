@@ -557,6 +557,11 @@ textarea {
   color: var(--accent);
   font-weight: 500;
 }
+/* Fet uten gul farge (arrangørene i «Kvelden») */
+.faq-section .faq-body strong {
+  color: #fff;
+  font-weight: 600;
+}
 
 .faq-section .faq-body h3 {
   font-size: 20px;
