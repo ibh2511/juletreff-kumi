@@ -1744,3 +1744,5 @@ h2.tittel { white-space: nowrap; font-size: clamp(18px, 6.4vw, 34px); letter-spa
   border-color: var(--accent);
   color: var(--accent);
 }
+/* Luft under hovedrettene og desserten i «Meny», før streken */
+.faq-section .faq-body p.meny-retter { margin-bottom: 28px; }
