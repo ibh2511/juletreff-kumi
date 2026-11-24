@@ -63,8 +63,13 @@ export function lenker(https) {
  * iPhone inne i apper: nettleseren der åpner ikke alltid apper fra vanlige lenker, så vipps:// prøves først.
  * Samme valg som på vegansk juleribbe, der variantene ble testet på iPhone, Android og PC.
  */
+// Appene til Meta stopper lenker til andre apper (vipps://, x-safari-, googlechromes://) på iPhone.
+// Testet i Messenger på iPhone 14: bare nettadressen åpnet Vipps.
+export const META = ["Facebook", "Messenger", "Instagram", "Threads"]
+
 export function valg(m = miljo()) {
   if (m.android) return { hoved: "intent", reserve: "https" }
+  if (m.ios && META.includes(m.inApp)) return { hoved: "https", reserve: "vipps" }
   if (m.ios && m.inApp) return { hoved: "vipps", reserve: "https" }
   return { hoved: "https", reserve: "vipps" }
 }
