@@ -775,6 +775,13 @@ function varselEpost_() { return cfg_('VARSEL_EPOST', '') || rapportMottaker_();
 function varsle_(emne, tekst, til, test) {
   til = til || varselEpost_();
   if (!til) return false;
+  // Samme varsel høyst hver 6. time, så et varsel som utløses hvert minutt ikke bruker opp e-postkvoten
+  if (!test) {
+    var cache = CacheService.getScriptCache();
+    var nokkel = 'varsel_' + Utilities.base64Encode(Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, til + emne + tekst));
+    if (cache.get(nokkel)) return true;
+    cache.put(nokkel, '1', 21600);
+  }
   try {
     MailApp.sendEmail(til, (test ? '[TEST] ' : '') + 'Juletreff KUMI: ' + emne,
       tekst + '\n\nAdmin: ' + cfg_('SITE_URL', 'https://ibh2511.github.io/juletreff-kumi').replace(/\/$/, '') + '/#admin',
@@ -1137,10 +1144,16 @@ function epostVenter_(r) {
 
 function sendVentendeBetalingsinfo_(min) {
   var naa = Date.now();
+  // Merket i Skriptegenskaper før sending, så e-posten går høyst én gang per påmelding, også hvis
+  // «epost_sendt» ikke blir skrevet i arket. Ellers sendes den på nytt hvert minutt og bruker opp e-postkvoten.
+  var props = PropertiesService.getScriptProperties(), sendt = props.getProperties();
   alle_().forEach(function (r) {
     if (r.status !== 'UBETALT' || r.epost_sendt || r.betaling !== 'manuell') return;
     var alder = naa - new Date(r.opprettet).getTime();
     if (alder < min * 60000 || alder > 48 * 36e5) return;
+    var merke = 'BETINFO_' + r.id + '_' + new Date(r.opprettet).getTime();
+    if (sendt[merke]) return;
+    props.setProperty(merke, '1');
     sendBekreftelse_(r);
   });
 }
@@ -1258,10 +1271,13 @@ function sendBekreftelse_(r) {
 
   try {
     MailApp.sendEmail(r.epost, emne, tekst, valg);
-    var o = finn_('id', r.id);
-    if (o) oppdater_(o._rad, { epost_sendt: new Date() });
-    return true;
   } catch (err) { console.error('E-post feilet for ' + r.id + ': ' + err); return false; }
+  // Raden e-posten gjelder. finn_ tar den siste med samme ID, og den kan være en annen.
+  try {
+    var rad = r._rad || (finn_('id', r.id) || {})._rad;
+    if (rad) oppdater_(rad, { epost_sendt: new Date() });
+  } catch (err) { console.error('Fikk ikke lagret «epost_sendt» for ' + r.id + ': ' + err); }
+  return true;
 }
 
 /* «Legg i kalenderen» i bekreftelsen. Samme hendelse som src/kalender.js lager på siden og i juletreff.ics der. */
