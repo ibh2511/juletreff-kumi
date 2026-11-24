@@ -7,6 +7,8 @@ import { inApp } from "./vipps.js"
 //  - iPhone: apper kan ikke åpnes i Safari automatisk. Øverst står en stripe med «Åpne i Safari»
 //    (x-safari-https, iOS 17 og nyere), «Chrome» ved siden av (googlechromes://) og hvordan man gjør det selv
 //    via menyen. Siden kan ikke se om Chrome er installert, så skjer det ingenting, sier vi fra etter litt.
+//    Appene til Meta stopper googlechromes://-lenker (testet i Messenger på iPhone), så der vises ikke Chrome.
+const STOPPER_CHROME = ["Facebook", "Messenger", "Instagram", "Threads"]
 const NOKKEL = "jt_apnet_i_nettleser"
 
 function lesFlagg() {
@@ -61,7 +63,7 @@ export default function ApneINettleser() {
         <a className="nettleser-knapp" href={lenke}>
           Åpne i {app.ios ? "Safari" : "nettleseren"}
         </a>
-        {app.ios && (
+        {app.ios && !STOPPER_CHROME.includes(app.app) && (
           <a className="nettleser-knapp sekundar" href={chrome} onClick={provChrome}>
             Chrome
           </a>
