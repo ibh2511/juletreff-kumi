@@ -20,8 +20,13 @@ const AdminStats = lazy(() => import("./AdminStats.jsx"))
 const AdminLogin = lazy(() => import("./AdminLogin.jsx"))
 const LegalPage = lazy(() => import("./LegalPage.jsx"))
 
-// Bildene i full kvalitet. Matias på scenen er med i karusellen, siden han underholder.
-const IMAGES = ["images/kumi.jpeg", "images/matias-konsert.jpg", "images/munch.jpg"]
+// Bildene i full kvalitet. Matias og Birger & Berenice er med i karusellen, siden de underholder.
+const IMAGES = [
+  { src: "images/kumi.jpeg", alt: "Juletreff på KUMI" },
+  { src: "images/matias-konsert.jpg", alt: "Matias opptrer med mikrofon" },
+  { src: "images/birger-berenice-karusell.jpg", alt: "Birger og Berenice foran KUMI" },
+  { src: "images/munch.jpg", alt: "Juletreff på KUMI" },
+]
 
 // «onsdag 16. desember» → «16. des»
 const kortDato = (t) => {
@@ -407,14 +412,14 @@ export default function App() {
         <div className="container">
           {/* Bilde med fade */}
           <div className="booking-image">
-            {IMAGES.map((src, index) => (
+            {IMAGES.map(({ src, alt }, index) => (
               <img
                 key={src}
                 className={`booking-img ${
                   index === currentImageIndex ? "active" : ""
                 }`}
                 src={src}
-                alt={src.includes("matias") ? "Matias opptrer med mikrofon" : "Juletreff på KUMI"}
+                alt={alt}
                 decoding="async"
                 fetchPriority={index === 0 ? "high" : "low"}
               />
@@ -779,7 +784,7 @@ export default function App() {
 
               <div className="faq-body">
                 <p>
-                  Oslo vegansamfunn, Vegan Norway og Nordisk vegan arrangerer
+                  <strong>Oslo vegansamfunn, Vegan Norway og Nordisk vegan</strong> arrangerer
                   juletreff på KUMI i Oslobukta <b>{info.dato},</b> med lokalet for oss selv.
                 </p>
                 <p>
@@ -914,8 +919,10 @@ export default function App() {
 
               <div className="faq-body">
                 <p>
-                  {formatPrice(info.pris)} per person for seks retter i{" "}
-                  <span className="nowrap">sharing-stil</span> og underholdning.
+                  <b>
+                    {formatPrice(info.pris)} per person for seks retter i{" "}
+                    <span className="nowrap">sharing-stil</span> og underholdning.
+                  </b>
                 </p>
                 <p>
                   {vippsAktiv
