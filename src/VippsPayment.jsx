@@ -369,14 +369,12 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt, onVente
         <div className="vipps-radar" aria-hidden="true">
           <span />
         </div>
-        <h3 role="status">Takk! Nå venter vi bare på banken</h3>
+        <h3 role="status">Takk! Nå venter vi på banken</h3>
         <p className="vipps-lead">
-          <span className="setning">Har du betalt i Vipps, er plassen din holdt av.</span>{" "}
+          <span className="setning">Plassen din er holdt av.</span>{" "}
           <span className="setning">Ikke betal på nytt.</span>
         </p>
-        <p className="vipps-bekreftes">
-          Bekreftelsen kommer vanligvis etter noen minutter, av og til etter opptil en time.
-        </p>
+        <p className="vipps-bekreftes">Det tar vanligvis noen minutter, av og til opptil en time.</p>
         <dl className="vipps-fakta vipps-sjekker-kort">
           <div>
             <dt>Beløp</dt>
@@ -404,8 +402,7 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt, onVente
         {endrer && navnSkjema}
         {navnFeil && <p className="vipps-feil">{navnFeil}</p>}
         <p className="vipps-sjekker-tekst">
-          Du kan trygt lukke siden. Vi sender <span className="nowrap">e-post</span> når betalingen er
-          bekreftet{info.automatisk ? ", og siden oppdaterer seg selv hvis du lar den stå" : ""}.
+          Du kan lukke siden. Du får <span className="nowrap">e-post</span> når betalingen er bekreftet.
         </p>
         {lenge && (
           <div className="vipps-hjelp">
@@ -423,10 +420,10 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt, onVente
         </p>
         {avbrot && (
           <div className="vipps-hjelp vipps-avbrot">
-            Sjekk først under <b className="inline">Aktivitet</b> i Vipps at du ikke har betalt {kr} til{" "}
-            <span className="nowrap">{info.mottaker}</span>. Betaler du to ganger, må vi betale tilbake.
+            Sjekk under <b className="inline">Aktivitet</b> i Vipps at betalingen ikke gikk gjennom, så du ikke
+            betaler to ganger.
             <button type="button" className="vipps-endre" onClick={visBetalingen}>
-              Jeg har ikke betalt, vis betalingen
+              Vis betalingen
             </button>
           </div>
         )}
