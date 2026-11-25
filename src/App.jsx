@@ -11,7 +11,6 @@ import {
   telefonSifre,
 } from "./config.js"
 import { googleKalender } from "./kalender.js"
-import ApneINettleser from "./ApneINettleser.jsx"
 import VippsPayment from "./VippsPayment.jsx"
 import KumiMap from "./KumiMap.jsx"
 
@@ -412,7 +411,6 @@ export default function App() {
 
   return (
     <>
-      <ApneINettleser />
       <div className="page">
         <div className="container">
           {/* Bilde med fade */}

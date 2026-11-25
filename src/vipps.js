@@ -5,7 +5,7 @@
 import qrcode from "qrcode-generator"
 
 // Nettleseren inne i Instagram, Facebook, Messenger, TikTok, Snapchat o.l.
-export function inApp() {
+function inApp() {
   const ua = navigator.userAgent || ""
   const ios =
     /iPhone|iPad|iPod/i.test(ua) ||
@@ -65,7 +65,7 @@ export function lenker(https) {
  */
 // Appene til Meta stopper lenker til andre apper (vipps://, x-safari-, googlechromes://) på iPhone.
 // Testet i Messenger på iPhone 14: bare nettadressen åpnet Vipps.
-export const META = ["Facebook", "Messenger", "Instagram", "Threads"]
+const META = ["Facebook", "Messenger", "Instagram", "Threads"]
 
 export function valg(m = miljo()) {
   if (m.android) return { hoved: "intent", reserve: "https" }
