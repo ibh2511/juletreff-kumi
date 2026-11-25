@@ -53,6 +53,13 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
   // Når betalingsstegene ble vist (ved start, eller etter «Vis betalingen»)
   const [stegFra, setStegFra] = useState(() => Date.now())
   const forlot = useRef(false)
+  const meldt = useRef(false)
+  // Sier fra til backend én gang: de har trolig betalt, så e-posten med betalingsinfo venter lenger (VIPPS_VENT_MIN)
+  const meldVipps = () => {
+    if (meldt.current || !id || !k) return
+    meldt.current = true
+    apiPost({ action: "vipps", id, k }, { keepalive: true }).catch(() => {})
+  }
 
   const visVenting = () => {
     const t = Date.now()
@@ -144,6 +151,7 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
 
   const kopierTekst = (tekst, hva) => {
     forlot.current = true // nummeret eller meldingen skal limes inn i Vipps, så de går trolig dit nå
+    meldVipps()
     return kopier(tekst)
       .then(() => {
         setKopiert(hva)
@@ -156,6 +164,7 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
   // de lime det inn i Vipps. Går kopieringen ikke, sier vi ingenting: beløpet står i steg 2.
   const apneVipps = () => {
     forlot.current = true
+    meldVipps()
     kopier(String(Math.round(Number(info.belop) || 0))).catch(() => {})
   }
 
@@ -347,7 +356,8 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
   }
 
   if (venterFra) {
-    const lenge = naa - venterFra > 20 * 60000
+    // Samme tid som backend venter før den rolige e-posten (VIPPS_VENT_MIN i Code.gs)
+    const lenge = naa - venterFra > 60 * 60000
     return (
       <div className="vipps-card vipps-sjekker">
         <p className="vipps-ref vipps-ref-topp">Påmeldings-ID: {info.id}</p>
@@ -388,12 +398,13 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
         <p className="vipps-sjekker-tekst">
           {info.automatisk ? (
             <>
-              Siden oppdaterer seg selv når betalingen er registrert. Du får også
-              bekreftelse på <span className="nowrap">e-post</span>.
+              Vipps kan bruke litt tid før betalingen kommer fram til oss. Siden oppdaterer seg selv, og du kan
+              trygt lukke den: du får bekreftelse på <span className="nowrap">e-post</span>.
             </>
           ) : (
             <>
-              Du får bekreftelse på <span className="nowrap">e-post</span> når betalingen er registrert.
+              Vipps kan bruke litt tid før betalingen kommer fram til oss. Du kan trygt lukke siden: du får
+              bekreftelse på <span className="nowrap">e-post</span> når betalingen er registrert.
             </>
           )}
         </p>

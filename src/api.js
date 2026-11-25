@@ -12,10 +12,12 @@ export async function apiGet(params) {
 }
 
 // text/plain gjør at nettleseren ikke trenger CORS-forhåndssjekk mot Apps Script
-export async function apiPost(params) {
+// keepalive: forespørselen fullføres selv om siden går i bakgrunnen (f.eks. når Vipps åpnes)
+export async function apiPost(params, { keepalive = false } = {}) {
   if (!API_URL) throw new Error("API ikke satt opp")
   const r = await fetch(API_URL, {
     method: "POST",
+    keepalive,
     headers: { "Content-Type": "text/plain;charset=utf-8" },
     body: JSON.stringify(params),
   })
