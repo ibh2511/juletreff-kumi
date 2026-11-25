@@ -44,7 +44,7 @@ function vippsErMobil_(nr) { return String(nr || '').replace(/\D/g, '').length =
 //  vipps_ref  referansen til siste betaling hos Vipps bedrift (påmeldings-ID, eller ID-2, ID-3 … ved ny betaling)
 var KOLONNER = ['id', 'opprettet', 'status', 'fornavn', 'etternavn', 'epost', 'telefon', 'kommentar',
   'belop', 'betaling', 'nokkel', 'betalt', 'epost_sendt', 'bindende_godtatt', 'trukket', 'refundert', 'notat', 'kilde', 'refusjon', 'test', 'varslet', 'purret', 'program', 'purringer', 'mott', 'takket',
-  'vipps_navn', 'bank_id', 'gebyr', 'vipps_ref'];
+  'vipps_navn', 'bank_id', 'gebyr', 'vipps_ref', 'vipps_apnet'];
 var BESOK_KOLONNER = ['tid', 'besokende', 'kilde', 'enhet'];
 // Innbetalinger fra banken (Vipps privat). Bare de som kan gjelde juletreffet lagres.
 var BANK_ARK = 'Bank';
@@ -250,6 +250,7 @@ function route_(e, body) {
       case 'status':    begrens_('status', 240); return json_(sjekkBetaling_(p.id, p.k, false, p.sjekk === '1' || p.sjekk === true));
       case 'betal':     begrens_('betal', 30); return json_(betalBedrift_(p));
       case 'navn':      begrens_('navn', 30); return json_(endreVippsNavn_(p));
+      case 'vipps':     begrens_('vipps', 60); return json_(meldVipps_(p));
       case 'hit':       begrens_('hit', 300); return json_(hit_(p));
       case 'admin':     return json_(adminLogin_(p.passord));
       case 'logout':    return json_(adminLogout_(p.okt));
@@ -520,6 +521,15 @@ function betalingsinfo_(r) {
   };
 }
 
+/** Betalingssiden sier fra når deltakeren trykker «Åpne Vipps» eller kopierer nummeret (se VIPPS_VENT_MIN). */
+function meldVipps_(p) {
+  if (!/^JT-\d{4,}$/.test(p.id || '')) throw new Brukerfeil('Fant ikke påmeldingen');
+  var o = finn_('id', p.id);
+  if (!o || !p.k || String(p.k) !== String(o.nokkel)) throw new Brukerfeil('Fant ikke påmeldingen');
+  if (o.status === 'UBETALT' && !o.vipps_apnet) oppdater_(o._rad, { vipps_apnet: new Date() });
+  return { ok: true };
+}
+
 /** Deltakeren betaler fra en annens Vipps (for eksempel en partner): navnet banken skal se etter. */
 function endreVippsNavn_(p) {
   var o = finn_('id', p.id);
@@ -698,6 +708,9 @@ var SB1_ACCEPT = 'application/vnd.sparebank1.v1+json; charset=utf-8';
 var BANK_STRAKS_TIMER = 2;
 // E-posten med betalingsinfo sendes først når betalingen ikke har kommet etter så mange minutter.
 var EPOST_VENT_MIN = 5;
+// Trykket deltakeren «Åpne Vipps» eller kopierte nummeret, har de trolig betalt, og Vipps privat kan bruke litt tid
+// før betalingen kommer til banken. Da venter vi så mange minutter, og sender så en rolig e-post i stedet.
+var VIPPS_VENT_MIN = 60;
 var BANK_OFTE_TIMER = 48;
 var BANK_OFTE_MIN = 5;
 var BANK_SJELDEN_MIN = 15;
@@ -1139,7 +1152,9 @@ function sjekkBankUtloser() {
  */
 /** E-posten med betalingsinfo er ikke sendt ennå fordi den venter på at betalingen kanskje kommer først. */
 function epostVenter_(r) {
-  return r.status === 'UBETALT' && r.betaling === 'manuell' && Date.now() - new Date(r.opprettet).getTime() < 20 * 60000;
+  if (r.status !== 'UBETALT' || r.betaling !== 'manuell') return false;
+  if (r.vipps_apnet) return Date.now() - new Date(r.vipps_apnet).getTime() < (VIPPS_VENT_MIN + 20) * 60000;
+  return Date.now() - new Date(r.opprettet).getTime() < 20 * 60000;
 }
 
 function sendVentendeBetalingsinfo_(min) {
@@ -1151,10 +1166,13 @@ function sendVentendeBetalingsinfo_(min) {
     if (r.status !== 'UBETALT' || r.epost_sendt || r.betaling !== 'manuell') return;
     var alder = naa - new Date(r.opprettet).getTime();
     if (alder < min * 60000 || alder > 48 * 36e5) return;
+    // Trykket på Vipps: vent lenger, og send den rolige varianten
+    var trykket = !!r.vipps_apnet;
+    if (trykket && naa - new Date(r.vipps_apnet).getTime() < VIPPS_VENT_MIN * 60000) return;
     var merke = 'BETINFO_' + r.id + '_' + new Date(r.opprettet).getTime();
     if (sendt[merke]) return;
     props.setProperty(merke, '1');
-    sendBekreftelse_(r);
+    sendBekreftelse_(r, trykket);
   });
 }
 
@@ -1201,7 +1219,8 @@ function bankCallback_(p) {
 /* ------------------------------------------------------------------ */
 
 /** Bekreftelse i samme stil som den opprinnelige e-posten: fersken ramme, mørkt kort, bilde øverst. */
-function sendBekreftelse_(r) {
+/** «venter»: deltakeren trykket på Vipps, men betalingen er ikke kommet. Da en rolig e-post uten stor betal-knapp. */
+function sendBekreftelse_(r, venter) {
   if (!r.epost) return;
   var a = arrangement_();
   var site = cfg_('SITE_URL', 'https://ibh2511.github.io/juletreff-kumi').replace(/\/$/, '');
@@ -1214,10 +1233,27 @@ function sendBekreftelse_(r) {
   var rad = epostRad_, tabell = epostTabell_;
   var bunn = betalt ? 'Spørsmål, eller må du melde deg av med legeerklæring? Svar på denne e-posten.' : 'Spørsmål? Svar på denne e-posten.';
 
+  var venterBoks = function () {
+    var b = betalingsinfo_(r), side = betalingsside_(r);
+    return '<div class="boks" style="border: 1px solid rgba(244, 234, 223, 0.25); border-radius: 10px; padding: 14px 12px; margin: 30px 0;">' +
+      '<p style="text-align: center; margin: 0 0 6px 0;"><b>Har du betalt, trenger du ikke gjøre noe.</b></p>' +
+      '<p style="text-align: center; margin: 0; color: #bdb3a8;">Vipps kan bruke litt tid før betalingen kommer fram til oss. ' +
+      'Du får en ny e-post når den er registrert.</p></div>' +
+      '<p style="font-size: .95rem; margin: 0 0 6px 0;"><b>Har du ikke betalt ennå?</b></p>' +
+      (b.nr ? epostTabell_(
+        epostRad_(b.mobil ? 'Vipps til:' : 'Vipps-nummer:', '<b>' + e(b.mottaker) + '</b>', false, '#edb77d') +
+        (b.vippsNavn ? epostRad_('Mottaker:', e(b.vippsNavn), false) : '') +
+        epostRad_('Beløp:', '<b>' + r.belop + ' kr</b>', false, '#edb77d') +
+        epostRad_('Melding:', '<b>' + e(b.melding) + '</b>', true, '#edb77d'), 'margin: 0 0 8px 0; ') : '') +
+      '<p style="font-size: .9rem; margin: 0;">Eller betal fra <a href="' + e(side) + '" style="color: #edb77d; text-decoration: none; ' +
+      'border-bottom: 1px dotted #edb77d;">betalingssiden</a>.</p>';
+  };
+
   var betaling = betalt
     ? '<div class="boks" style="border: 1px solid #6fbf73; border-radius: 10px; padding: 14px 12px; margin: 30px 0;">' +
       '<h3 style="font-size: 1.2rem; color: #8fd694; margin: 0 0 6px 0; text-align: center;">Betalt ' + r.belop + ' kr ✓</h3>' +
       '<p style="text-align: center; margin: 0;">Plassen din er sikret.</p></div>'
+    : venter ? venterBoks()
     : vippsBoks_(r, 'Plassen din er sikret når betalingen er mottatt.') +
       '<p style="font-size: .9rem; line-height: 1.5; margin: 0; color: #bdb3a8; text-align: center;">' +
       'Har du allerede betalt? Da trenger du ikke gjøre noe mer. Du får en ny e-post når betalingen er registrert.</p>';
@@ -1225,7 +1261,8 @@ function sendBekreftelse_(r) {
   var html = epostRamme_(
     '<h2 style="color: #edb77d; font-size: 1.5rem; margin-top: 0; text-align: center;">Hei ' + fornavn + ',</h2>' +
     '<p style="font-weight: bold; font-size: 1.1rem; margin: 20px 0 0 0; letter-spacing: 0.5px; text-align: center;">' +
-    (betalt ? 'Du er påmeldt Juletreff på KUMI 🌿' : 'Ett steg igjen: betal, så er plassen din 🌿') + '</p>' +
+    (betalt ? 'Du er påmeldt Juletreff på KUMI 🌿' : venter ? 'Vi har ikke sett betalingen din ennå'
+      : 'Ett steg igjen: betal, så er plassen din 🌿') + '</p>' +
 
     betaling +
 
@@ -1248,8 +1285,11 @@ function sendBekreftelse_(r) {
 
   var tekst =
     'Hei ' + r.fornavn + '!\n\n' +
-    (betalt ? 'Du er påmeldt Juletreff på KUMI. Plassen din er sikret.' : 'Ett steg igjen: betal, så er plassen din på Juletreff på KUMI.') + '\n\n' +
+    (betalt ? 'Du er påmeldt Juletreff på KUMI. Plassen din er sikret.' : venter ? 'Vi har ikke sett betalingen din for Juletreff på KUMI ennå.'
+      : 'Ett steg igjen: betal, så er plassen din på Juletreff på KUMI.') + '\n\n' +
     (betalt ? 'Betalt: ' + r.belop + ' kr.'
+      : venter ? 'Har du betalt, trenger du ikke gjøre noe. Vipps kan bruke litt tid før betalingen kommer fram til oss. ' +
+        'Du får en ny e-post når den er registrert.\n\nHar du ikke betalt ennå? ' + vippsTekst_(r)
       : vippsTekst_(r) + '\nPlassen din er sikret når betalingen er mottatt.\n' +
         'Har du allerede betalt? Da trenger du ikke gjøre noe mer. Du får en ny e-post når betalingen er registrert.') + '\n\n' +
     'Sted: ' + a.sted + '\nTid: ' + a.dato + '\nPåmelding: ' + r.id + '\n\n' +
@@ -1259,7 +1299,8 @@ function sendBekreftelse_(r) {
     'Salgsvilkår: ' + site + '/#vilkar\nPersonvern: ' + site + '/#personvern';
 
   var emne = (erTest_(r) ? '[TEST] ' : '') +
-    (betalt ? '✨ Du er påmeldt Juletreff på KUMI 🥂' : '✨ Juletreff på KUMI 🥂 Betal ' + r.belop + ' kr med Vipps');
+    (betalt ? '✨ Du er påmeldt Juletreff på KUMI 🥂' : venter ? 'Juletreff på KUMI: vi venter på betalingen din'
+      : '✨ Juletreff på KUMI 🥂 Betal ' + r.belop + ' kr med Vipps');
 
   var valg = { htmlBody: html, name: cfg_('AVSENDER_NAVN', 'Juletreff på KUMI'), replyTo: cfg_('SVAR_EPOST', '') || undefined };
   // Kalenderfila som vedlegg: Apple Mail og Outlook legger den i kalenderen med ett trykk.
@@ -2383,6 +2424,7 @@ function testEpost_(type, p) {
   var sendt = true;
   try {
     if (type === 'ubetalt' || type === 'betalt') sendt = sendBekreftelse_(r);
+    else if (type === 'venterbetaling') sendt = sendBekreftelse_(r, true);
     else if (type === 'ledig') sendLedigPlassEpost_(r, 1);
     else if (type === 'purring') sendPurring_(r);
     else if (type === 'trukket') { r.betalt = new Date(); sendTrukketEpost_(r, Math.max(0, a.pris - a.noshow), false); }

@@ -561,6 +561,7 @@ export default function AdminStats({ okt, onLogout }) {
               >
                 <option value="pamelding">Hel testpåmelding (lager en rad)</option>
                 <option value="ubetalt">E-post: bekreftelse med betalingsinfo</option>
+                <option value="venterbetaling">E-post: vi har ikke sett betalingen ennå (trykket Vipps)</option>
                 <option value="betalt">E-post: bekreftelse når betalingen er mottatt</option>
                 <option value="venteliste">E-post: du står på ventelisten</option>
                 <option value="ledig">E-post: det er ledig plass</option>
