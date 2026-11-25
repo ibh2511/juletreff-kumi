@@ -23,22 +23,23 @@ import { kopier, lenker, miljo, qrSvg, valg } from "./vipps.js"
 const FORTSATT = 5 * 60000
 
 const VENT_KEY = (id) => `jt_betalt_${id}`
+// null: ikke lagret i denne nettleseren. 0: deltakeren valgte å vise betalingen igjen.
 function lesVent(id) {
   try {
-    return Number(sessionStorage.getItem(VENT_KEY(id))) || 0
+    const v = sessionStorage.getItem(VENT_KEY(id))
+    return v == null ? null : Number(v) || 0
   } catch {
-    return 0
+    return null
   }
 }
 function lagreVent(id, t) {
   try {
-    if (t) sessionStorage.setItem(VENT_KEY(id), String(t))
-    else sessionStorage.removeItem(VENT_KEY(id))
+    sessionStorage.setItem(VENT_KEY(id), String(t || 0))
   } catch {
     // privat modus: gjelder til siden lastes på nytt
   }
 }
-export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
+export default function VippsPayment({ info, id, k, lead, notis, onBytt, onVenter }) {
   const m = useMemo(() => miljo(), [])
   const [kopiert, setKopiert] = useState("")
   const [fraNavn, setFraNavn] = useState(info?.fraNavn || "")
@@ -47,8 +48,10 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
   const [navnFeil, setNavnFeil] = useState("")
   const [sender, setSender] = useState(false)
   const [betalFeil, setBetalFeil] = useState("")
-  // Når deltakeren kom tilbake fra Vipps (tidspunkt), eller 0 mens betalingsstegene vises
-  const [venterFra, setVenterFra] = useState(() => (id ? lesVent(id) : 0))
+  // Når deltakeren kom tilbake fra Vipps (tidspunkt), eller 0 mens betalingsstegene vises. Backend husker når
+  // de trykket «Åpne Vipps» (vippsApnet), så kvitteringen vises også fra e-postlenken eller en annen telefon.
+  const [venterFra, setVenterFra] = useState(() => (id ? (lesVent(id) ?? (Number(info?.vippsApnet) || 0)) : 0))
+  const [avbrot, setAvbrot] = useState(false)
   const [naa, setNaa] = useState(() => Date.now())
   // Når betalingsstegene ble vist (ved start, eller etter «Vis betalingen»)
   const [stegFra, setStegFra] = useState(() => Date.now())
@@ -67,6 +70,7 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
     lagreVent(id, t)
   }
   const visBetalingen = () => {
+    setAvbrot(false)
     setVenterFra(0)
     lagreVent(id, 0)
     setStegFra(Date.now())
@@ -74,6 +78,7 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
 
   // Når stegene og venteboksen bytter plass, ber vi siden rulle det nye opp i skjermen (på mobil)
   const varVenting = useRef(!!venterFra)
+  useEffect(() => onVenter?.(!!venterFra), [venterFra, onVenter])
   useEffect(() => {
     if (varVenting.current === !!venterFra) return
     varVenting.current = !!venterFra
@@ -364,11 +369,12 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
         <div className="vipps-radar" aria-hidden="true">
           <span />
         </div>
-        <h3 role="status">Vi ser etter betalingen din</h3>
+        <h3 role="status">Takk! Nå venter vi på banken</h3>
         <p className="vipps-lead">
-          <span className="setning">Har du betalt, er du ferdig.</span>{" "}
-          <span className="setning">Ikke betal igjen.</span>
+          <span className="setning">Plassen din er holdt av.</span>{" "}
+          <span className="setning">Ikke betal på nytt.</span>
         </p>
+        <p className="vipps-bekreftes">Det tar vanligvis noen minutter, av og til opptil en time.</p>
         <dl className="vipps-fakta vipps-sjekker-kort">
           <div>
             <dt>Beløp</dt>
@@ -396,17 +402,7 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
         {endrer && navnSkjema}
         {navnFeil && <p className="vipps-feil">{navnFeil}</p>}
         <p className="vipps-sjekker-tekst">
-          {info.automatisk ? (
-            <>
-              Vipps kan bruke litt tid før betalingen kommer fram til oss. Siden oppdaterer seg selv, og du kan
-              trygt lukke den: du får bekreftelse på <span className="nowrap">e-post</span>.
-            </>
-          ) : (
-            <>
-              Vipps kan bruke litt tid før betalingen kommer fram til oss. Du kan trygt lukke siden: du får
-              bekreftelse på <span className="nowrap">e-post</span> når betalingen er registrert.
-            </>
-          )}
+          Du kan lukke siden. Du får <span className="nowrap">e-post</span> når betalingen er bekreftet.
         </p>
         {lenge && (
           <div className="vipps-hjelp">
@@ -415,13 +411,22 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt }) {
             en annens Vipps, trykk «Endre». Ellers kan du svare på <span className="nowrap">e-posten</span> fra oss.
           </div>
         )}
+        {/* Ingen knapp tilbake til betalingen her: den fikk noen til å betale to ganger mens banken ennå ikke
+            hadde vist den første. Den som avbrøt i Vipps, kommer dit via en sjekk. */}
         <p className="vipps-tilbake-rad">
-          Har du ikke betalt ennå?
-          <br />
-          <button type="button" className="vipps-tilbake" onClick={visBetalingen}>
-            Vis betalingen
+          <button type="button" className="vipps-tilbake" aria-expanded={avbrot} onClick={() => setAvbrot(!avbrot)}>
+            Avbrøt du i Vipps?
           </button>
         </p>
+        {avbrot && (
+          <div className="vipps-hjelp vipps-avbrot">
+            Sjekk under <b className="inline">Aktivitet</b> i Vipps at betalingen ikke gikk gjennom, så du ikke
+            betaler to ganger.
+            <button type="button" className="vipps-endre" onClick={visBetalingen}>
+              Vis betalingen
+            </button>
+          </div>
+        )}
       </div>
     )
   }

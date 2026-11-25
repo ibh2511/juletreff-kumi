@@ -1392,6 +1392,11 @@ h2.tittel { white-space: nowrap; font-size: clamp(18px, 6.4vw, 34px); letter-spa
 .fremdrift .ferdig span { background: #2f6b3a; border-color: #2f6b3a; color: #fff; }
 .fremdrift .aktiv { color: #fff; font-weight: 600; }
 .fremdrift .aktiv span { background: #ff5b24; border-color: #ff5b24; color: #fff; }
+/* Betalt i Vipps, men ikke bekreftet ennå: tredje steg pulserer rolig */
+.fremdrift .bekreftes span { border-color: #ff5b24; color: #ff5b24; animation: vippsPrikk 3s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .fremdrift .bekreftes span { animation: none; }
+}
 .epost-notis {
   margin: 12px 0 0;
   font-size: 13px;
@@ -1570,6 +1575,24 @@ h2.tittel { white-space: nowrap; font-size: clamp(18px, 6.4vw, 34px); letter-spa
   margin-bottom: 4px;
   font-weight: 500;
   color: var(--ink);
+}
+.vipps-bekreftes {
+  margin: -6px 0 18px;
+  font-size: 13px;
+  font-weight: 300;
+  color: #a39b92;
+  text-wrap: balance;
+}
+.vipps-hjelp b.inline {
+  display: inline;
+  margin: 0;
+}
+.vipps-avbrot {
+  margin-top: 10px;
+}
+.vipps-avbrot .vipps-endre {
+  display: block;
+  margin: 12px auto 0;
 }
 /* Spørsmålet på én linje og den stiplede lenken på linjen under */
 .vipps-tilbake-rad {

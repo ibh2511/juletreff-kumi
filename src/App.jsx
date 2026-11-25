@@ -235,6 +235,8 @@ export default function App() {
   // «Du er påmeldt» når betalingen er kommet, og meldinger som «E-post allerede påmeldt». Kommer man fra
   // betalingslenken i e-posten og har begynt å rulle selv mens siden lastet, blir man der man er.
   const rullTilKolonnen = useCallback(() => rullFram(skjemaRef.current), [])
+  // Venteskjermen etter Vipps vises (betalt i Vipps, ikke bekreftet): fremdriften over viser det samme
+  const [venterVipps, setVenterVipps] = useState(false)
   const forrigeStatus = useRef(status)
   useEffect(() => {
     const fra = forrigeStatus.current
@@ -391,16 +393,19 @@ export default function App() {
   }
 
   // Påmeldt → Betal → Plassen er din. Vises over betalingsboksen, så det er tydelig hva som gjenstår.
-  const fremdrift = (betalt) => (
+  // «venter»: betalt i Vipps, men banken har ikke vist betalingen ennå (betalt, ikke bekreftet).
+  const fremdrift = (betalt, venter) => (
     <ol className="fremdrift" aria-label="Påmeldingen">
       <li className="ferdig">
         <span aria-hidden="true">✓</span>Påmeldt
       </li>
-      <li className={betalt ? "ferdig" : "aktiv"} aria-current={betalt ? undefined : "step"}>
-        <span aria-hidden="true">{betalt ? "✓" : "2"}</span>{betalt ? "Betalt" : "Betal"}
+      <li className={betalt || venter ? "ferdig" : "aktiv"} aria-current={betalt || venter ? undefined : "step"}>
+        <span aria-hidden="true">{betalt || venter ? "✓" : "2"}</span>
+        {betalt ? "Betalt" : venter ? "Betalt i Vipps" : "Betal"}
       </li>
-      <li className={betalt ? "ferdig" : ""} aria-current={betalt ? "step" : undefined}>
-        <span aria-hidden="true">{betalt ? "✓" : "3"}</span>Plassen er din
+      <li className={betalt ? "ferdig" : venter ? "bekreftes" : ""} aria-current={betalt || venter ? "step" : undefined}>
+        <span aria-hidden="true">{betalt ? "✓" : "3"}</span>
+        {venter ? "Bekreftes" : "Plassen er din"}
       </li>
     </ol>
   )
@@ -530,9 +535,10 @@ export default function App() {
 
             {status === "ubetalt" && (
               <>
-                {fremdrift(false)}
+                {fremdrift(false, venterVipps)}
                 <VippsPayment
                   onBytt={rullTilKolonnen}
+                  onVenter={setVenterVipps}
                   info={detaljer?.betalingsinfo}
                   id={detaljer?.id}
                   k={detaljer?.k}

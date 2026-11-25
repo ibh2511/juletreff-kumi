@@ -48,7 +48,10 @@ var KOLONNER = ['id', 'opprettet', 'status', 'fornavn', 'etternavn', 'epost', 't
 var BESOK_KOLONNER = ['tid', 'besokende', 'kilde', 'enhet'];
 // Innbetalinger fra banken (Vipps privat). Bare de som kan gjelde juletreffet lagres.
 var BANK_ARK = 'Bank';
-var BANK_KOLONNER = ['sett', 'bank_id', 'dato', 'belop', 'navn', 'tekst', 'type', 'bokforing', 'status', 'pamelding'];
+var BANK_KOLONNER = ['sett', 'bank_id', 'dato', 'belop', 'navn', 'tekst', 'type', 'bokforing', 'status', 'pamelding', 'varslet'];
+// En betaling som ikke kunne kobles, står ofte som «Transaksjon under behandling» uten navn. Den sjekkes på nytt
+// ved hver banksjekk, og du får varsel først når den fortsatt ikke er koblet etter så mange timer.
+var UMATCHET_VARSEL_TIMER = 2;
 
 /**
  * Vipps-gebyret for et salg med Vipps bedrift (ePayment): prosent av beløpet + fast kronebeløp per salg.
@@ -517,6 +520,8 @@ function betalingsinfo_(r) {
     nr: nr, mottaker: nr ? vippsTil_(nr) : '', mobil: vippsErMobil_(nr), vippsNavn: a.vippsNavn,
     lenke: vippsLenke_(nr), melding: vippsMelding_(r),
     fraNavn: r.vipps_navn || (r.fornavn + ' ' + r.etternavn),
+    // Når deltakeren trykket «Åpne Vipps» (ms), så betalingssiden viser kvitteringen og ikke stegene
+    vippsApnet: r.vipps_apnet ? new Date(r.vipps_apnet).getTime() : 0,
     automatisk: bankKlar_()
   };
 }
@@ -1050,11 +1055,21 @@ function sjekkBank_() {
   var nye = 0, koblet = 0;
   try {
     var bsh = sheet_(BANK_ARK), B = {}; BANK_KOLONNER.forEach(function (k, i) { B[k] = i; });
-    var sett = {}, feilSett = {};
-    bsh.getDataRange().getValues().slice(1).forEach(function (r) {
+    var sett = {}, feilSett = {}, umatchet = {};
+    // Ukoblede betalinger fra før varselet ble forsinket, har allerede gitt varsel
+    var props = PropertiesService.getScriptProperties();
+    var varselFra = Number(props.getProperty('UMATCHET_VARSEL_FRA')) || 0;
+    if (!varselFra) { varselFra = Date.now(); props.setProperty('UMATCHET_VARSEL_FRA', String(varselFra)); }
+    bsh.getDataRange().getValues().slice(1).forEach(function (r, i) {
       sett[String(r[B.bank_id])] = 1;
       if (r[B.status] === 'FEIL_BELOP') feilSett[r[B.pamelding] + '|' + ore_(r[B.belop])] = 1;
+      if (r[B.status] === 'UMATCHET') {
+        var naar = new Date(r[B.sett]).getTime();
+        umatchet[String(r[B.bank_id])] = { rad: i + 2, sett: naar, varslet: !!r[B.varslet] || naar < varselFra,
+          navn: String(r[B.navn]), tekst: String(r[B.tekst]), bokforing: String(r[B.bokforing]), pamelding: String(r[B.pamelding] || '') };
+      }
     });
+    var settNa = {};
 
     var nylig = Date.now() - 4 * 864e5;
     var rader = alle_();
@@ -1063,13 +1078,50 @@ function sjekkBank_() {
     var priser = {}; priser[ore_(arrangement_().pris)] = 1;
     ventende.forEach(function (r) { priser[ore_(r.belop)] = 1; });
 
+    var bankTekst = function (t) { return [t.navn, t.beskrivelse].filter(String).join(' · ').slice(0, 300); };
     var lagre = function (t, status, id) {
-      bsh.appendRow([new Date(), t.id, t.dato, t.belop, t.navn, [t.navn, t.beskrivelse].filter(String).join(' · ').slice(0, 300),
-        t.type, t.bokforing, status, id].map(celle_));
+      bsh.appendRow([new Date(), t.id, t.dato, t.belop, t.navn, bankTekst(t), t.type, t.bokforing, status, id, ''].map(celle_));
       sett[t.id] = 1; nye++;
     };
+    var kobl = function (treff, t) {
+      var stempel = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd.MM HH:mm');
+      var felt = { status: 'BETALT', betalt: new Date(), bank_id: t.id, gebyr: 0, betaling: 'manuell',
+        notat: [treff.notat, stempel + ' Betaling funnet i banken'].filter(String).join(' | ').slice(-500) };
+      oppdater_(treff._rad, felt);
+      Object.assign(treff, felt);
+      bekreftes.push(treff);
+      ventende.splice(ventende.indexOf(treff), 1);
+      betalte.push(treff);
+      koblet++;
+    };
+    // Den eneste som venter på dette beløpet og har trykket «Åpne Vipps»: forslag i adminsiden
+    var forslag = function (t) {
+      var k = ventende.filter(function (r) { return ore_(r.belop) === ore_(t.belop) && r.vipps_apnet; });
+      return k.length === 1 ? k[0].id : '';
+    };
     trans.forEach(function (t) {
-      if (!(t.belop > 0) || sett[t.id] || annetArrangement_(t.tekst)) return;
+      if (!(t.belop > 0) || annetArrangement_(t.tekst)) return;
+      settNa[t.id] = 1;
+      var u = umatchet[t.id];
+      if (u) {
+        // Sett før uten treff, ofte fordi navnet manglet («under behandling»). Har navnet kommet nå, kobles den.
+        var igjen = finnPameldingForBetaling_(t, ventende);
+        if (igjen && igjen !== 'FLERE') {
+          kobl(igjen, t);
+          oppdaterBankRad_(u.rad, { status: 'KOBLET', pamelding: igjen.id, navn: t.navn, tekst: bankTekst(t), bokforing: t.bokforing });
+        } else {
+          // Skriver bare det som er endret, så arket ikke oppdateres hvert minutt
+          var ny = { navn: t.navn, tekst: bankTekst(t), bokforing: t.bokforing, pamelding: forslag(t) }, endret = {};
+          Object.keys(ny).forEach(function (k) { if (String(ny[k] || '') !== u[k]) endret[k] = ny[k]; });
+          if (Object.keys(endret).length) oppdaterBankRad_(u.rad, endret);
+          if (!u.varslet && Date.now() - u.sett > UMATCHET_VARSEL_TIMER * 36e5) {
+            oppdaterBankRad_(u.rad, { varslet: new Date() });
+            varsler.push(varselIkkeKoblet_(t, igjen === 'FLERE', ventende.filter(function (r) { return ore_(r.belop) === ore_(t.belop); })));
+          }
+        }
+        return;
+      }
+      if (sett[t.id]) return;
       if (!priser[ore_(t.belop)]) {
         var hvem = deltakerForBetaling_(t, ventende);
         if (!hvem) return; // en vanlig vipps som ikke gjelder juletreffet
@@ -1080,17 +1132,10 @@ function sjekkBank_() {
         varsler.push(varselFeilBelop_(t, hvem));
         return;
       }
-      var treff = finnPameldingForBetaling_(t, ventende), status = 'UMATCHET', id = '', kandidater = ventende.slice();
+      var treff = finnPameldingForBetaling_(t, ventende), status = 'UMATCHET', id = '';
       if (treff && treff !== 'FLERE') {
-        var stempel = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd.MM HH:mm');
-        var felt = { status: 'BETALT', betalt: new Date(), bank_id: t.id, gebyr: 0, betaling: 'manuell',
-          notat: [treff.notat, stempel + ' Betaling funnet i banken'].filter(String).join(' | ').slice(-500) };
-        oppdater_(treff._rad, felt);
-        Object.assign(treff, felt);
-        bekreftes.push(treff);
-        ventende.splice(ventende.indexOf(treff), 1);
-        betalte.push(treff);
-        status = 'KOBLET'; id = treff.id; koblet++;
+        kobl(treff, t);
+        status = 'KOBLET'; id = treff.id;
       } else if (!treff && betalte.some(function (r) {
         // Samme navn og beløp som en som nettopp betalte: trolig samme betaling igjen
         // (reservert først, bokført etterpå), eller at noen betalte to ganger.
@@ -1098,11 +1143,14 @@ function sjekkBank_() {
       })) {
         status = 'DUPLIKAT';
       }
-      lagre(t, status, id);
-      if (status === 'UMATCHET') {
-        var samme = kandidater.filter(function (r) { return ore_(r.belop) === ore_(t.belop); });
-        varsler.push(varselIkkeKoblet_(t, treff === 'FLERE', samme));
-      }
+      // Ikke koblet: varsel kommer først etter UMATCHET_VARSEL_TIMER, hvis navnet ikke dukker opp før det
+      lagre(t, status, status === 'UMATCHET' ? forslag(t) : id);
+    });
+    // Ukoblet betaling som ikke lenger finnes i banken: den var «under behandling» og er bokført på nytt
+    // under en annen ID, som er koblet over. Den skjules i adminsiden.
+    if (trans.length) Object.keys(umatchet).forEach(function (bid) {
+      var u = umatchet[bid];
+      if (!settNa[bid] && Date.now() - u.sett < 2 * 864e5) oppdaterBankRad_(u.rad, { status: 'BORTE' });
     });
   } finally { lock.releaseLock(); }
   // E-postene sendes etter at låsen er sluppet, så andre forespørsler ikke må vente på Gmail.
@@ -1775,7 +1823,7 @@ function adminOversikt_(okt) {
         telefon: r.telefon, kommentar: r.kommentar, belop: r.belop, betaling: r.betaling, betalt: r.betalt,
         trukket: r.trukket, refundert: r.refundert, refusjon: r.refusjon, notat: r.notat, test: erTest_(r), varslet: r.varslet, purret: r.purret,
         program: r.program, purringer: antallPurringer_(r), mott: r.mott, takket: r.takket,
-        vippsNavn: r.vipps_navn, gebyr: r.gebyr, bankId: r.bank_id, vippsNaa: !!aktivRef_(r),
+        vippsNavn: r.vipps_navn, vippsApnet: r.vipps_apnet, gebyr: r.gebyr, bankId: r.bank_id, vippsNaa: !!aktivRef_(r),
         utenEpost: HOLDER_PLASS.indexOf(r.status) >= 0 && !r.epost_sendt && !epostVenter_(r) };
     })
   };
@@ -2272,6 +2320,8 @@ function adminPurring_(p) {
     ubetalte.forEach(function (r) {
       if (antallPurringer_(r) >= MAKS_PURRINGER) { ferdig++; return; }
       if (r.purret && new Date(r.purret).getTime() > grense) { hoppet++; return; }
+      // Trykket «Åpne Vipps» det siste døgnet: har trolig betalt, og betalingen er bare ikke kommet til banken ennå
+      if (r.vipps_apnet && new Date(r.vipps_apnet).getTime() > Date.now() - 24 * 36e5) { hoppet++; return; }
       try {
         sendPurring_(r);
         oppdater_(r._rad, { purret: new Date(), purringer: antallPurringer_(r) + 1 });
@@ -2283,7 +2333,7 @@ function adminPurring_(p) {
   if (feilet && !sendt) return { ok: false, error: 'Ingen purringer ble sendt. Dagens e-postkvote kan være brukt opp.' };
   if (!sendt && !hoppet && ferdig) return { ok: false, error: 'Alle ubetalte har fått ' + MAKS_PURRINGER + ' purringer. Frigi plassene deres hvis betalingen ikke kommer.' };
   return { ok: true, melding: 'Purring sendt til ' + sendt + (sendt === 1 ? ' person' : ' personer') + '.' +
-    (hoppet ? ' ' + hoppet + ' ble hoppet over fordi de fikk purring det siste døgnet.' : '') +
+    (hoppet ? ' ' + hoppet + ' ble hoppet over fordi de fikk purring eller trykket «Åpne Vipps» det siste døgnet.' : '') +
     (ferdig ? ' ' + ferdig + ' har fått ' + MAKS_PURRINGER + ' purringer og kan miste plassen.' : '') +
     (feilet ? ' ' + feilet + ' feilet.' : '') };
 }
