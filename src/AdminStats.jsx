@@ -982,7 +982,7 @@ export default function AdminStats({ okt, onLogout }) {
               </b>
               <div className="liten">
                 Send en påminnelse med Vipps-info til alle som ikke har betalt.
-                De som fikk purring det siste døgnet, hoppes over.
+                De som fikk purring eller trykket «Åpne Vipps» det siste døgnet, hoppes over.
               </div>
             </div>
             {bekreftPurring ? (
@@ -1126,6 +1126,9 @@ export default function AdminStats({ okt, onLogout }) {
                           <div className="liten varsel">
                             ⚠️ Fikk ikke bekreftelsen på e-post. Send den på nytt.
                           </div>
+                        )}
+                        {r.vippsApnet && r.status === "UBETALT" && (
+                          <div className="liten">💸 Betalt i Vipps {dato(r.vippsApnet)}, venter på banken</div>
                         )}
                         {r.purringer > 0 && r.status === "UBETALT" && (
                           <div className={`liten ${r.purringer >= maksPurringer ? "varsel" : ""}`}>
