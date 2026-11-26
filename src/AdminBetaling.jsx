@@ -211,7 +211,7 @@ export default function AdminBetaling({ data, okt, onLogout, last }) {
                     <td className="c-fra">
                       {b.navn ||
                         (/pending/i.test(b.bokforing) &&
-                          "Reservert i banken. Navnet kommer når banken bokfører den, og da kobles den selv.")}
+                          "Reservert i banken. Navnet kommer når banken bokfører den.")}
                       <div className="liten">{b.tekst}</div>
                     </td>
                     <td className="c-status">
