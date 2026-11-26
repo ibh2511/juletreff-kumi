@@ -836,6 +836,16 @@ function varselFeilBelop_(t, r) {
     'Deltakeren har e-post ' + r.epost + ' hvis du vil be om resten av beløpet.' };
 }
 
+function varselReservasjon_(r, t) {
+  var hvem = r.vipps_navn || r.fornavn + ' ' + r.etternavn;
+  return { emne: 'Sjekk betalingen til ' + hvem + ' (' + kroner_(t.belop) + ')', tekst:
+    'En reservert betaling uten navn ble koblet automatisk til påmelding ' + r.id + ' fra ' + hvem +
+    ', som var den eneste som ventet på beløpet og nettopp hadde trykket Vipps.\n\n' +
+    'Nå har banken bokført ' + kroner_(t.belop) + ' fra ' + t.navn + (t.dato ? ' (' + t.dato + ')' : '') + ', og navnet passer ikke. ' +
+    'Sjekk i nettbanken om ' + hvem + ' har betalt. Har de ikke det, kan du trekke plassen i adminsiden. ' +
+    'Betalingen står under «Innbetalinger som ikke ble koblet» til du trykker «Ignorer».' };
+}
+
 function varselIkkeKoblet_(t, flere, samme) {
   return { emne: 'Betaling som ikke ble koblet (' + kroner_(t.belop) + ')', tekst:
     'Det har kommet ' + kroner_(t.belop) + ' fra ' + (t.navn || 'ukjent') + (t.dato ? ' (' + t.dato + ')' : '') + ', ' +
@@ -1097,7 +1107,7 @@ function sjekkBank_() {
   var nye = 0, koblet = 0;
   try {
     var bsh = sheet_(BANK_ARK), B = {}; BANK_KOLONNER.forEach(function (k, i) { B[k] = i; });
-    var sett = {}, feilSett = {}, umatchet = {};
+    var sett = {}, feilSett = {}, umatchet = {}, reservasjoner = {};
     // Ukoblede betalinger fra før varselet ble forsinket, har allerede gitt varsel
     var props = PropertiesService.getScriptProperties();
     var varselFra = Number(props.getProperty('UMATCHET_VARSEL_FRA')) || 0;
@@ -1105,6 +1115,7 @@ function sjekkBank_() {
     bsh.getDataRange().getValues().slice(1).forEach(function (r, i) {
       sett[String(r[B.bank_id])] = 1;
       if (r[B.status] === 'FEIL_BELOP') feilSett[r[B.pamelding] + '|' + ore_(r[B.belop])] = 1;
+      if (r[B.status] === 'RESERVERT') reservasjoner[String(r[B.bank_id])] = { rad: i + 2, pamelding: String(r[B.pamelding]), belop: r[B.belop] };
       if (r[B.status] === 'UMATCHET') {
         var naar = new Date(r[B.sett]).getTime();
         umatchet[String(r[B.bank_id])] = { rad: i + 2, sett: naar, varslet: !!r[B.varslet] || naar < varselFra,
@@ -1125,10 +1136,10 @@ function sjekkBank_() {
       bsh.appendRow([new Date(), t.id, t.dato, t.belop, t.navn, bankTekst(t), t.type, t.bokforing, status, id, ''].map(celle_));
       sett[t.id] = 1; nye++;
     };
-    var kobl = function (treff, t) {
+    var kobl = function (treff, t, hva) {
       var stempel = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd.MM HH:mm');
       var felt = { status: 'BETALT', betalt: new Date(), bank_id: t.id, gebyr: 0, betaling: 'manuell',
-        notat: [treff.notat, stempel + ' Betaling funnet i banken'].filter(String).join(' | ').slice(-500) };
+        notat: [treff.notat, stempel + ' ' + (hva || 'Betaling funnet i banken')].filter(String).join(' | ').slice(-500) };
       oppdater_(treff._rad, felt);
       Object.assign(treff, felt);
       bekreftes.push(treff);
@@ -1141,16 +1152,48 @@ function sjekkBank_() {
       var k = ventende.filter(function (r) { return ore_(r.belop) === ore_(t.belop) && r.vipps_apnet; });
       return k.length === 1 ? k[0].id : '';
     };
+    // Reservert betaling uten navn og melding: banken sier ikke hvem den er fra før den er bokført.
+    var utenNavn = function (x) {
+      return x.belop > 0 && !x.navn && /pending/i.test(x.bokforing) && !idITekst_(x.tekst) && !annetArrangement_(x.tekst);
+    };
+    var reservert = {}; // slike reservasjoner per beløp som ikke er koblet, telt før noe lagres under
+    trans.forEach(function (x) { if (utenNavn(x) && (!sett[x.id] || umatchet[x.id])) reservert[ore_(x.belop)] = (reservert[ore_(x.belop)] || 0) + 1; });
+    // Kobles bare når det er én slik reservasjon på beløpet, og den eneste som venter på beløpet og har trykket Vipps,
+    // gjorde det fra 10 minutter før til 30 minutter etter at reservasjonen dukket opp. Navnet sjekkes når banken bokfører.
+    var reservasjon = function (t, forst) {
+      var id = utenNavn(t) && reservert[ore_(t.belop)] === 1 && forslag(t);
+      var r = id && ventende.filter(function (x) { return x.id === id; })[0];
+      var d = r ? forst - new Date(r.vipps_apnet).getTime() : NaN;
+      return d > -10 * 60000 && d < 30 * 60000 ? r : null;
+    };
+    // Automatisk koblet reservasjon som banken har bokført (med navn, eventuelt under en ny ID): passer navnet?
+    var iBanken = {}; trans.forEach(function (x) { iBanken[x.id] = x; });
+    Object.keys(reservasjoner).forEach(function (bid) {
+      var rv = reservasjoner[bid], naa = iBanken[bid];
+      var p = rader.filter(function (r) { return r.id === rv.pamelding; })[0];
+      if (!p || !trans.length || (naa && !naa.navn)) return; // fortsatt reservert uten navn
+      var nye = trans.filter(function (x) { return ore_(x.belop) === ore_(rv.belop) && x.navn && (x.id === bid || !sett[x.id]); });
+      var bok = nye.filter(function (x) { return navnPasser_(p, x.tekst); })[0];
+      if (bok) {
+        oppdaterBankRad_(rv.rad, { status: 'KOBLET', navn: bok.navn, tekst: bankTekst(bok), bokforing: bok.bokforing });
+        if (bok.id !== bid) lagre(bok, 'BOKFORT', p.id); // samme betaling, bokført under en ny ID
+      } else if (nye.length) {
+        oppdaterBankRad_(rv.rad, { status: 'SJEKK' });
+        varsler.push(varselReservasjon_(p, nye[0]));
+      } // ellers er den borte fra listen, men ikke bokført ennå: vent
+      // shortcut: bokfører banken den aldri (eller etter mer enn tre dager), venter raden for alltid uten varsel. Legg til en frist hvis det skjer.
+    });
     trans.forEach(function (t) {
       if (!(t.belop > 0) || annetArrangement_(t.tekst)) return;
       settNa[t.id] = 1;
       var u = umatchet[t.id];
       if (u) {
         // Sett før uten treff, ofte fordi navnet manglet («under behandling»). Har navnet kommet nå, kobles den.
-        var igjen = finnPameldingForBetaling_(t, ventende);
+        var igjen = finnPameldingForBetaling_(t, ventende), res = !igjen && reservasjon(t, u.sett);
+        if (res) igjen = res;
         if (igjen && igjen !== 'FLERE') {
-          kobl(igjen, t);
-          oppdaterBankRad_(u.rad, { status: 'KOBLET', pamelding: igjen.id, navn: t.navn, tekst: bankTekst(t), bokforing: t.bokforing });
+          kobl(igjen, t, res && 'Reservert betaling uten navn koblet automatisk');
+          oppdaterBankRad_(u.rad, { status: res ? 'RESERVERT' : 'KOBLET', pamelding: igjen.id, navn: t.navn, tekst: bankTekst(t), bokforing: t.bokforing });
         } else {
           // Skriver bare det som er endret, så arket ikke oppdateres hvert minutt
           var ny = { navn: t.navn, tekst: bankTekst(t), bokforing: t.bokforing, pamelding: forslag(t) }, endret = {};
@@ -1175,9 +1218,11 @@ function sjekkBank_() {
         return;
       }
       var treff = finnPameldingForBetaling_(t, ventende), status = 'UMATCHET', id = '';
+      var res = !treff && reservasjon(t, Date.now());
+      if (res) treff = res;
       if (treff && treff !== 'FLERE') {
-        kobl(treff, t);
-        status = 'KOBLET'; id = treff.id;
+        kobl(treff, t, res && 'Reservert betaling uten navn koblet automatisk');
+        status = res ? 'RESERVERT' : 'KOBLET'; id = treff.id;
       } else if (!treff && betalte.some(function (r) {
         // Samme navn og beløp som en som nettopp betalte: trolig samme betaling igjen
         // (reservert først, bokført etterpå), eller at noen betalte to ganger.
@@ -1909,7 +1954,7 @@ function bankRader_() {
   if (!sh) return [];
   var B = {}; BANK_KOLONNER.forEach(function (k, i) { B[k] = i; });
   return sh.getDataRange().getValues().slice(1).filter(function (r) {
-    return ['UMATCHET', 'FEIL_BELOP', 'DUPLIKAT'].indexOf(r[B.status]) >= 0;
+    return ['UMATCHET', 'FEIL_BELOP', 'DUPLIKAT', 'SJEKK'].indexOf(r[B.status]) >= 0;
   }).map(function (r) {
     var d = r[B.dato] instanceof Date ? Utilities.formatDate(r[B.dato], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(r[B.dato]);
     return { bankId: String(r[B.bank_id]), sett: r[B.sett], dato: d, belop: Number(r[B.belop]), navn: String(r[B.navn]),
