@@ -1375,8 +1375,7 @@ export default function AdminStats({ okt, onLogout }) {
           besøksstatistikken, og neste påmelding får JT-1001. En kopi lagres i
           «Arkiv»-faner i regnearket. Antall plasser, Vipps-innstilling og
           passord beholdes. Innbetalinger fra før nullstillingen kobles aldri til
-          nye påmeldinger. Kommer det en ny innbetaling samme dag, kobler du den
-          selv under «Innbetalinger som ikke ble koblet».
+          nye påmeldinger.
         </p>
         {medBetaling > 0 ? (
           <p className="liten">

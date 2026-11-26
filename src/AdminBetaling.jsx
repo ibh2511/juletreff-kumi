@@ -21,6 +21,7 @@ const BANKSTATUS = {
   FEIL_BELOP: { tekst: "Feil beløp", klasse: "warn" },
   DUPLIKAT: { tekst: "Mulig dobbel betaling", klasse: "info" },
   SJEKK: { tekst: "Koblet automatisk, sjekk", klasse: "warn" },
+  NULLSTILT: { tekst: "Trolig test fra før nullstillingen", klasse: "info" },
 }
 
 // Salg per betalingsløsning, innbetalinger fra banken som ikke ble koblet, og tilkoblingen til SpareBank 1.

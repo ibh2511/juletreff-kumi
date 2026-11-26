@@ -1112,12 +1112,22 @@ function sjekkBank_() {
   var sist = Date.parse(cfg_('BANK_SIST_SJEKKET', '')) || Date.now();
   var trans = bankTransaksjoner_(Math.min(14, Math.max(3, Math.ceil((Date.now() - sist) / 864e5) + 1)));
   PropertiesService.getScriptProperties().setProperty('BANK_SIST_SJEKKET', new Date().toISOString());
-  // Innbetalinger fra før «Nullstill» hører til testene: de som var lagret, og de fra dager før, hoppes over.
-  // Fra selve dagen kobles ingenting automatisk. De lagres som ukoblet, så du kobler eller ignorerer dem i admin.
-  // shortcut: bokfører banken en reservasjon fra før nullstillingen med en senere dato, kobles den som ny. Ikke sett ennå.
-  var nullstilt = JSON.parse(cfg_('BANK_NULLSTILT', '{}'));
+  // Innbetalinger fra før «Nullstill» hører til testene: de som var lagret, og alt datert dagene før, hoppes over.
+  // En reservasjon fra før kan bli bokført samme dag under en ny ID, nå med navn. Den første nye bokførte på samme
+  // beløp den dagen kobles derfor ikke, men vises i admin («NULLSTILT»). Alt annet kobles som vanlig.
+  // shortcut: får den bokførte en senere dato enn nullstillingsdagen, kobles den som ny. Ikke sett ennå.
+  var nullstilt = JSON.parse(cfg_('BANK_NULLSTILT', '{}')), forNullstill = nullstilt.reservert || [];
   trans = trans.filter(function (t) { return !(nullstilt.dag && t.dato && t.dato < nullstilt.dag); });
-  var usikker = function (t) { return !!nullstilt.dag && (!t.dato || t.dato === nullstilt.dag); };
+  // Bokført under samme ID: den hoppes over (ID-en er kjent), og reservasjonen er ferdig
+  var bokfortSamme = {}; trans.forEach(function (t) { if (t.navn) bokfortSamme[t.id] = 1; });
+  forNullstill = forNullstill.filter(function (r) { return !bokfortSamme[r.id]; });
+  var fraForNullstill = function (t) {
+    if (!t.navn || t.dato !== nullstilt.dag) return false;
+    var i = forNullstill.map(function (r) { return ore_(r.belop); }).indexOf(ore_(t.belop));
+    if (i < 0) return false;
+    forNullstill.splice(i, 1);
+    return true;
+  };
   var lock = LockService.getScriptLock();
   if (!lock.tryLock(15000)) return { ok: true, opptatt: true };
   var varsler = [], bekreftes = [];
@@ -1178,14 +1188,14 @@ function sjekkBank_() {
     var aktuelle = {};
     trans.forEach(function (x) {
       var forst = !sett[x.id] ? Date.now() : umatchet[x.id] ? umatchet[x.id].sett : 0;
-      if (utenNavn(x) && !usikker(x) && Date.now() - forst < 40 * 60000) aktuelle[ore_(x.belop)] = (aktuelle[ore_(x.belop)] || 0) + 1;
+      if (utenNavn(x) && Date.now() - forst < 40 * 60000) aktuelle[ore_(x.belop)] = (aktuelle[ore_(x.belop)] || 0) + 1;
     });
     // De som venter på beløpet og trykket Vipps fra 30 minutter før til 10 minutter etter at reservasjonen dukket opp.
     // Er de like mange som de aktuelle reservasjonene på beløpet, kobles reservasjonen til den som trykket nærmest i tid.
     // Hvem som får hvilken, spiller ingen rolle før banken bokfører dem med navn, og da sjekkes navnene samlet.
     var reservasjon = function (t, forst) {
       var naer = function (r) { return Math.abs(forst - new Date(r.vipps_apnet).getTime()); };
-      var k = !utenNavn(t) || usikker(t) ? [] : ventende.filter(function (r) {
+      var k = !utenNavn(t) ? [] : ventende.filter(function (r) {
         var d = forst - new Date(r.vipps_apnet).getTime();
         return ore_(r.belop) === ore_(t.belop) && r.vipps_apnet && d > -10 * 60000 && d < 30 * 60000;
       });
@@ -1205,7 +1215,7 @@ function sjekkBank_() {
       if (!p) return;
       // Bokførte betalinger på beløpet: reservasjonene, og nye som ikke kobles til andre som venter
       var nye = trans.filter(function (x) {
-        return ore_(x.belop) === A && x.navn && !usikker(x) && (reservasjoner[x.id] || (!sett[x.id] && !finnPameldingForBetaling_(x, ventende)));
+        return ore_(x.belop) === A && x.navn && (reservasjoner[x.id] || (!sett[x.id] && !finnPameldingForBetaling_(x, ventende)));
       });
       var bok = nye.filter(function (x) { return navnPasser_(p, x.tekst) && !(venter[A] && reservasjoner[x.id]); })[0];
       if (bok) {
@@ -1223,7 +1233,7 @@ function sjekkBank_() {
       var u = umatchet[t.id];
       if (u) {
         // Sett før uten treff, ofte fordi navnet manglet («under behandling»). Har navnet kommet nå, kobles den.
-        var igjen = usikker(t) ? null : finnPameldingForBetaling_(t, ventende), res = !igjen && reservasjon(t, u.sett);
+        var igjen = finnPameldingForBetaling_(t, ventende), res = !igjen && reservasjon(t, u.sett);
         if (res) igjen = res;
         if (igjen && igjen !== 'FLERE') {
           kobl(igjen, t, res && 'Reservert betaling uten navn koblet automatisk');
@@ -1241,7 +1251,7 @@ function sjekkBank_() {
         return;
       }
       if (sett[t.id]) return;
-      if (usikker(t)) { if (priser[ore_(t.belop)]) lagre(t, 'UMATCHET', ''); return; }
+      if (fraForNullstill(t)) { if (priser[ore_(t.belop)]) lagre(t, 'NULLSTILT', ''); return; }
       if (!priser[ore_(t.belop)]) {
         var hvem = deltakerForBetaling_(t, ventende);
         if (!hvem) return; // en vanlig vipps som ikke gjelder juletreffet
@@ -1274,6 +1284,10 @@ function sjekkBank_() {
       var u = umatchet[bid];
       if (!settNa[bid] && Date.now() - u.sett < 2 * 864e5) oppdaterBankRad_(u.rad, { status: 'BORTE' });
     });
+    if (nullstilt.reservert && forNullstill.length !== nullstilt.reservert.length) {
+      nullstilt.reservert = forNullstill;
+      props.setProperty('BANK_NULLSTILT', JSON.stringify(nullstilt));
+    }
   } finally { lock.releaseLock(); }
   // E-postene sendes etter at låsen er sluppet, så andre forespørsler ikke må vente på Gmail.
   bekreftes.forEach(function (r) { sendBekreftelse_(r); });
@@ -1989,7 +2003,7 @@ function bankRader_() {
   if (!sh) return [];
   var B = {}; BANK_KOLONNER.forEach(function (k, i) { B[k] = i; });
   return sh.getDataRange().getValues().slice(1).filter(function (r) {
-    return ['UMATCHET', 'FEIL_BELOP', 'DUPLIKAT', 'SJEKK'].indexOf(r[B.status]) >= 0;
+    return ['UMATCHET', 'FEIL_BELOP', 'DUPLIKAT', 'SJEKK', 'NULLSTILT'].indexOf(r[B.status]) >= 0;
   }).map(function (r) {
     var d = r[B.dato] instanceof Date ? Utilities.formatDate(r[B.dato], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(r[B.dato]);
     return { bankId: String(r[B.bank_id]), sett: r[B.sett], dato: d, belop: Number(r[B.belop]), navn: String(r[B.navn]),
@@ -2429,9 +2443,14 @@ function adminNullstill_(p) {
     if (vippsTest) return { ok: false, error: 'En testpåmelding er betalt i Vipps og ikke refundert. Trekk og refunder den først.' };
     var stempel = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH.mm');
     // Innbetalingene banken har vist til nå, og dagen i dag: sjekkBank_ kobler ingen av dem til nye påmeldinger.
+    // Reservasjonene som ikke er bokført ennå, huskes med beløp, for de kan komme igjen under en ny ID.
     // Høyst 200 ID-er, så det får plass i én skriptegenskap.
-    var bankId = BANK_KOLONNER.indexOf('bank_id');
-    var ider = sheet_(BANK_ARK).getDataRange().getValues().slice(1).map(function (r) { return String(r[bankId]); }).slice(-200);
+    var K = {}; BANK_KOLONNER.forEach(function (k, i) { K[k] = i; });
+    var bankRader = sheet_(BANK_ARK).getDataRange().getValues().slice(1).slice(-200);
+    var ider = bankRader.map(function (r) { return String(r[K.bank_id]); });
+    var reservert = bankRader.filter(function (r) {
+      return /pending/i.test(r[K.bokforing]) && ['UMATCHET', 'RESERVERT'].indexOf(r[K.status]) >= 0;
+    }).map(function (r) { return { id: String(r[K.bank_id]), belop: r[K.belop] }; });
     var tomt = 0;
     [PAMELDING_ARK, BESOK_ARK, BANK_ARK].forEach(function (navn) {
       var sh = sheet_(navn);
@@ -2441,7 +2460,7 @@ function adminNullstill_(p) {
       }
     });
     PropertiesService.getScriptProperties().setProperties({ NESTE_ID: '1001', BANK_NULLSTILT: JSON.stringify({
-      dag: Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd'), ider: ider }) });
+      dag: Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd'), ider: ider, reservert: reservert }) });
     return { ok: true, melding: 'Alt er nullstilt: ' + rader.length + ' påmeldinger og ' + (tomt - rader.length) +
       ' besøk og innbetalinger er fjernet, og neste påmelding får JT-1001. En kopi ligger i «Arkiv»-faner i regnearket.' };
   } finally { lock.releaseLock(); }
@@ -2711,7 +2730,7 @@ function dagligRapport(tvungen) {
   var utenEpost = rader.filter(function (r) { return HOLDER_PLASS.indexOf(r.status) >= 0 && !r.epost_sendt && !epostVenter_(r); });
   var venteliste = (antall.VENTELISTE || 0) > 0 && ledige > 0;
   var ukoblet = [];
-  try { ukoblet = bankRader_().filter(function (b) { return b.status !== 'DUPLIKAT'; }); } catch (err) { console.error(err); }
+  try { ukoblet = bankRader_().filter(function (b) { return b.status !== 'DUPLIKAT' && b.status !== 'NULLSTILT'; }); } catch (err) { console.error(err); }
   var bankFeil = cfg_('BANK_FEIL', '') && a.vippsModus !== 'api';
 
   // Etter arrangementet er det bare penger som skal tilbake og sletting av persondata som følges opp.
