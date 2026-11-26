@@ -173,6 +173,12 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt, onVente
     kopier(String(Math.round(Number(info.belop) || 0))).catch(() => {})
   }
 
+  // PC: vi ser ikke når QR-koden skannes, så deltakeren sier selv fra. Samme signal som «Åpne Vipps» på mobil.
+  const harBetalt = () => {
+    meldVipps()
+    visVenting()
+  }
+
   // «Kopier» og «Kopiert!» ligger oppå hverandre, og bare den ene vises. Da er knappen like bred før og
   // etter trykket, og den hopper ikke ned under nummeret når teksten blir lengre.
   const kopiKnapp = (tekst, hva) => (
@@ -312,6 +318,9 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt, onVente
             </div>
           </li>
         </ol>
+        <button type="button" className="vipps-endre vipps-har-betalt" onClick={harBetalt}>
+          Jeg har betalt
+        </button>
       </>
     )
   } else {
@@ -362,7 +371,7 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt, onVente
 
   if (venterFra) {
     // Samme tid som backend venter før den rolige e-posten (VIPPS_VENT_MIN i Code.gs)
-    const lenge = naa - venterFra > 60 * 60000
+    const lenge = naa - venterFra > 90 * 60000
     return (
       <div className="vipps-card vipps-sjekker">
         <p className="vipps-ref vipps-ref-topp">Påmeldings-ID: {info.id}</p>
@@ -374,7 +383,7 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt, onVente
           <span className="setning">Plassen din er holdt av.</span>{" "}
           <span className="setning">Ikke betal på nytt.</span>
         </p>
-        <p className="vipps-bekreftes">Det tar vanligvis noen minutter, av og til opptil en time.</p>
+        <p className="vipps-bekreftes">Det tar vanligvis noen minutter, men kan ta mer enn en time.</p>
         <dl className="vipps-fakta vipps-sjekker-kort">
           <div>
             <dt>Beløp</dt>

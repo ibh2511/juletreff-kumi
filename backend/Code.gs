@@ -715,7 +715,7 @@ var BANK_STRAKS_TIMER = 2;
 var EPOST_VENT_MIN = 5;
 // Trykket deltakeren «Åpne Vipps» eller kopierte nummeret, har de trolig betalt, og Vipps privat kan bruke litt tid
 // før betalingen kommer til banken. Da venter vi så mange minutter, og sender så en rolig e-post i stedet.
-var VIPPS_VENT_MIN = 60;
+var VIPPS_VENT_MIN = 90;
 var BANK_OFTE_TIMER = 48;
 var BANK_OFTE_MIN = 5;
 var BANK_SJELDEN_MIN = 15;
@@ -958,6 +958,33 @@ function navnTreff_(navn, tekst) {
   return t.indexOf(' ' + o[0] + ' ') >= 0 && t.indexOf(' ' + o[o.length - 1] + ' ') >= 0;
 }
 
+/** Hvor mange bokstaver som må byttes, legges til eller fjernes for å gjøre a om til b. */
+function avstand_(a, b) {
+  var d = [];
+  for (var i = 0; i <= a.length; i++) d[i] = [i];
+  for (var j = 1; j <= b.length; j++) d[0][j] = j;
+  for (i = 1; i <= a.length; i++) {
+    for (j = 1; j <= b.length; j++) {
+      d[i][j] = Math.min(d[i - 1][j] + 1, d[i][j - 1] + 1, d[i - 1][j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+  }
+  return d[a.length][b.length];
+}
+
+/**
+ * Fornavnet står i bankteksten, og etternavnet nesten: en skrivefeil eller et avkortet navn,
+ * som «Christian Ihn» for Christian Ihle. Høyst to bokstaver feil, og bare for etternavn på fire bokstaver eller mer.
+ */
+function nestenNavnTreff_(navn, tekst) {
+  var o = navnOrd_(navn);
+  if (o.length < 2) return false;
+  var ord = navnOrd_(tekst), fornavn = o[0], etter = o[o.length - 1];
+  if (ord.indexOf(fornavn) < 0 || etter.length < 4) return false;
+  return ord.some(function (w) {
+    return w !== fornavn && w.length >= 3 && (avstand_(w, etter) <= 2 || etter.indexOf(w) === 0);
+  });
+}
+
 /** Minst ett av navnene (tre bokstaver eller mer) står i bankteksten. */
 function delvisNavnTreff_(navn, tekst) {
   var t = ' ' + navnOrd_(tekst).join(' ') + ' ';
@@ -1009,6 +1036,12 @@ function finnPameldingForBetaling_(t, ventende) {
     if (Object.keys(eposter).length === 1) return navn[navn.length - 1];
     return 'FLERE';
   }
+  // Nesten likt navn: fornavnet stemmer, og etternavnet er feilstavet eller avkortet i banken.
+  // Bare når det gjelder én av dem som venter på beløpet.
+  var nesten = kand.filter(function (r) {
+    return nestenNavnTreff_(r.vipps_navn || fulltNavn_(r), t.tekst) || nestenNavnTreff_(fulltNavn_(r), t.tekst);
+  });
+  if (nesten.length === 1) return nesten[0];
   // Reserve: deltakeren brukte et annet navn enn i Vipps (kallenavn, nytt etternavn). Venter bare én på dette
   // beløpet, og minst ett av navnene står i bankteksten, er det nesten sikkert den.
   if (kand.length === 1 && (delvisNavnTreff_(kand[0].vipps_navn || fulltNavn_(kand[0]), t.tekst) || delvisNavnTreff_(fulltNavn_(kand[0]), t.tekst))) {

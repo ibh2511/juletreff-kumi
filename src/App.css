@@ -1535,6 +1535,12 @@ h2.tittel { white-space: nowrap; font-size: clamp(18px, 6.4vw, 34px); letter-spa
   font-weight: 500;
   cursor: pointer;
 }
+.vipps-endre.vipps-har-betalt {
+  display: block;
+  margin: 18px auto 0;
+  padding: 8px 24px;
+  font-size: 15px;
+}
 .vipps-endre[aria-expanded="true"] {
   background: rgba(237, 183, 125, 0.12);
 }
