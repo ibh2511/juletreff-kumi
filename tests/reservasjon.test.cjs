@@ -57,6 +57,19 @@ assert.strictEqual(status('r1'), 'SJEKK');
 assert.strictEqual(status('b1'), 'UMATCHET');
 assert.match(varsler[0], /Sjekk betalingen til Kari Nordmann/);
 
+// Bokført under ny ID mens reservasjonen fortsatt står i listen: samme betaling, ikke «mulig dobbel betaling»
+ny(); rader.push(pers('JT-1', 'Kari', 'Nordmann', -3)); trans = [res('r1')]; sjekk();
+trans = [res('r1'), res('b1', 'Kari Nordmann', 'BOOKED')]; sjekk(60);
+assert.strictEqual(status('r1'), 'KOBLET');
+assert.strictEqual(status('b1'), 'BOKFORT');
+
+// Reservasjonen er borte, og Ola betaler sine 600 kr samtidig: Olas betaling kobles til Ola, ikke falsk alarm for Kari
+ny(); rader.push(pers('JT-1', 'Kari', 'Nordmann', -3), pers('JT-2', 'Ola', 'Hansen', null)); trans = [res('r1')]; sjekk();
+trans = [res('o1', 'Ola Hansen', 'BOOKED')]; sjekk(10);
+assert.strictEqual(status('r1'), 'RESERVERT');
+assert.strictEqual(status('o1'), 'KOBLET');
+assert.deepStrictEqual(varsler, []);
+
 // Borte fra listen, men ikke bokført ennå: vent
 ny(); rader.push(pers('JT-1', 'Kari', 'Nordmann', -3)); trans = [res('r1')]; sjekk();
 trans = [res('x', 'Noen', 'BOOKED')]; trans[0].belop = 250; sjekk(5);

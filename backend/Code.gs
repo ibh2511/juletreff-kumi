@@ -1171,13 +1171,16 @@ function sjekkBank_() {
     Object.keys(reservasjoner).forEach(function (bid) {
       var rv = reservasjoner[bid], naa = iBanken[bid];
       var p = rader.filter(function (r) { return r.id === rv.pamelding; })[0];
-      if (!p || !trans.length || (naa && !naa.navn)) return; // fortsatt reservert uten navn
-      var nye = trans.filter(function (x) { return ore_(x.belop) === ore_(rv.belop) && x.navn && (x.id === bid || !sett[x.id]); });
+      if (!p || !trans.length) return;
+      // Nye betalinger med navn på beløpet, unntatt dem som kobles til andre som venter
+      var nye = trans.filter(function (x) {
+        return ore_(x.belop) === ore_(rv.belop) && x.navn && (x.id === bid || (!sett[x.id] && !finnPameldingForBetaling_(x, ventende)));
+      });
       var bok = nye.filter(function (x) { return navnPasser_(p, x.tekst); })[0];
       if (bok) {
         oppdaterBankRad_(rv.rad, { status: 'KOBLET', navn: bok.navn, tekst: bankTekst(bok), bokforing: bok.bokforing });
         if (bok.id !== bid) lagre(bok, 'BOKFORT', p.id); // samme betaling, bokført under en ny ID
-      } else if (nye.length) {
+      } else if (nye.length && !(naa && !naa.navn)) { // står den fortsatt uten navn, venter vi
         oppdaterBankRad_(rv.rad, { status: 'SJEKK' });
         varsler.push(varselReservasjon_(p, nye[0]));
       } // ellers er den borte fra listen, men ikke bokført ennå: vent
