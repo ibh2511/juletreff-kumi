@@ -794,7 +794,7 @@ export default function App() {
                   juletreff på KUMI i Oslobukta <b>{info.dato},</b> med lokalet for oss selv.
                 </p>
                 <p>
-                  Etterpå går vi til{" "}
+                  Middagen på KUMI varer til 21.20. Etterpå går vi til{" "}
                   <a
                     href="https://www.munch.no/mat-drikke-MUNCH/munch-bar/"
                     target="_blank"

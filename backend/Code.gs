@@ -1749,7 +1749,7 @@ function sendRefundertEpost_(r, belop) {
     'Spørsmål? Svar på denne e-posten.');
 }
 
-var STANDARD_PROGRAM = '18.30 Ankomst på KUMI\n19.00 Middag serveres\n19.30 Birger\n20.45 Vi går videre til MUNCH bar';
+var STANDARD_PROGRAM = '18.30 Ankomst på KUMI\n19.00 Middag serveres\n19.30 Birger\n21.20 Vi går videre til MUNCH bar';
 var STANDARD_TAKK = 'Tusen takk for at du var med på juletreffet på KUMI! Vi håper du koste deg like mye som oss.\n\nGod jul og godt nytt år!';
 var MUNCH_BAR_URL = 'https://www.munch.no/mat-drikke-MUNCH/munch-bar/';
 var MUNCH_MENY_URL = 'https://www.munch.no/globalassets/foto-munch/mat-og-drikke/menyer/munch-bar-13th-17.10.pdf';
