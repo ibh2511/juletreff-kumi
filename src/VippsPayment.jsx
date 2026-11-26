@@ -173,6 +173,12 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt, onVente
     kopier(String(Math.round(Number(info.belop) || 0))).catch(() => {})
   }
 
+  // PC: vi ser ikke når QR-koden skannes, så deltakeren sier selv fra. Samme signal som «Åpne Vipps» på mobil.
+  const harBetalt = () => {
+    meldVipps()
+    visVenting()
+  }
+
   // «Kopier» og «Kopiert!» ligger oppå hverandre, og bare den ene vises. Da er knappen like bred før og
   // etter trykket, og den hopper ikke ned under nummeret når teksten blir lengre.
   const kopiKnapp = (tekst, hva) => (
@@ -312,6 +318,9 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt, onVente
             </div>
           </li>
         </ol>
+        <button type="button" className="vipps-endre vipps-har-betalt" onClick={harBetalt}>
+          Jeg har betalt
+        </button>
       </>
     )
   } else {
