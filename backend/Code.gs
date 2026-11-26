@@ -1112,6 +1112,12 @@ function sjekkBank_() {
   var sist = Date.parse(cfg_('BANK_SIST_SJEKKET', '')) || Date.now();
   var trans = bankTransaksjoner_(Math.min(14, Math.max(3, Math.ceil((Date.now() - sist) / 864e5) + 1)));
   PropertiesService.getScriptProperties().setProperty('BANK_SIST_SJEKKET', new Date().toISOString());
+  // Innbetalinger fra før «Nullstill» hører til testene: de som var lagret, og de fra dager før, hoppes over.
+  // Fra selve dagen kobles ingenting automatisk. De lagres som ukoblet, så du kobler eller ignorerer dem i admin.
+  // shortcut: bokfører banken en reservasjon fra før nullstillingen med en senere dato, kobles den som ny. Ikke sett ennå.
+  var nullstilt = JSON.parse(cfg_('BANK_NULLSTILT', '{}'));
+  trans = trans.filter(function (t) { return !(nullstilt.dag && t.dato && t.dato < nullstilt.dag); });
+  var usikker = function (t) { return !!nullstilt.dag && (!t.dato || t.dato === nullstilt.dag); };
   var lock = LockService.getScriptLock();
   if (!lock.tryLock(15000)) return { ok: true, opptatt: true };
   var varsler = [], bekreftes = [];
@@ -1133,6 +1139,7 @@ function sjekkBank_() {
           navn: String(r[B.navn]), tekst: String(r[B.tekst]), bokforing: String(r[B.bokforing]), pamelding: String(r[B.pamelding] || '') };
       }
     });
+    (nullstilt.ider || []).forEach(function (id) { sett[id] = 1; });
     var settNa = {};
 
     var nylig = Date.now() - 4 * 864e5;
@@ -1171,14 +1178,14 @@ function sjekkBank_() {
     var aktuelle = {};
     trans.forEach(function (x) {
       var forst = !sett[x.id] ? Date.now() : umatchet[x.id] ? umatchet[x.id].sett : 0;
-      if (utenNavn(x) && Date.now() - forst < 40 * 60000) aktuelle[ore_(x.belop)] = (aktuelle[ore_(x.belop)] || 0) + 1;
+      if (utenNavn(x) && !usikker(x) && Date.now() - forst < 40 * 60000) aktuelle[ore_(x.belop)] = (aktuelle[ore_(x.belop)] || 0) + 1;
     });
     // De som venter på beløpet og trykket Vipps fra 30 minutter før til 10 minutter etter at reservasjonen dukket opp.
     // Er de like mange som de aktuelle reservasjonene på beløpet, kobles reservasjonen til den som trykket nærmest i tid.
     // Hvem som får hvilken, spiller ingen rolle før banken bokfører dem med navn, og da sjekkes navnene samlet.
     var reservasjon = function (t, forst) {
       var naer = function (r) { return Math.abs(forst - new Date(r.vipps_apnet).getTime()); };
-      var k = !utenNavn(t) ? [] : ventende.filter(function (r) {
+      var k = !utenNavn(t) || usikker(t) ? [] : ventende.filter(function (r) {
         var d = forst - new Date(r.vipps_apnet).getTime();
         return ore_(r.belop) === ore_(t.belop) && r.vipps_apnet && d > -10 * 60000 && d < 30 * 60000;
       });
@@ -1198,7 +1205,7 @@ function sjekkBank_() {
       if (!p) return;
       // Bokførte betalinger på beløpet: reservasjonene, og nye som ikke kobles til andre som venter
       var nye = trans.filter(function (x) {
-        return ore_(x.belop) === A && x.navn && (reservasjoner[x.id] || (!sett[x.id] && !finnPameldingForBetaling_(x, ventende)));
+        return ore_(x.belop) === A && x.navn && !usikker(x) && (reservasjoner[x.id] || (!sett[x.id] && !finnPameldingForBetaling_(x, ventende)));
       });
       var bok = nye.filter(function (x) { return navnPasser_(p, x.tekst) && !(venter[A] && reservasjoner[x.id]); })[0];
       if (bok) {
@@ -1216,7 +1223,7 @@ function sjekkBank_() {
       var u = umatchet[t.id];
       if (u) {
         // Sett før uten treff, ofte fordi navnet manglet («under behandling»). Har navnet kommet nå, kobles den.
-        var igjen = finnPameldingForBetaling_(t, ventende), res = !igjen && reservasjon(t, u.sett);
+        var igjen = usikker(t) ? null : finnPameldingForBetaling_(t, ventende), res = !igjen && reservasjon(t, u.sett);
         if (res) igjen = res;
         if (igjen && igjen !== 'FLERE') {
           kobl(igjen, t, res && 'Reservert betaling uten navn koblet automatisk');
@@ -1234,6 +1241,7 @@ function sjekkBank_() {
         return;
       }
       if (sett[t.id]) return;
+      if (usikker(t)) { if (priser[ore_(t.belop)]) lagre(t, 'UMATCHET', ''); return; }
       if (!priser[ore_(t.belop)]) {
         var hvem = deltakerForBetaling_(t, ventende);
         if (!hvem) return; // en vanlig vipps som ikke gjelder juletreffet
@@ -2420,6 +2428,10 @@ function adminNullstill_(p) {
     var vippsTest = rader.filter(function (r) { return erTest_(r) && r.status === 'BETALT' && r.betaling === 'vipps' && !r.refundert; }).length;
     if (vippsTest) return { ok: false, error: 'En testpåmelding er betalt i Vipps og ikke refundert. Trekk og refunder den først.' };
     var stempel = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH.mm');
+    // Innbetalingene banken har vist til nå, og dagen i dag: sjekkBank_ kobler ingen av dem til nye påmeldinger.
+    // Høyst 200 ID-er, så det får plass i én skriptegenskap.
+    var bankId = BANK_KOLONNER.indexOf('bank_id');
+    var ider = sheet_(BANK_ARK).getDataRange().getValues().slice(1).map(function (r) { return String(r[bankId]); }).slice(-200);
     var tomt = 0;
     [PAMELDING_ARK, BESOK_ARK, BANK_ARK].forEach(function (navn) {
       var sh = sheet_(navn);
@@ -2428,7 +2440,8 @@ function adminNullstill_(p) {
         tomt += tomArk_(sh);
       }
     });
-    PropertiesService.getScriptProperties().setProperty('NESTE_ID', '1001');
+    PropertiesService.getScriptProperties().setProperties({ NESTE_ID: '1001', BANK_NULLSTILT: JSON.stringify({
+      dag: Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd'), ider: ider }) });
     return { ok: true, melding: 'Alt er nullstilt: ' + rader.length + ' påmeldinger og ' + (tomt - rader.length) +
       ' besøk og innbetalinger er fjernet, og neste påmelding får JT-1001. En kopi ligger i «Arkiv»-faner i regnearket.' };
   } finally { lock.releaseLock(); }

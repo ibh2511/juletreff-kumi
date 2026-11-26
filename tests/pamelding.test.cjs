@@ -119,11 +119,32 @@ for (let i = 0; i < 12; i++) pm('Mange' + i, 'mange' + i + '@x.no');
 assert.strictEqual(emner('Mange påmeldinger').length, 1);
 
 // Nullstill før lansering: alle fanene tømmes, også når de ikke har tomme rader nederst
+const dag = (d) => new Date(naa + d * DOGN).toISOString().slice(0, 10);
+const tx = (id, d, navn = 'Første Test') => ({ id, belop: 600, dato: dag(d), navn, beskrivelse: '', type: 'Straksbetaling',
+  bokforing: 'BOOKED', tekst: navn + ' Straksbetaling BOOKED' });
+let trans = [tx('test-i-dag', 0)];
+ctx.bankTransaksjoner_ = () => trans;
+ctx.sjekkBank_(); // en testbetaling fra i dag ligger i «Bank» når du nullstiller
 ark['Påmeldinger'].rader.slice(1).forEach((r, i) => ctx.oppdater_(i + 2, { test: 'ja' }));
 kall({ action: 'hit', v: 'a' }); kall({ action: 'hit', v: 'b' });
 const nullstilt = kall({ action: 'nullstill', okt: kall({ action: 'admin', passord: 'et-langt-passord-123' }).okt, bekreft: 'NULLSTILL' });
 assert.ok(nullstilt.ok, nullstilt.error);
 assert.deepStrictEqual(['Påmeldinger', 'Besøk'].map((n) => ark[n].rader.length), [1, 1]);
-assert.strictEqual(pm('Første', 'forste@x.no').id, 'JT-1001');
+const forste = pm('Første', 'forste@x.no');
+assert.strictEqual(forste.id, 'JT-1001');
+
+// Innbetalinger fra før nullstillingen kobles ikke til nye påmeldinger med samme navn: den som var lagret,
+// og en fra i går, hoppes over. En ny fra samme dag lagres bare som ukoblet, så du avgjør den i admin.
+trans = [tx('test-i-dag', 0), tx('bokfort-i-gaar', -1), tx('ny-i-dag', 0)];
+ctx.sjekkBank_();
+assert.strictEqual(rad('forste@x.no').status, 'UBETALT');
+const bankRader = () => ark['Bank'].rader.slice(1).map((r) => [r[1], r[8]].join(':'));
+assert.deepStrictEqual(bankRader(), ['ny-i-dag:UMATCHET']);
+// Dagen etter kobles betalinger som vanlig
+naa += DOGN;
+trans.push(tx('i-morgen', 0));
+ctx.sjekkBank_();
+assert.strictEqual(rad('forste@x.no').status, 'BETALT');
+assert.strictEqual(rad('forste@x.no').bank_id, 'i-morgen');
 
 console.log('pamelding ok');
