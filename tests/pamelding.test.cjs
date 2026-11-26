@@ -147,4 +147,25 @@ ctx.sjekkBank_();
 assert.strictEqual(rad('forste@x.no').status, 'BETALT');
 assert.strictEqual(rad('forste@x.no').bank_id, 'ny-i-dag');
 
+// Bryteren for egne innbetalinger: fra Isabelle Haugan og ikke prisen ignoreres, og lagrede skjules under ukoblede
+const okt2 = kall({ action: 'admin', passord: 'et-langt-passord-123' }).okt;
+const egne = (b) => kall({ action: 'innstillinger', okt: okt2, ignorerEgne: b });
+const ukoblede = () => kall({ action: 'oversikt', okt: okt2 }).bankrader.map((b) => b.bankId).filter((id) => id.startsWith('meg-'));
+pm('Isabelle', 'isabelle@x.no', { etternavn: 'Haugan' });
+const fraMeg = (id, belop) => ({ ...tx(id, 0, 'Isabelle Haugan'), belop });
+assert.ok(egne(false).ok);
+trans.push(fraMeg('meg-450', 450));
+ctx.sjekkBank_();
+assert.deepStrictEqual(ukoblede(), ['meg-450'], 'av: vises som feil beløp');
+assert.strictEqual(kall({ action: 'oversikt', okt: okt2 }).arrangement.ignorerEgne, false);
+assert.ok(egne(true).ok);
+assert.deepStrictEqual(ukoblede(), [], 'på: skjult');
+const bankFor = ark['Bank'].rader.length, varslerFor = eposter.length;
+trans.push(fraMeg('meg-1kr', 1));
+ctx.sjekkBank_();
+assert.deepStrictEqual([ark['Bank'].rader.length, eposter.length], [bankFor, varslerFor], 'på: ikke lagret, ingen varsel');
+trans.push(fraMeg('meg-600', 600));
+ctx.sjekkBank_();
+assert.deepStrictEqual([rad('isabelle@x.no').status, rad('isabelle@x.no').bank_id], ['BETALT', 'meg-600']);
+
 console.log('pamelding ok');

@@ -188,6 +188,17 @@ export default function AdminBetaling({ data, okt, onLogout, last }) {
         trykker du «Ignorer». Ser du en betaling i nettbanken som mangler her,
         bruker du «Marker som betalt» i påmeldingslisten.
       </div>
+      <label className="sjekk">
+        <input
+          type="checkbox"
+          checked={!!arr.ignorerEgne}
+          disabled={jobber}
+          onChange={(e) => kall({ action: "innstillinger", ignorerEgne: e.target.checked }, "egne", last)}
+        />
+        Ignorer innbetalinger fra {arr.egetNavn} som ikke er {formatPrice(arr.pris)}. Slå av når du tester
+        med testlenken på 1 kr.
+      </label>
+      {vis("egne")}
       {rader.length === 0 ? (
         <div className="tom">Ingen innbetalinger venter på kobling.</div>
       ) : (

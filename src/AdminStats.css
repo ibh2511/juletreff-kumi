@@ -781,8 +781,9 @@
 .valgkort em { font-style: normal; font-size: 12px; font-weight: 600; color: #8a5300; }
 .valgkort em.ok { color: #1e6b33; }
 .valgkort em.mangler { color: #b3261e; }
-.innstilling .sjekk { display: flex; gap: 8px; align-items: center; font-size: 13px; cursor: pointer; }
-.innstilling .sjekk input { accent-color: #1e6b33; }
+.innstilling .sjekk, .panel > .sjekk { display: flex; gap: 8px; align-items: center; font-size: 13px; cursor: pointer; }
+.innstilling .sjekk input, .panel > .sjekk input { accent-color: #1e6b33; }
+.panel > .sjekk { margin: 8px 0; }
 
 /* Vipps og bank */
 .under-tittel { font-size: 15px; margin: 20px 0 6px; color: #5b4a3a; }
