@@ -383,7 +383,7 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt, onVente
           <span className="setning">Plassen din er holdt av.</span>{" "}
           <span className="setning">Ikke betal på nytt.</span>
         </p>
-        <p className="vipps-bekreftes">Det tar vanligvis noen minutter, men kan ta mer enn en time.</p>
+        <p className="vipps-bekreftes">Det tar vanligvis noen minutter, men kan av og til ta lengre tid ved mye trafikk i Vipps.</p>
         <dl className="vipps-fakta vipps-sjekker-kort">
           <div>
             <dt>Beløp</dt>
