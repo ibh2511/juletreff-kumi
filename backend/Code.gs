@@ -1913,7 +1913,7 @@ function bankRader_() {
   }).map(function (r) {
     var d = r[B.dato] instanceof Date ? Utilities.formatDate(r[B.dato], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(r[B.dato]);
     return { bankId: String(r[B.bank_id]), sett: r[B.sett], dato: d, belop: Number(r[B.belop]), navn: String(r[B.navn]),
-      tekst: String(r[B.tekst]), status: r[B.status], forslag: String(r[B.pamelding] || '') };
+      tekst: String(r[B.tekst]), status: r[B.status], forslag: String(r[B.pamelding] || ''), bokforing: String(r[B.bokforing]) };
   }).reverse().slice(0, 50);
 }
 

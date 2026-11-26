@@ -209,7 +209,9 @@ export default function AdminBetaling({ data, okt, onLogout, last }) {
                     <td className="liten c-dato">{b.dato}</td>
                     <td className="tall c-belop">{kr2(b.belop)}</td>
                     <td className="c-fra">
-                      {b.navn}
+                      {b.navn ||
+                        (/pending/i.test(b.bokforing) &&
+                          "Reservert i banken. Navnet kommer når banken bokfører den, og da kobles den selv.")}
                       <div className="liten">{b.tekst}</div>
                     </td>
                     <td className="c-status">
