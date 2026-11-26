@@ -44,7 +44,8 @@ export default function AdminBetaling({ data, okt, onLogout, last }) {
     (o, k) => ({ ...o, [k]: (pb.bedrift[k] || 0) + (pb.privat[k] || 0) }),
     {}
   )
-  const rader = data.bankrader || []
+  // Nyeste først, etter når betalingen dukket opp i banken
+  const rader = [...(data.bankrader || [])].sort((a, b) => new Date(b.sett) - new Date(a.sett))
   const ubetalte = data.deltakere.filter((r) => r.status === "UBETALT")
   const redirect = `${API_URL}?action=bank`
 
@@ -207,7 +208,7 @@ export default function AdminBetaling({ data, okt, onLogout, last }) {
                 const v = valgt[b.bankId] ?? (ubetalte.some((r) => r.id === b.forslag) ? b.forslag : "")
                 return (
                   <tr key={b.bankId}>
-                    <td className="liten c-dato">{b.dato}</td>
+                    <td className="liten c-dato">{tid(b.sett) || b.dato}</td>
                     <td className="tall c-belop">{kr2(b.belop)}</td>
                     <td className="c-fra">
                       {b.navn ||
