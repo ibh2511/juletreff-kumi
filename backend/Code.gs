@@ -1037,9 +1037,10 @@ function finnPameldingForBetaling_(t, ventende) {
     return 'FLERE';
   }
   // Nesten likt navn: fornavnet stemmer, og etternavnet er feilstavet eller avkortet i banken.
-  // Bare når det gjelder én av dem som venter på beløpet.
+  // Bare når det gjelder én av dem som venter på beløpet. Sammenligner bare med navnet på betaleren,
+  // ellers kunne ord som «NOK» eller «Vipps» i resten av bankteksten telle som et nesten likt etternavn.
   var nesten = kand.filter(function (r) {
-    return nestenNavnTreff_(r.vipps_navn || fulltNavn_(r), t.tekst) || nestenNavnTreff_(fulltNavn_(r), t.tekst);
+    return nestenNavnTreff_(r.vipps_navn || fulltNavn_(r), t.navn) || nestenNavnTreff_(fulltNavn_(r), t.navn);
   });
   if (nesten.length === 1) return nesten[0];
   // Reserve: deltakeren brukte et annet navn enn i Vipps (kallenavn, nytt etternavn). Venter bare én på dette
