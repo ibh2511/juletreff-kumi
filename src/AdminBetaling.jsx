@@ -110,6 +110,7 @@ export default function AdminBetaling({ data, okt, onLogout, last }) {
   const fakta = [
     bank.konto && ["Konto", bank.konto],
     bank.sistSjekket && ["Sist sjekket", tid(bank.sistSjekket)],
+    bank.pause && ["Pause", "Banken sa at vi spurte for ofte. Den spørres igjen om noen minutter."],
     bank.utloper && [
       "BankID gyldig til",
       new Date(bank.utloper).toLocaleDateString("nb-NO", { dateStyle: "long" }),

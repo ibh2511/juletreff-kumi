@@ -558,7 +558,7 @@ function sjekkBetaling_(id, nokkel, fraUtloser, sjekkBanken) {
   // Vipps privat: betalingen finnes i banken, ikke hos Vipps.
   if (forst.status === 'UBETALT' && !aktivRef_(forst)) {
     if (sjekkBanken && bankKlar_()) {
-      try { sjekkBankHvisLenge_(20); } catch (err) { console.error('Banksjekk feilet: ' + err); }
+      try { sjekkBankHvisLenge_(BANK_MELLOMROM_SEK); } catch (err) { console.error('Banksjekk feilet: ' + err); }
       forst = finn_('id', id);
     }
     return statusSvar_(forst);
@@ -704,12 +704,16 @@ function vippsFeilForklart_(melding) {
 var SB1_AUTH = 'https://api-auth.sparebank1.no';
 var SB1_API = 'https://api.sparebank1.no';
 var SB1_ACCEPT = 'application/vnd.sparebank1.v1+json; charset=utf-8';
-// Så lenge etter en ny ubetalt påmelding eller purring spør utløseren banken hvert minutt.
-// Ellers spør den hvert 15. minutt så lenge noen ikke har betalt.
-// Hvor ofte utløseren spør banken. Hvert minutt de første to timene etter en ny ubetalt påmelding (da betaler
-// de fleste), hvert 5. minutt resten av de to døgnene, og ellers hvert 15. minutt så lenge noen ikke har betalt.
+// Hvor ofte utløseren spør banken. Så ofte grensen under tillater de første to timene etter en ny ubetalt påmelding
+// (da betaler de fleste), hvert 5. minutt resten av de to døgnene, og ellers hvert 15. minutt så lenge noen ikke har betalt.
 // Betalingssiden spør i tillegg banken selv mens deltakeren står på den. Google gir et vanlig Gmail-konto
 // 90 minutter kjøretid for utløsere i døgnet, og det deles mellom alle skriptene på kontoen.
+// SpareBank 1 tillater rundt 60 kall i timen per API. Utløseren og betalingssiden spør derfor til sammen høyst
+// én gang per BANK_MELLOMROM_SEK (40 i timen), så det er rom for «Test banken» i admin.
+// shortcut: grensen på 60 i timen er ikke bekreftet av SpareBank 1, juster hvis banken svarer 429 likevel.
+var BANK_MELLOMROM_SEK = 90;
+// Svarer banken at vi har spurt for ofte (429), venter vi så lenge før vi spør igjen.
+var BANK_PAUSE_SEK = 900;
 var BANK_STRAKS_TIMER = 2;
 // E-posten med betalingsinfo sendes først når betalingen ikke har kommet etter så mange minutter.
 var EPOST_VENT_MIN = 5;
@@ -856,6 +860,10 @@ function bankGet_(path, query) {
     });
     var code = res.getResponseCode(), txt = res.getContentText();
     if (code === 401 && forsok === 0) continue; // tokenet gikk nettopp ut: hent nytt og prøv igjen
+    if (code === 429) {
+      CacheService.getScriptCache().put('bank_pause', '1', BANK_PAUSE_SEK);
+      throw new Error('SpareBank 1 sier vi har spurt for ofte (429). Banken spørres igjen om ' + BANK_PAUSE_SEK / 60 + ' minutter.');
+    }
     if (code >= 300) throw new Error('SpareBank 1 ' + path + ' → ' + code + ': ' + txt.slice(0, 300));
     return txt ? JSON.parse(txt) : {};
   }
@@ -936,7 +944,7 @@ function bankTransaksjoner_(dager) { return bankRaa_(dager).map(normTrans_); }
 /** Spør banken høyst én gang per «sek» sekunder, uansett hvor mange som venter samtidig. */
 function sjekkBankHvisLenge_(sek) {
   var cache = CacheService.getScriptCache();
-  if (cache.get('bank_sist')) return;
+  if (cache.get('bank_sist') || cache.get('bank_pause')) return;
   cache.put('bank_sist', '1', sek);
   sjekkBank_();
 }
@@ -1220,10 +1228,9 @@ function sjekkBankUtloser() {
   }
   // Har alle betalt, trengs ikke banken før noen nye melder seg på.
   if (!alle_().some(function (r) { return r.status === 'UBETALT'; })) return;
-  cache.put('bank_sist', '1', 20);
   // Etter banksjekken, så den som nettopp betalte, får bekreftelsen og ikke betalingsinfo. Svarer ikke banken,
   // går betalingsinfoen likevel ut, ellers ville de som ikke har betalt, ventet på en e-post som aldri kom.
-  try { sjekkBank_(); } catch (err) { console.error('Banksjekken feilet: ' + err); }
+  try { sjekkBankHvisLenge_(BANK_MELLOMROM_SEK); } catch (err) { console.error('Banksjekken feilet: ' + err); }
   sendVentendeBetalingsinfo_(EPOST_VENT_MIN);
 }
 
@@ -1890,7 +1897,8 @@ function bankStatus_() {
     klientId: !!cfg_('BANK_CLIENT_ID', ''), hemmelighet: !!cfg_('BANK_CLIENT_SECRET', ''), finInst: cfg_('BANK_FININST', ''),
     tilkoblet: !!cfg_('BANK_REFRESH_TOKEN', ''), klar: bankKlar_(), konto: cfg_('BANK_KONTO_NAVN', ''),
     sistSjekket: cfg_('BANK_SIST_SJEKKET', ''), tilkobletTid: cfg_('BANK_TILKOBLET', ''),
-    utloper: cfg_('BANK_REFRESH_UTLOPER', ''), feil: cfg_('BANK_FEIL', '')
+    utloper: cfg_('BANK_REFRESH_UTLOPER', ''), feil: cfg_('BANK_FEIL', ''),
+    pause: !!CacheService.getScriptCache().get('bank_pause')
   };
 }
 
