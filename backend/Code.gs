@@ -979,10 +979,13 @@ function navnOrd_(s) {
     .split(' ').filter(function (w) { return w.length > 1; });
 }
 
-/** Bryteren i admin: er innbetalingen fra EGET_NAVN og ikke prisen? Leser innstillingene én gang. */
+/**
+ * Bryteren i admin: er innbetalingen fra EGET_NAVN og ikke prisen? Leser innstillingene én gang.
+ * SpareBank 1 har navnet i beskrivelsen (navn-feltet er tomt), så hele bankteksten sjekkes.
+ */
 function egenOverforing_() {
   var paa = cfg_('IGNORER_EGNE', 'ja') === 'ja', pris = ore_(arrangement_().pris);
-  return function (x) { return paa && ore_(x.belop) !== pris && navnTreff_(EGET_NAVN, x.navn); };
+  return function (x) { return paa && ore_(x.belop) !== pris && navnTreff_(EGET_NAVN, [x.navn, x.tekst].join(' ')); };
 }
 
 /** Fornavn og etternavn må begge finnes i bankteksten. Mellomnavn i Vipps gjør ingenting. */
@@ -2013,7 +2016,7 @@ function bankRader_() {
   var egen = egenOverforing_();
   return sh.getDataRange().getValues().slice(1).filter(function (r) {
     return ['UMATCHET', 'FEIL_BELOP', 'DUPLIKAT', 'SJEKK', 'NULLSTILT'].indexOf(r[B.status]) >= 0 &&
-      !egen({ belop: r[B.belop], navn: r[B.navn] });
+      !egen({ belop: r[B.belop], navn: r[B.navn], tekst: r[B.tekst] });
   }).map(function (r) {
     var d = r[B.dato] instanceof Date ? Utilities.formatDate(r[B.dato], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(r[B.dato]);
     return { bankId: String(r[B.bank_id]), sett: r[B.sett], dato: d, belop: Number(r[B.belop]), navn: String(r[B.navn]),

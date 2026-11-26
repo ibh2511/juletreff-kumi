@@ -152,7 +152,9 @@ const okt2 = kall({ action: 'admin', passord: 'et-langt-passord-123' }).okt;
 const egne = (b) => kall({ action: 'innstillinger', okt: okt2, ignorerEgne: b });
 const ukoblede = () => kall({ action: 'oversikt', okt: okt2 }).bankrader.map((b) => b.bankId).filter((id) => id.startsWith('meg-'));
 pm('Isabelle', 'isabelle@x.no', { etternavn: 'Haugan' });
-const fraMeg = (id, belop) => ({ ...tx(id, 0, 'Isabelle Haugan'), belop });
+// Som i banken: navn-feltet er tomt, navnet står i beskrivelsen
+const fraMeg = (id, belop) => ({ ...tx(id, 0, ''), belop, beskrivelse: 'Isabelle Haugan',
+  tekst: 'Isabelle Haugan Overførsel mellom egne kontoer i MobilBank BOOKED' });
 assert.ok(egne(false).ok);
 trans.push(fraMeg('meg-450', 450));
 ctx.sjekkBank_();
