@@ -840,7 +840,7 @@ function varselReservasjon_(r, t) {
   var hvem = r.vipps_navn || r.fornavn + ' ' + r.etternavn;
   return { emne: 'Sjekk betalingen til ' + hvem + ' (' + kroner_(t.belop) + ')', tekst:
     'En reservert betaling uten navn ble koblet automatisk til påmelding ' + r.id + ' fra ' + hvem +
-    ', som var den eneste som ventet på beløpet og nettopp hadde trykket Vipps.\n\n' +
+    ', som nettopp hadde trykket Vipps.\n\n' +
     'Nå har banken bokført ' + kroner_(t.belop) + ' fra ' + t.navn + (t.dato ? ' (' + t.dato + ')' : '') + ', og navnet passer ikke. ' +
     'Sjekk i nettbanken om ' + hvem + ' har betalt. Har de ikke det, kan du trekke plassen i adminsiden. ' +
     'Betalingen står under «Innbetalinger som ikke ble koblet» til du trykker «Ignorer».' };
@@ -1156,31 +1156,44 @@ function sjekkBank_() {
     var utenNavn = function (x) {
       return x.belop > 0 && !x.navn && /pending/i.test(x.bokforing) && !idITekst_(x.tekst) && !annetArrangement_(x.tekst);
     };
-    var reservert = {}; // slike reservasjoner per beløp som ikke er koblet, telt før noe lagres under
-    trans.forEach(function (x) { if (utenNavn(x) && (!sett[x.id] || umatchet[x.id])) reservert[ore_(x.belop)] = (reservert[ore_(x.belop)] || 0) + 1; });
-    // Kobles bare når det er én slik reservasjon på beløpet, og den eneste som venter på beløpet og har trykket Vipps,
-    // gjorde det fra 10 minutter før til 30 minutter etter at reservasjonen dukket opp. Navnet sjekkes når banken bokfører.
+    // Slike reservasjoner per beløp som ikke er koblet og dukket opp de siste 40 minuttene, telt før noe lagres under
+    var aktuelle = {};
+    trans.forEach(function (x) {
+      var forst = !sett[x.id] ? Date.now() : umatchet[x.id] ? umatchet[x.id].sett : 0;
+      if (utenNavn(x) && Date.now() - forst < 40 * 60000) aktuelle[ore_(x.belop)] = (aktuelle[ore_(x.belop)] || 0) + 1;
+    });
+    // De som venter på beløpet og trykket Vipps fra 30 minutter før til 10 minutter etter at reservasjonen dukket opp.
+    // Er de like mange som de aktuelle reservasjonene på beløpet, kobles reservasjonen til den som trykket nærmest i tid.
+    // Hvem som får hvilken, spiller ingen rolle før banken bokfører dem med navn, og da sjekkes navnene samlet.
     var reservasjon = function (t, forst) {
-      var id = utenNavn(t) && reservert[ore_(t.belop)] === 1 && forslag(t);
-      var r = id && ventende.filter(function (x) { return x.id === id; })[0];
-      var d = r ? forst - new Date(r.vipps_apnet).getTime() : NaN;
-      return d > -10 * 60000 && d < 30 * 60000 ? r : null;
-    };
-    // Automatisk koblet reservasjon som banken har bokført (med navn, eventuelt under en ny ID): passer navnet?
-    var iBanken = {}; trans.forEach(function (x) { iBanken[x.id] = x; });
-    Object.keys(reservasjoner).forEach(function (bid) {
-      var rv = reservasjoner[bid], naa = iBanken[bid];
-      var p = rader.filter(function (r) { return r.id === rv.pamelding; })[0];
-      if (!p || !trans.length) return;
-      // Nye betalinger med navn på beløpet, unntatt dem som kobles til andre som venter
-      var nye = trans.filter(function (x) {
-        return ore_(x.belop) === ore_(rv.belop) && x.navn && (x.id === bid || (!sett[x.id] && !finnPameldingForBetaling_(x, ventende)));
+      var naer = function (r) { return Math.abs(forst - new Date(r.vipps_apnet).getTime()); };
+      var k = !utenNavn(t) ? [] : ventende.filter(function (r) {
+        var d = forst - new Date(r.vipps_apnet).getTime();
+        return ore_(r.belop) === ore_(t.belop) && r.vipps_apnet && d > -10 * 60000 && d < 30 * 60000;
       });
-      var bok = nye.filter(function (x) { return navnPasser_(p, x.tekst); })[0];
+      if (!k.length || k.length !== aktuelle[ore_(t.belop)]) return null;
+      aktuelle[ore_(t.belop)]--;
+      return k.sort(function (a, b) { return naer(a) - naer(b); })[0];
+    };
+    // Automatisk koblede reservasjoner som banken har bokført med navn (under samme eller ny ID): finnes navnet?
+    // Står noen av reservasjonene på beløpet fortsatt uten navn, kan den være hvem som helst av dem, så da venter vi
+    // med varselet, og godtar bare nye bokførte betalinger med riktig navn.
+    var iBanken = {}; trans.forEach(function (x) { iBanken[x.id] = x; });
+    var venter = {};
+    Object.keys(reservasjoner).forEach(function (id) { if (iBanken[id] && !iBanken[id].navn) venter[ore_(reservasjoner[id].belop)] = 1; });
+    if (trans.length) Object.keys(reservasjoner).forEach(function (bid) {
+      var rv = reservasjoner[bid], A = ore_(rv.belop);
+      var p = rader.filter(function (r) { return r.id === rv.pamelding; })[0];
+      if (!p) return;
+      // Bokførte betalinger på beløpet: reservasjonene, og nye som ikke kobles til andre som venter
+      var nye = trans.filter(function (x) {
+        return ore_(x.belop) === A && x.navn && (reservasjoner[x.id] || (!sett[x.id] && !finnPameldingForBetaling_(x, ventende)));
+      });
+      var bok = nye.filter(function (x) { return navnPasser_(p, x.tekst) && !(venter[A] && reservasjoner[x.id]); })[0];
       if (bok) {
         oppdaterBankRad_(rv.rad, { status: 'KOBLET', navn: bok.navn, tekst: bankTekst(bok), bokforing: bok.bokforing });
-        if (bok.id !== bid) lagre(bok, 'BOKFORT', p.id); // samme betaling, bokført under en ny ID
-      } else if (nye.length && !(naa && !naa.navn)) { // står den fortsatt uten navn, venter vi
+        if (!sett[bok.id]) lagre(bok, 'BOKFORT', p.id); // samme betaling, bokført under en ny ID
+      } else if (nye.length && !venter[A]) {
         oppdaterBankRad_(rv.rad, { status: 'SJEKK' });
         varsler.push(varselReservasjon_(p, nye[0]));
       } // ellers er den borte fra listen, men ikke bokført ennå: vent
