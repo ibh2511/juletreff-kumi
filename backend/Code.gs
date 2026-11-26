@@ -30,7 +30,7 @@ var BESOK_ARK = 'Besøk';
 // Det vises bare til den som har meldt seg på, i e-posten og på betalingssiden.
 var STANDARD_VIPPS_NUMMER = '';
 var STANDARD_VIPPS_NAVN = '';
-// Arrangøren (står også i vilkårene). Egne innbetalinger som ikke er prisen, ignoreres når bryteren i admin er på.
+// Arrangøren (står også i vilkårene). Egne innbetalinger som ikke er prisen, skjules under ukoblede når bryteren i admin er på.
 var EGET_NAVN = 'Isabelle Haugan';
 /** «#12345» for Vipps-nummer, «12 34 56 78» for mobilnummer. */
 function vippsTil_(nr) {
@@ -1125,9 +1125,7 @@ function sjekkBank_() {
   // beløp den dagen kobles derfor ikke, men vises i admin («NULLSTILT»). Alt annet kobles som vanlig.
   // shortcut: får den bokførte en senere dato enn nullstillingsdagen, kobles den som ny. Ikke sett ennå.
   var nullstilt = JSON.parse(cfg_('BANK_NULLSTILT', '{}')), forNullstill = nullstilt.reservert || [];
-  // Dine egne innbetalinger som ikke er prisen, lagres ikke og gir ingen varsler (bryteren i admin)
-  var egen = egenOverforing_();
-  trans = trans.filter(function (t) { return !(nullstilt.dag && t.dato && t.dato < nullstilt.dag) && !egen(t); });
+  trans = trans.filter(function (t) { return !(nullstilt.dag && t.dato && t.dato < nullstilt.dag); });
   // Bokført under samme ID: den hoppes over (ID-en er kjent), og reservasjonen er ferdig
   var bokfortSamme = {}; trans.forEach(function (t) { if (t.navn) bokfortSamme[t.id] = 1; });
   forNullstill = forNullstill.filter(function (r) { return !bokfortSamme[r.id]; });
@@ -2187,7 +2185,7 @@ function adminEndre_(p) {
  *  kapasitet   antall plasser (1–500)
  *  betaling    'privat' (deltakerne vippser til nummeret) eller 'bedrift' (Vipps-avtalen).
  *              Lagres som VIPPS_MODUS ('nummer' / 'api'). Det gamle feltet vippsModus virker fortsatt.
- *  ignorerEgne true: innbetalinger fra EGET_NAVN som ikke er prisen, ignoreres (IGNORER_EGNE, på som standard)
+ *  ignorerEgne true: innbetalinger fra EGET_NAVN som ikke er prisen, skjules under ukoblede (IGNORER_EGNE, på som standard)
  */
 function adminInnstillinger_(p) {
   if (!sjekkOkt_(p.okt)) return { ok: false, utlogget: true, error: 'Logg inn på nytt' };
@@ -2219,8 +2217,8 @@ function adminInnstillinger_(p) {
     if (p.ignorerEgne !== undefined) {
       var ie = p.ignorerEgne === true || p.ignorerEgne === 'true';
       props.setProperty('IGNORER_EGNE', ie ? 'ja' : 'nei');
-      meldinger.push(ie ? 'Innbetalinger fra ' + EGET_NAVN + ' som ikke er ' + arrangement_().pris + ' kr, blir ignorert.'
-        : 'Alle innbetalinger fra ' + EGET_NAVN + ' behandles som vanlig igjen.');
+      meldinger.push(ie ? 'Innbetalinger fra ' + EGET_NAVN + ' som ikke er ' + arrangement_().pris + ' kr, vises ikke i listen.'
+        : 'Alle innbetalinger fra ' + EGET_NAVN + ' vises i listen igjen.');
     }
     if (p.svarEpost !== undefined) {
       var se = tekst_(p.svarEpost, 120).toLowerCase();
