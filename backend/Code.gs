@@ -348,7 +348,7 @@ function pamelding_(p, test) {
 
   var lock = LockService.getScriptLock();
   lock.waitLock(15000);
-  var rad, ubetalt;
+  var rad, ubetalt, mange = false;
   try {
     var rader = alle_();
     var grense = Date.now() - VENTER_MINUTTER * 60000;
@@ -387,6 +387,8 @@ function pamelding_(p, test) {
       rad.betaling = fullt ? '' : a.vippsAktiv ? 'vipps' : 'manuell';
       if (rad.status === 'VENTER') rad.vipps_ref = rad.id;
       sheet_(PAMELDING_ARK).appendRow(KOLONNER.map(function (k) { return celle_(rad[k]); }));
+      // Mer enn 10 på 10 minutter kan være falske påmeldinger som tar plassene
+      mange = !test && rader.filter(function (r) { return !erTest_(r) && new Date(r.opprettet).getTime() > Date.now() - 10 * 60000; }).length >= 10;
       if (rad.status !== 'VENTELISTE') {
         tidligere.forEach(function (r) {
           if (r.status === 'VENTELISTE') oppdater_(r._rad, { status: 'AVBRUTT', notat: [r.notat, 'Meldte seg på igjen og fikk plass (' + rad.id + ')'].filter(String).join(' | ') });
@@ -394,6 +396,9 @@ function pamelding_(p, test) {
       }
     }
   } finally { lock.releaseLock(); }
+  // Samme tekst hver gang, så varsle_ sender den høyst hver 6. time
+  if (mange) varsle_('Mange påmeldinger på kort tid', 'Det har kommet mer enn 10 påmeldinger de siste 10 minuttene. ' +
+    'Sjekk i admin at de er ekte. Falske påmeldinger kan du trekke, så plassene blir ledige igjen.');
 
   // Den som melder seg på igjen uten å ha betalt, får betalingslenken på e-post på nytt, og siden sier fra om det.
   // Siden viser ikke selve betalingen, for den viser navnet til hvem som helst som skriver inn e-postadressen.
@@ -520,8 +525,9 @@ function betalingsinfo_(r) {
     nr: nr, mottaker: nr ? vippsTil_(nr) : '', mobil: vippsErMobil_(nr), vippsNavn: a.vippsNavn,
     lenke: vippsLenke_(nr), melding: vippsMelding_(r),
     fraNavn: r.vipps_navn || (r.fornavn + ' ' + r.etternavn),
-    // Når deltakeren trykket «Åpne Vipps» (ms), så betalingssiden viser kvitteringen og ikke stegene
-    vippsApnet: r.vipps_apnet ? new Date(r.vipps_apnet).getTime() : 0,
+    // Når deltakeren trykket «Åpne Vipps» (ms), så betalingssiden viser kvitteringen og ikke stegene.
+    // Etter et døgn uten betaling vises stegene igjen, slik purringen også regner.
+    vippsApnet: r.vipps_apnet && Date.now() - new Date(r.vipps_apnet).getTime() < 24 * 36e5 ? new Date(r.vipps_apnet).getTime() : 0,
     automatisk: bankKlar_()
   };
 }
@@ -531,7 +537,10 @@ function meldVipps_(p) {
   if (!/^JT-\d{4,}$/.test(p.id || '')) throw new Brukerfeil('Fant ikke påmeldingen');
   var o = finn_('id', p.id);
   if (!o || !p.k || String(p.k) !== String(o.nokkel)) throw new Brukerfeil('Fant ikke påmeldingen');
-  if (o.status === 'UBETALT' && !o.vipps_apnet) oppdater_(o._rad, { vipps_apnet: new Date() });
+  // Et nytt trykk teller når det forrige er over 30 minutter gammelt, for eksempel når de betaler dager senere.
+  if (o.status === 'UBETALT' && !(o.vipps_apnet && Date.now() - new Date(o.vipps_apnet).getTime() < 30 * 60000)) {
+    oppdater_(o._rad, { vipps_apnet: new Date() });
+  }
   return { ok: true };
 }
 
@@ -1092,14 +1101,16 @@ function markerPrivatBetalt_(r, bankId, notat) {
 }
 
 /**
- * Henter innbetalinger fra de siste tre dagene og kobler dem til påmeldinger som ikke er betalt.
+ * Henter innbetalinger siden forrige sjekk (minst tre dager) og kobler dem til påmeldinger som ikke er betalt.
  * Bare innbetalinger med beløpet for juletreffet lagres (fanen «Bank»), så private vippsinger ikke blir liggende.
  * Unntak: har noen som venter betalt feil beløp (navnet eller påmeldings-ID-en står i bankteksten), lagres den
  * som «FEIL_BELOP» med påmeldingen som forslag, og du får en e-post. Den kobles aldri automatisk.
  */
 function sjekkBank_() {
   if (!bankKlar_()) return { ok: false, error: 'Banken er ikke koblet til' };
-  var trans = bankTransaksjoner_(3);
+  // Fra siste vellykkede sjekk, så betalinger ikke blir borte etter et brudd. Minst 3 og høyst 14 dager.
+  var sist = Date.parse(cfg_('BANK_SIST_SJEKKET', '')) || Date.now();
+  var trans = bankTransaksjoner_(Math.min(14, Math.max(3, Math.ceil((Date.now() - sist) / 864e5) + 1)));
   PropertiesService.getScriptProperties().setProperty('BANK_SIST_SJEKKET', new Date().toISOString());
   var lock = LockService.getScriptLock();
   if (!lock.tryLock(15000)) return { ok: true, opptatt: true };
@@ -1749,7 +1760,7 @@ function sendRefundertEpost_(r, belop) {
     'Spørsmål? Svar på denne e-posten.');
 }
 
-var STANDARD_PROGRAM = '18.30 Ankomst på KUMI\n19.00 Middag serveres\n19.30 Birger\n20.45 Vi går videre til MUNCH bar';
+var STANDARD_PROGRAM = '18.30 Ankomst på KUMI\n19.00 Middag serveres\n19.30 Birger\n21.30 Vi går videre til MUNCH bar';
 var STANDARD_TAKK = 'Tusen takk for at du var med på juletreffet på KUMI! Vi håper du koste deg like mye som oss.\n\nGod jul og godt nytt år!';
 var MUNCH_BAR_URL = 'https://www.munch.no/mat-drikke-MUNCH/munch-bar/';
 var MUNCH_MENY_URL = 'https://www.munch.no/globalassets/foto-munch/mat-og-drikke/menyer/munch-bar-13th-17.10.pdf';
@@ -2078,6 +2089,7 @@ function adminEndre_(p) {
       var fra = o.fornavn + ' ' + o.etternavn;
       // Den nye deltakeren får ny nøkkel, så den gamle bekreftelseslenken ikke virker lenger.
       Object.assign(ny, { nokkel: nyNokkel_(), kommentar: '', epost_sendt: '', purret: '', purringer: '', program: '', mott: '', takket: '',
+        vipps_navn: '', vipps_apnet: '',
         notat: nyttNotat('Overtatt fra ' + fra + ' (' + o.epost + ')' + (notat ? ': ' + notat : '')) });
       oppdater_(o._rad, ny);
       Object.assign(o, ny);
@@ -2349,6 +2361,24 @@ function oppdaterBankRad_(row, fields) {
 }
 
 /**
+ * Sender e-post til mange etter at låsen er sluppet. Hver e-post tar omtrent et sekund, og en påmelding venter
+ * høyst 15 sekunder på låsen. Mottakerne er merket under låsen, så to trykk samtidig ikke sender dobbelt.
+ * Feiler en e-post, settes merket tilbake med «angre».
+ */
+function sendTilAlle_(liste, send, angre) {
+  var svar = { sendt: 0, feilet: 0 };
+  liste.forEach(function (r) {
+    try { send(r); svar.sendt++; }
+    catch (err) {
+      svar.feilet++;
+      console.error('E-post feilet for ' + r.id + ': ' + err);
+      if (angre) { try { oppdater_(r._rad, angre(r)); } catch (e) { console.error(e); } }
+    }
+  });
+  return svar;
+}
+
+/**
  * Sender «ledig plass» til alle på ventelisten. Kan bare brukes når det er ledige plasser
  * og fristen ikke har gått ut. Den som melder seg på først, får plassen.
  */
@@ -2357,20 +2387,17 @@ function adminVarsleVenteliste_(p) {
   begrens_('endre', 60);
   var a = arrangement_();
   if (Date.now() > a.frist.getTime()) return { ok: false, error: 'Påmeldingsfristen har gått ut. Gi plass direkte fra ventelisten i stedet.' };
-  var sendt = 0, ledige;
+  var ledige, venter;
   var lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
     var rader = alle_();
     ledige = a.kapasitet - opptatte_(rader);
     if (ledige <= 0) return { ok: false, error: 'Det er ingen ledige plasser. Knappen virker når antallet påmeldte er under ' + a.kapasitet + '.' };
-    var venter = rader.filter(function (r) { return r.status === 'VENTELISTE' && !erTest_(r); });
+    venter = rader.filter(function (r) { return r.status === 'VENTELISTE' && !erTest_(r); });
     if (!venter.length) return { ok: false, error: 'Ingen står på ventelisten.' };
-    venter.forEach(function (r) {
-      try { sendLedigPlassEpost_(r, ledige); oppdater_(r._rad, { varslet: new Date() }); sendt++; }
-      catch (err) { console.error('Ventelistevarsel feilet for ' + r.id + ': ' + err); }
-    });
   } finally { lock.releaseLock(); }
+  var sendt = sendTilAlle_(venter, function (r) { sendLedigPlassEpost_(r, ledige); oppdater_(r._rad, { varslet: new Date() }); }).sendt;
   if (!sendt) return { ok: false, error: 'Ingen e-poster ble sendt. Dagens e-postkvote kan være brukt opp.' };
   return { ok: true, melding: 'E-post om ' + (ledige === 1 ? 'en ledig plass' : ledige + ' ledige plasser') + ' er sendt til ' +
     sendt + ' på ventelisten. Den som melder seg på først, får plassen.' };
@@ -2414,7 +2441,7 @@ function adminPurring_(p) {
   if (!sjekkOkt_(p.okt)) return { ok: false, utlogget: true, error: 'Logg inn på nytt' };
   begrens_('endre', 60);
   var grense = Date.now() - 20 * 36e5;
-  var sendt = 0, hoppet = 0, feilet = 0, ferdig = 0;
+  var hoppet = 0, ferdig = 0, ut = [];
   var lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
@@ -2425,13 +2452,12 @@ function adminPurring_(p) {
       if (r.purret && new Date(r.purret).getTime() > grense) { hoppet++; return; }
       // Trykket «Åpne Vipps» det siste døgnet: har trolig betalt, og betalingen er bare ikke kommet til banken ennå
       if (r.vipps_apnet && new Date(r.vipps_apnet).getTime() > Date.now() - 24 * 36e5) { hoppet++; return; }
-      try {
-        sendPurring_(r);
-        oppdater_(r._rad, { purret: new Date(), purringer: antallPurringer_(r) + 1 });
-        sendt++;
-      } catch (err) { feilet++; console.error('Purring feilet for ' + r.id + ': ' + err); }
+      oppdater_(r._rad, { purret: new Date(), purringer: antallPurringer_(r) + 1 });
+      ut.push(r);
     });
   } finally { lock.releaseLock(); }
+  var res = sendTilAlle_(ut, sendPurring_, function (r) { return { purret: r.purret, purringer: r.purringer }; });
+  var sendt = res.sendt, feilet = res.feilet;
   if (sendt) venterPaBank_();
   if (feilet && !sendt) return { ok: false, error: 'Ingen purringer ble sendt. Dagens e-postkvote kan være brukt opp.' };
   if (!sendt && !hoppet && ferdig) return { ok: false, error: 'Alle ubetalte har fått ' + MAKS_PURRINGER + ' purringer. Frigi plassene deres hvis betalingen ikke kommer.' };
@@ -2446,7 +2472,7 @@ function adminFellesmail_(p) {
   if (!sjekkOkt_(p.okt)) return { ok: false, utlogget: true, error: 'Logg inn på nytt' };
   begrens_('endre', 60);
   var med = p.medUbetalte === true || p.medUbetalte === 'true';
-  var sendt = 0, feilet = 0, hadde = 0;
+  var hadde = 0, ut = [];
   var lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
@@ -2456,10 +2482,12 @@ function adminFellesmail_(p) {
     if (!mottakere.length) return { ok: false, error: med ? 'Ingen er påmeldt ennå.' : 'Ingen har betalt ennå.' };
     mottakere.forEach(function (r) {
       if (r.program) { hadde++; return; }
-      try { sendProgramEpost_(r); oppdater_(r._rad, { program: new Date() }); sendt++; }
-      catch (err) { feilet++; console.error('Fellesmail feilet for ' + r.id + ': ' + err); }
+      oppdater_(r._rad, { program: new Date() });
+      ut.push(r);
     });
   } finally { lock.releaseLock(); }
+  var res = sendTilAlle_(ut, sendProgramEpost_, function () { return { program: '' }; });
+  var sendt = res.sendt, feilet = res.feilet;
   if (!sendt && feilet) return { ok: false, error: 'Ingen e-poster ble sendt. Dagens e-postkvote kan være brukt opp. Prøv igjen i morgen.' };
   if (!sendt) return { ok: false, error: 'Alle ' + hadde + ' har fått programmet fra før.' };
   return { ok: true, melding: 'Programmet er sendt til ' + sendt + (sendt === 1 ? ' person' : ' personer') + '.' +
@@ -2472,7 +2500,7 @@ function adminTakkemail_(p) {
   if (!sjekkOkt_(p.okt)) return { ok: false, utlogget: true, error: 'Logg inn på nytt' };
   begrens_('endre', 60);
   if (Date.now() < arrangement_().start.getTime()) return { ok: false, error: 'Takkemailen kan sendes når arrangementet har startet.' };
-  var sendt = 0, feilet = 0, hadde = 0;
+  var hadde = 0, ut = [];
   var lock = LockService.getScriptLock();
   lock.waitLock(20000);
   try {
@@ -2482,10 +2510,12 @@ function adminTakkemail_(p) {
     if (!mottakere.length) return { ok: false, error: 'Ingen å sende til.' };
     mottakere.forEach(function (r) {
       if (r.takket) { hadde++; return; }
-      try { sendTakkEpost_(r); oppdater_(r._rad, { takket: new Date() }); sendt++; }
-      catch (err) { feilet++; console.error('Takkemail feilet for ' + r.id + ': ' + err); }
+      oppdater_(r._rad, { takket: new Date() });
+      ut.push(r);
     });
   } finally { lock.releaseLock(); }
+  var res = sendTilAlle_(ut, sendTakkEpost_, function () { return { takket: '' }; });
+  var sendt = res.sendt, feilet = res.feilet;
   if (!sendt && feilet) return { ok: false, error: 'Ingen e-poster ble sendt. Dagens e-postkvote kan være brukt opp. Prøv igjen i morgen.' };
   if (!sendt) return { ok: false, error: 'Alle ' + hadde + ' har fått takkemailen fra før.' };
   return { ok: true, melding: 'Takkemailen er sendt til ' + sendt + (sendt === 1 ? ' person' : ' personer') + '.' +
@@ -2640,7 +2670,7 @@ function dagligRapport(tvungen) {
   if (tvungen !== true) {
     try {
       alle_().forEach(function (r) {
-        if (!erTest_(r) && HOLDER_PLASS.indexOf(r.status) >= 0 && !r.epost_sendt && sendBekreftelse_(r)) sendtPaNytt++;
+        if (!erTest_(r) && HOLDER_PLASS.indexOf(r.status) >= 0 && !r.epost_sendt && !epostVenter_(r) && sendBekreftelse_(r)) sendtPaNytt++;
       });
     } catch (err) { console.error('Nytt forsøk på bekreftelser feilet: ' + err); }
   }

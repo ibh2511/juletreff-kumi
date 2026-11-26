@@ -140,6 +140,11 @@ export default function App() {
     const sjekk = () => {
       apiGet({ action: "status", id, k })
         .then((d) => {
+          // Kuttet lenke eller slettet påmelding: si det med en gang. Skjemaet vises under.
+          if (!d.ok && /fant ikke/i.test(d.error || "")) {
+            setErrorText("Fant ikke påmeldingen. Sjekk at du åpnet hele lenken fra e-posten, eller meld deg på under.")
+            return setStatus("error")
+          }
           if (!d.ok) throw new Error(d.error)
           setDetaljer({ ...d, id, k, fraLenke: true })
           if (d.status === "BETALT") setStatus("betalt")
@@ -178,7 +183,9 @@ export default function App() {
     const sjekk = () => {
       apiGet({ action: "status", id: ventId, k: ventK, sjekk: automatisk ? "1" : "" })
         .then((d) => {
-          if (stopp || !d.ok) return
+          if (stopp) return
+          // Travelt eller for mange forespørsler: prøv igjen, som ved nettverksfeil
+          if (!d.ok) return planlegg(15000)
           if (d.status === "BETALT") {
             setDetaljer((x) => ({ ...x, ...d }))
             setStatus("betalt")
@@ -794,7 +801,7 @@ export default function App() {
                   juletreff på KUMI i Oslobukta <b>{info.dato},</b> med lokalet for oss selv.
                 </p>
                 <p>
-                  Etterpå går vi til{" "}
+                  Middagen på KUMI varer til 21.30. Etterpå går vi til{" "}
                   <a
                     href="https://www.munch.no/mat-drikke-MUNCH/munch-bar/"
                     target="_blank"
