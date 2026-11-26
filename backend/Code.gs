@@ -30,6 +30,8 @@ var BESOK_ARK = 'Besøk';
 // Det vises bare til den som har meldt seg på, i e-posten og på betalingssiden.
 var STANDARD_VIPPS_NUMMER = '';
 var STANDARD_VIPPS_NAVN = '';
+// Arrangøren (står også i vilkårene). Egne innbetalinger som ikke er prisen, ignoreres når bryteren i admin er på.
+var EGET_NAVN = 'Isabelle Haugan';
 /** «#12345» for Vipps-nummer, «12 34 56 78» for mobilnummer. */
 function vippsTil_(nr) {
   var d = String(nr || '').replace(/\D/g, '');
@@ -977,6 +979,12 @@ function navnOrd_(s) {
     .split(' ').filter(function (w) { return w.length > 1; });
 }
 
+/** Bryteren i admin: er innbetalingen fra EGET_NAVN og ikke prisen? Leser innstillingene én gang. */
+function egenOverforing_() {
+  var paa = cfg_('IGNORER_EGNE', 'ja') === 'ja', pris = ore_(arrangement_().pris);
+  return function (x) { return paa && ore_(x.belop) !== pris && navnTreff_(EGET_NAVN, x.navn); };
+}
+
 /** Fornavn og etternavn må begge finnes i bankteksten. Mellomnavn i Vipps gjør ingenting. */
 function navnTreff_(navn, tekst) {
   var o = navnOrd_(navn);
@@ -1117,7 +1125,9 @@ function sjekkBank_() {
   // beløp den dagen kobles derfor ikke, men vises i admin («NULLSTILT»). Alt annet kobles som vanlig.
   // shortcut: får den bokførte en senere dato enn nullstillingsdagen, kobles den som ny. Ikke sett ennå.
   var nullstilt = JSON.parse(cfg_('BANK_NULLSTILT', '{}')), forNullstill = nullstilt.reservert || [];
-  trans = trans.filter(function (t) { return !(nullstilt.dag && t.dato && t.dato < nullstilt.dag); });
+  // Dine egne innbetalinger som ikke er prisen, lagres ikke og gir ingen varsler (bryteren i admin)
+  var egen = egenOverforing_();
+  trans = trans.filter(function (t) { return !(nullstilt.dag && t.dato && t.dato < nullstilt.dag) && !egen(t); });
   // Bokført under samme ID: den hoppes over (ID-en er kjent), og reservasjonen er ferdig
   var bokfortSamme = {}; trans.forEach(function (t) { if (t.navn) bokfortSamme[t.id] = 1; });
   forNullstill = forNullstill.filter(function (r) { return !bokfortSamme[r.id]; });
@@ -1936,7 +1946,7 @@ function adminOversikt_(okt) {
     testlenke: testlenkeInfo_(),
     arrangement: { dato: a.dato, pris: a.pris, kapasitet: a.kapasitet, fristTekst: a.fristTekst, vippsAktiv: a.vippsAktiv,
       vippsModus: a.vippsModus, harVippsNokler: harVippsNokler_(), vippsMiljo: cfg_('VIPPS_ENV', 'test'),
-      vippsNummer: a.vippsNummer, vippsNavn: a.vippsNavn, start: a.start.toISOString(), noshow: a.noshow, rapportTil: rapportMottaker_(),
+      vippsNummer: a.vippsNummer, vippsNavn: a.vippsNavn, egetNavn: EGET_NAVN, ignorerEgne: cfg_('IGNORER_EGNE', 'ja') === 'ja', start: a.start.toISOString(), noshow: a.noshow, rapportTil: rapportMottaker_(),
       facebookUrl: facebookUrl_(), epostKvote: epostKvote_(), svarEpost: cfg_('SVAR_EPOST', ''), program: program_(), takk: takk_(), telefon: cfg_('KONTAKT_TELEFON', ''),
       maksPurringer: MAKS_PURRINGER, betaling: a.vippsAktiv ? 'bedrift' : 'privat',
       gebyrProsent: GEBYR_PROSENT, gebyrKr: GEBYR_KR, varselEpost: varselEpost_(),
@@ -2002,8 +2012,10 @@ function bankRader_() {
   var sh = ss.getSheetByName(BANK_ARK);
   if (!sh) return [];
   var B = {}; BANK_KOLONNER.forEach(function (k, i) { B[k] = i; });
+  var egen = egenOverforing_();
   return sh.getDataRange().getValues().slice(1).filter(function (r) {
-    return ['UMATCHET', 'FEIL_BELOP', 'DUPLIKAT', 'SJEKK', 'NULLSTILT'].indexOf(r[B.status]) >= 0;
+    return ['UMATCHET', 'FEIL_BELOP', 'DUPLIKAT', 'SJEKK', 'NULLSTILT'].indexOf(r[B.status]) >= 0 &&
+      !egen({ belop: r[B.belop], navn: r[B.navn] });
   }).map(function (r) {
     var d = r[B.dato] instanceof Date ? Utilities.formatDate(r[B.dato], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(r[B.dato]);
     return { bankId: String(r[B.bank_id]), sett: r[B.sett], dato: d, belop: Number(r[B.belop]), navn: String(r[B.navn]),
@@ -2175,6 +2187,7 @@ function adminEndre_(p) {
  *  kapasitet   antall plasser (1–500)
  *  betaling    'privat' (deltakerne vippser til nummeret) eller 'bedrift' (Vipps-avtalen).
  *              Lagres som VIPPS_MODUS ('nummer' / 'api'). Det gamle feltet vippsModus virker fortsatt.
+ *  ignorerEgne true: innbetalinger fra EGET_NAVN som ikke er prisen, ignoreres (IGNORER_EGNE, på som standard)
  */
 function adminInnstillinger_(p) {
   if (!sjekkOkt_(p.okt)) return { ok: false, utlogget: true, error: 'Logg inn på nytt' };
@@ -2202,6 +2215,12 @@ function adminInnstillinger_(p) {
       props.setProperty('VIPPS_NUMMER', vn);
       props.setProperty('VIPPS_NAVN', tekst_(p.vippsNavn, 60));
       meldinger.push('Nye e-poster og betalingssiden viser nå Vipps til ' + vippsTil_(vn) + '. De som allerede har fått betalingsinfo, har det gamle nummeret i e-posten sin.');
+    }
+    if (p.ignorerEgne !== undefined) {
+      var ie = p.ignorerEgne === true || p.ignorerEgne === 'true';
+      props.setProperty('IGNORER_EGNE', ie ? 'ja' : 'nei');
+      meldinger.push(ie ? 'Innbetalinger fra ' + EGET_NAVN + ' som ikke er ' + arrangement_().pris + ' kr, blir ignorert.'
+        : 'Alle innbetalinger fra ' + EGET_NAVN + ' behandles som vanlig igjen.');
     }
     if (p.svarEpost !== undefined) {
       var se = tekst_(p.svarEpost, 120).toLowerCase();
