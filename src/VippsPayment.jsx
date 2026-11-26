@@ -371,7 +371,7 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt, onVente
 
   if (venterFra) {
     // Samme tid som backend venter før den rolige e-posten (VIPPS_VENT_MIN i Code.gs)
-    const lenge = naa - venterFra > 60 * 60000
+    const lenge = naa - venterFra > 90 * 60000
     return (
       <div className="vipps-card vipps-sjekker">
         <p className="vipps-ref vipps-ref-topp">Påmeldings-ID: {info.id}</p>
@@ -383,7 +383,7 @@ export default function VippsPayment({ info, id, k, lead, notis, onBytt, onVente
           <span className="setning">Plassen din er holdt av.</span>{" "}
           <span className="setning">Ikke betal på nytt.</span>
         </p>
-        <p className="vipps-bekreftes">Det tar vanligvis noen minutter, av og til opptil en time.</p>
+        <p className="vipps-bekreftes">Det tar vanligvis noen minutter, men kan ta mer enn en time.</p>
         <dl className="vipps-fakta vipps-sjekker-kort">
           <div>
             <dt>Beløp</dt>

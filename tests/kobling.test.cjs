@@ -1,0 +1,21 @@
+// Kjør med: npm test. Sjekker hvordan en innbetaling kobles til påmeldingen (finnPameldingForBetaling_ i backend/Code.gs).
+const vm=require('vm'),fs=require('fs'),assert=require('assert');
+const ctx={console,Date,JSON,Math,String,Number,Object,Array,encodeURIComponent}; vm.createContext(ctx);
+vm.runInContext(fs.readFileSync(require('path').join(__dirname,'../backend/Code.gs'),'utf8'),ctx);
+const r=(id,f,e,x={})=>({id,fornavn:f,etternavn:e,belop:600,epost:id+'@x.no',opprettet:new Date(),...x});
+const finn=(tekst,vent,belop=600)=>{const t={belop,dato:'',tekst}; const v=ctx.finnPameldingForBetaling_(t,vent); return v&&v.id||v;};
+const ch=r('JT-1','Christian','Ihle'), kari=r('JT-2','Kari','Nordmann'), ola=r('JT-3','Ola','Hansen');
+assert.strictEqual(ctx.avstand_('ihn','ihle'),2);
+assert.strictEqual(finn('Christian Ihn · Vennebetaling',[ch,kari,ola]),'JT-1','avkortet/feilstavet etternavn');
+assert.strictEqual(finn('CHRISTIAN IHLE',[ch,kari,ola]),'JT-1','eksakt som før');
+assert.strictEqual(finn('Christian Ihl',[ch,kari,ola]),'JT-1','avkortet');
+assert.strictEqual(finn('Christian Ih',[ch,kari,ola]),null,'for kort etternavn i banken');
+assert.strictEqual(finn('Kristian Ihle',[ch,kari,ola]),null,'fornavnet må stemme når flere venter');
+assert.strictEqual(finn('Christian Ihn',[ch,r('JT-4','Christian','Ihla'),kari]),null,'to nesten-treff: ingen kobling');
+assert.strictEqual(finn('Christian Ihn',[ch,r('JT-5','Christian','Ihlen'),kari]),null,'Ihle og Ihlen er like nær: ingen kobling');
+assert.strictEqual(finn('Christian Ihn',[ch,r('JT-6','Christian','Iversen'),kari]),'JT-1','Iversen er langt unna');
+assert.strictEqual(finn('Christian Ihn',[ch,kari],500),null,'beløpet må stemme');
+assert.strictEqual(finn('Christian Vipps',[ch,kari,ola]),null,'Vipps-ord gir ikke treff');
+assert.strictEqual(finn('Ola Hanssen',[ch,kari,ola]),'JT-3');
+assert.strictEqual(finn('Kristian Ihle',[ch]),'JT-1','reserven når bare én venter, som før');
+console.log('kobling ok');
