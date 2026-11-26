@@ -134,4 +134,11 @@ ny(); rader.push(pers('JT-1', 'Kari', 'Nordmann', null)); trans = [res('r1')]; s
 rader[0].vipps_apnet = new Date(start + 20 * MIN); sjekk(21);
 assert.strictEqual(status('r1'), 'UMATCHET');
 
+// To reservasjoner og tre som trykket: når den tredje reservasjonen kommer, kobles alle (de to første ved neste sjekk)
+ny(); rader.push(pers('JT-1', 'Kari', 'Nordmann', -3), pers('JT-2', 'Ola', 'Hansen', -1), pers('JT-3', 'Per', 'Olsen', 4));
+trans = [res('r1'), res('r2')]; sjekk();
+assert.deepStrictEqual(rader.map(r => r.status), ['UBETALT', 'UBETALT', 'UBETALT']);
+trans = [res('r1'), res('r2'), res('r3')]; sjekk(5); sjekk(7);
+assert.deepStrictEqual(rader.map(r => r.status), ['BETALT', 'BETALT', 'BETALT']);
+
 console.log('reservasjon ok');
