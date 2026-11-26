@@ -1371,9 +1371,11 @@ export default function AdminStats({ okt, onLogout }) {
       <section className="panel faresone">
         <h2>Nullstill før lansering</h2>
         <p className="liten">
-          Fjerner alle påmeldinger (også tester) og besøksstatistikken, og neste
-          påmelding får JT-1001. En kopi lagres i «Arkiv»-faner i regnearket.
-          Antall plasser, Vipps-innstilling og passord beholdes.
+          Fjerner alle påmeldinger (også tester), innbetalingene og
+          besøksstatistikken, og neste påmelding får JT-1001. En kopi lagres i
+          «Arkiv»-faner i regnearket. Antall plasser, Vipps-innstilling og
+          passord beholdes. Innbetalinger fra før nullstillingen kobles aldri til
+          nye påmeldinger.
         </p>
         {medBetaling > 0 ? (
           <p className="liten">

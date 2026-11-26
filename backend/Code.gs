@@ -1112,6 +1112,22 @@ function sjekkBank_() {
   var sist = Date.parse(cfg_('BANK_SIST_SJEKKET', '')) || Date.now();
   var trans = bankTransaksjoner_(Math.min(14, Math.max(3, Math.ceil((Date.now() - sist) / 864e5) + 1)));
   PropertiesService.getScriptProperties().setProperty('BANK_SIST_SJEKKET', new Date().toISOString());
+  // Innbetalinger fra før «Nullstill» hører til testene: de som var lagret, og alt datert dagene før, hoppes over.
+  // En reservasjon fra før kan bli bokført samme dag under en ny ID, nå med navn. Den første nye bokførte på samme
+  // beløp den dagen kobles derfor ikke, men vises i admin («NULLSTILT»). Alt annet kobles som vanlig.
+  // shortcut: får den bokførte en senere dato enn nullstillingsdagen, kobles den som ny. Ikke sett ennå.
+  var nullstilt = JSON.parse(cfg_('BANK_NULLSTILT', '{}')), forNullstill = nullstilt.reservert || [];
+  trans = trans.filter(function (t) { return !(nullstilt.dag && t.dato && t.dato < nullstilt.dag); });
+  // Bokført under samme ID: den hoppes over (ID-en er kjent), og reservasjonen er ferdig
+  var bokfortSamme = {}; trans.forEach(function (t) { if (t.navn) bokfortSamme[t.id] = 1; });
+  forNullstill = forNullstill.filter(function (r) { return !bokfortSamme[r.id]; });
+  var fraForNullstill = function (t) {
+    if (!t.navn || t.dato !== nullstilt.dag) return false;
+    var i = forNullstill.map(function (r) { return ore_(r.belop); }).indexOf(ore_(t.belop));
+    if (i < 0) return false;
+    forNullstill.splice(i, 1);
+    return true;
+  };
   var lock = LockService.getScriptLock();
   if (!lock.tryLock(15000)) return { ok: true, opptatt: true };
   var varsler = [], bekreftes = [];
@@ -1133,6 +1149,7 @@ function sjekkBank_() {
           navn: String(r[B.navn]), tekst: String(r[B.tekst]), bokforing: String(r[B.bokforing]), pamelding: String(r[B.pamelding] || '') };
       }
     });
+    (nullstilt.ider || []).forEach(function (id) { sett[id] = 1; });
     var settNa = {};
 
     var nylig = Date.now() - 4 * 864e5;
@@ -1234,6 +1251,7 @@ function sjekkBank_() {
         return;
       }
       if (sett[t.id]) return;
+      if (fraForNullstill(t)) { if (priser[ore_(t.belop)]) lagre(t, 'NULLSTILT', ''); return; }
       if (!priser[ore_(t.belop)]) {
         var hvem = deltakerForBetaling_(t, ventende);
         if (!hvem) return; // en vanlig vipps som ikke gjelder juletreffet
@@ -1266,6 +1284,10 @@ function sjekkBank_() {
       var u = umatchet[bid];
       if (!settNa[bid] && Date.now() - u.sett < 2 * 864e5) oppdaterBankRad_(u.rad, { status: 'BORTE' });
     });
+    if (nullstilt.reservert && forNullstill.length !== nullstilt.reservert.length) {
+      nullstilt.reservert = forNullstill;
+      props.setProperty('BANK_NULLSTILT', JSON.stringify(nullstilt));
+    }
   } finally { lock.releaseLock(); }
   // E-postene sendes etter at låsen er sluppet, så andre forespørsler ikke må vente på Gmail.
   bekreftes.forEach(function (r) { sendBekreftelse_(r); });
@@ -1981,7 +2003,7 @@ function bankRader_() {
   if (!sh) return [];
   var B = {}; BANK_KOLONNER.forEach(function (k, i) { B[k] = i; });
   return sh.getDataRange().getValues().slice(1).filter(function (r) {
-    return ['UMATCHET', 'FEIL_BELOP', 'DUPLIKAT', 'SJEKK'].indexOf(r[B.status]) >= 0;
+    return ['UMATCHET', 'FEIL_BELOP', 'DUPLIKAT', 'SJEKK', 'NULLSTILT'].indexOf(r[B.status]) >= 0;
   }).map(function (r) {
     var d = r[B.dato] instanceof Date ? Utilities.formatDate(r[B.dato], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(r[B.dato]);
     return { bankId: String(r[B.bank_id]), sett: r[B.sett], dato: d, belop: Number(r[B.belop]), navn: String(r[B.navn]),
@@ -2420,6 +2442,15 @@ function adminNullstill_(p) {
     var vippsTest = rader.filter(function (r) { return erTest_(r) && r.status === 'BETALT' && r.betaling === 'vipps' && !r.refundert; }).length;
     if (vippsTest) return { ok: false, error: 'En testpåmelding er betalt i Vipps og ikke refundert. Trekk og refunder den først.' };
     var stempel = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd HH.mm');
+    // Innbetalingene banken har vist til nå, og dagen i dag: sjekkBank_ kobler ingen av dem til nye påmeldinger.
+    // Reservasjonene som ikke er bokført ennå, huskes med beløp, for de kan komme igjen under en ny ID.
+    // Høyst 200 ID-er, så det får plass i én skriptegenskap.
+    var K = {}; BANK_KOLONNER.forEach(function (k, i) { K[k] = i; });
+    var bankRader = sheet_(BANK_ARK).getDataRange().getValues().slice(1).slice(-200);
+    var ider = bankRader.map(function (r) { return String(r[K.bank_id]); });
+    var reservert = bankRader.filter(function (r) {
+      return /pending/i.test(r[K.bokforing]) && ['UMATCHET', 'RESERVERT'].indexOf(r[K.status]) >= 0;
+    }).map(function (r) { return { id: String(r[K.bank_id]), belop: r[K.belop] }; });
     var tomt = 0;
     [PAMELDING_ARK, BESOK_ARK, BANK_ARK].forEach(function (navn) {
       var sh = sheet_(navn);
@@ -2428,7 +2459,8 @@ function adminNullstill_(p) {
         tomt += tomArk_(sh);
       }
     });
-    PropertiesService.getScriptProperties().setProperty('NESTE_ID', '1001');
+    PropertiesService.getScriptProperties().setProperties({ NESTE_ID: '1001', BANK_NULLSTILT: JSON.stringify({
+      dag: Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'yyyy-MM-dd'), ider: ider, reservert: reservert }) });
     return { ok: true, melding: 'Alt er nullstilt: ' + rader.length + ' påmeldinger og ' + (tomt - rader.length) +
       ' besøk og innbetalinger er fjernet, og neste påmelding får JT-1001. En kopi ligger i «Arkiv»-faner i regnearket.' };
   } finally { lock.releaseLock(); }
@@ -2698,7 +2730,7 @@ function dagligRapport(tvungen) {
   var utenEpost = rader.filter(function (r) { return HOLDER_PLASS.indexOf(r.status) >= 0 && !r.epost_sendt && !epostVenter_(r); });
   var venteliste = (antall.VENTELISTE || 0) > 0 && ledige > 0;
   var ukoblet = [];
-  try { ukoblet = bankRader_().filter(function (b) { return b.status !== 'DUPLIKAT'; }); } catch (err) { console.error(err); }
+  try { ukoblet = bankRader_().filter(function (b) { return b.status !== 'DUPLIKAT' && b.status !== 'NULLSTILT'; }); } catch (err) { console.error(err); }
   var bankFeil = cfg_('BANK_FEIL', '') && a.vippsModus !== 'api';
 
   // Etter arrangementet er det bare penger som skal tilbake og sletting av persondata som følges opp.
