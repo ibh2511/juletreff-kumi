@@ -81,9 +81,43 @@ ny(); rader.push(pers('JT-1', 'Kari', 'Nordmann', -3)); trans = [res('r1'), res(
 assert.strictEqual(rader[0].status, 'UBETALT');
 assert.strictEqual(status('r1'), 'UMATCHET');
 
-// To som venter og har trykket Vipps: ingen kobling
-ny(); rader.push(pers('JT-1', 'Kari', 'Nordmann', -3), pers('JT-2', 'Ola', 'Hansen', -50)); trans = [res('r1')]; sjekk();
+// To som nettopp trykket Vipps, men bare én reservasjon: ingen kobling
+ny(); rader.push(pers('JT-1', 'Kari', 'Nordmann', -3), pers('JT-2', 'Ola', 'Hansen', -20)); trans = [res('r1')]; sjekk();
 assert.strictEqual(status('r1'), 'UMATCHET');
+
+// Et gammelt Vipps-trykk (50 min) teller ikke med: Kari kobles
+ny(); rader.push(pers('JT-1', 'Kari', 'Nordmann', -3), pers('JT-2', 'Ola', 'Hansen', -50)); trans = [res('r1')]; sjekk();
+assert.strictEqual(status('r1'), 'RESERVERT');
+assert.strictEqual(rader[1].status, 'UBETALT');
+
+// En gammel reservasjon uten navn (fra en time siden) teller ikke med
+ny(); rader.push(pers('JT-1', 'Kari', 'Nordmann', -3)); trans = [res('r0')]; sjekk(-60);
+trans = [res('r0'), res('r1')]; sjekk();
+assert.strictEqual(status('r0'), 'UMATCHET');
+assert.strictEqual(status('r1'), 'RESERVERT');
+
+// To reservasjoner og to som nettopp trykket: begge kobles
+ny(); rader.push(pers('JT-1', 'Kari', 'Nordmann', -3), pers('JT-2', 'Ola', 'Hansen', -1)); trans = [res('r1'), res('r2')]; sjekk();
+assert.deepStrictEqual(rader.map(r => r.status), ['BETALT', 'BETALT']);
+assert.deepStrictEqual([status('r1'), status('r2')], ['RESERVERT', 'RESERVERT']);
+const kariFikk = rader[0].bank_id, olaFikk = rader[1].bank_id;
+// Banken bokfører dem omvendt av hvordan de ble fordelt, og den ene får navn før den andre: ingen falsk alarm
+trans = [res(kariFikk), res(olaFikk, 'Kari Nordmann', 'BOOKED')]; sjekk(30);
+assert.deepStrictEqual(varsler, []);
+assert.strictEqual(status(kariFikk), 'RESERVERT');
+trans = [res(kariFikk, 'Ola Hansen', 'BOOKED'), res(olaFikk, 'Kari Nordmann', 'BOOKED')]; sjekk(60);
+assert.deepStrictEqual([status('r1'), status('r2')], ['KOBLET', 'KOBLET']);
+assert.deepStrictEqual(varsler, []);
+// … men er ett av navnene feil, kommer varselet
+ny(); rader.push(pers('JT-1', 'Kari', 'Nordmann', -3), pers('JT-2', 'Ola', 'Hansen', -1)); trans = [res('r1'), res('r2')]; sjekk();
+trans = [res('r1', 'Kari Nordmann', 'BOOKED'), res('r2', 'Per Olsen', 'BOOKED')]; sjekk(60);
+assert.strictEqual(varsler.length, 1);
+assert.match(varsler[0], /Ola Hansen/);
+
+// To reservasjoner og tre som nettopp trykket: ingen kobling
+ny(); rader.push(pers('JT-1', 'Kari', 'Nordmann', -3), pers('JT-2', 'Ola', 'Hansen', -1), pers('JT-3', 'Per', 'Olsen', -5));
+trans = [res('r1'), res('r2')]; sjekk();
+assert.deepStrictEqual([status('r1'), status('r2')], ['UMATCHET', 'UMATCHET']);
 
 // Trykket Vipps for 45 minutter siden: bare forslag i admin
 ny(); rader.push(pers('JT-1', 'Kari', 'Nordmann', -45)); trans = [res('r1')]; sjekk();
