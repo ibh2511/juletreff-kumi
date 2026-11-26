@@ -7,9 +7,17 @@ const KlokkeDate = class extends Date { constructor(...a) { super(...(a.length ?
 const props = {}, cache = {}, ark = {}, eposter = [];
 let laast = false, mailFeiler = false, mailUnderLas = 0, uuid = 0;
 const lagArk = (navn) => {
+  // Som i Google: ingen tomme rader nederst før insertRowAfter, og alle radene under den frosne kan ikke slettes
   const rader = [];
+  let tomme = 0;
   return ark[navn] = {
-    rader, appendRow: (r) => rader.push(r.slice()),
+    rader, appendRow: (r) => { tomme = Math.max(0, tomme - 1); rader.push(r.slice()); },
+    getMaxRows: () => rader.length + tomme, insertRowAfter: () => { tomme++; },
+    deleteRows: (row, n) => {
+      if (rader.length + tomme - n <= 1) throw new Error('Sorry, it is not possible to delete all non-frozen rows.');
+      rader.splice(row - 1, n);
+    },
+    copyTo: () => ({ setName() {} }), getParent: () => ({}),
     getDataRange: () => ({ getValues: () => rader.map((r) => r.slice()) }),
     getRange: (row, col) => ({ setValue: (v) => { rader[row - 1][col - 1] = v; }, setValues: (v) => { rader[row - 1] = v[0].slice(); } }),
     getLastColumn: () => (rader[0] || []).length, getLastRow: () => rader.length, setFrozenRows() {},
@@ -109,5 +117,13 @@ assert.deepStrictEqual(dager, [3, 7, 14, 3]);
 naa += DOGN;
 for (let i = 0; i < 12; i++) pm('Mange' + i, 'mange' + i + '@x.no');
 assert.strictEqual(emner('Mange påmeldinger').length, 1);
+
+// Nullstill før lansering: alle fanene tømmes, også når de ikke har tomme rader nederst
+ark['Påmeldinger'].rader.slice(1).forEach((r, i) => ctx.oppdater_(i + 2, { test: 'ja' }));
+kall({ action: 'hit', v: 'a' }); kall({ action: 'hit', v: 'b' });
+const nullstilt = kall({ action: 'nullstill', okt: kall({ action: 'admin', passord: 'et-langt-passord-123' }).okt, bekreft: 'NULLSTILL' });
+assert.ok(nullstilt.ok, nullstilt.error);
+assert.deepStrictEqual(['Påmeldinger', 'Besøk'].map((n) => ark[n].rader.length), [1, 1]);
+assert.strictEqual(pm('Første', 'forste@x.no').id, 'JT-1001');
 
 console.log('pamelding ok');

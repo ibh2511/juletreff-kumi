@@ -2423,11 +2423,9 @@ function adminNullstill_(p) {
     var tomt = 0;
     [PAMELDING_ARK, BESOK_ARK, BANK_ARK].forEach(function (navn) {
       var sh = sheet_(navn);
-      var sist = sh.getLastRow();
-      if (sist > 1) {
+      if (sh.getLastRow() > 1) {
         sh.copyTo(sh.getParent()).setName('Arkiv ' + navn.toLowerCase() + ' ' + stempel);
-        sh.deleteRows(2, sist - 1);
-        tomt += sist - 1;
+        tomt += tomArk_(sh);
       }
     });
     PropertiesService.getScriptProperties().setProperty('NESTE_ID', '1001');
@@ -2543,8 +2541,8 @@ function adminSlettData_(p) {
     if (skylder) return { ok: false, error: skylder + (skylder === 1 ? ' person' : ' personer') + ' skal fortsatt ha penger tilbake. Marker dem som refundert først.' };
     var slettet = 0, arkiv = 0;
     [PAMELDING_ARK, BESOK_ARK, BANK_ARK].forEach(function (navn) {
-      var sh = sheet_(navn), sist = sh.getLastRow();
-      if (sist > 1) { if (navn === PAMELDING_ARK) slettet = sist - 1; sh.deleteRows(2, sist - 1); }
+      var n = tomArk_(sheet_(navn));
+      if (navn === PAMELDING_ARK) slettet = n;
     });
     var ss = SpreadsheetApp.openById(cfg_('SHEET_ID', STANDARD_SHEET_ID));
     ss.getSheets().forEach(function (sh) {
@@ -2795,6 +2793,18 @@ function alle_() {
 function finn_(felt, verdi) {
   var hit = alle_().filter(function (r) { return String(r[felt]) === String(verdi); });
   return hit.length ? hit[hit.length - 1] : null;
+}
+
+/**
+ * Sletter alle radene under overskriften og gir antallet. Google nekter å slette alle radene under en frosset rad
+ * («not possible to delete all non-frozen rows»), så en tom rad legges til først når fanen ikke har noen.
+ */
+function tomArk_(sh) {
+  var sist = sh.getLastRow();
+  if (sist < 2) return 0;
+  if (sh.getMaxRows() <= sist) sh.insertRowAfter(sist);
+  sh.deleteRows(2, sist - 1);
+  return sist - 1;
 }
 
 function oppdater_(rad, felt) {
