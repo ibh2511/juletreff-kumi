@@ -20,6 +20,7 @@ const BANKSTATUS = {
   UMATCHET: { tekst: "Ikke koblet", klasse: "warn" },
   FEIL_BELOP: { tekst: "Feil beløp", klasse: "warn" },
   DUPLIKAT: { tekst: "Mulig dobbel betaling", klasse: "info" },
+  SJEKK: { tekst: "Koblet automatisk, sjekk", klasse: "warn" },
 }
 
 // Salg per betalingsløsning, innbetalinger fra banken som ikke ble koblet, og tilkoblingen til SpareBank 1.
@@ -110,6 +111,7 @@ export default function AdminBetaling({ data, okt, onLogout, last }) {
   const fakta = [
     bank.konto && ["Konto", bank.konto],
     bank.sistSjekket && ["Sist sjekket", tid(bank.sistSjekket)],
+    bank.pause && ["Pause", "Banken sa at vi spurte for ofte. Den spørres igjen om noen minutter."],
     bank.utloper && [
       "BankID gyldig til",
       new Date(bank.utloper).toLocaleDateString("nb-NO", { dateStyle: "long" }),
@@ -208,7 +210,9 @@ export default function AdminBetaling({ data, okt, onLogout, last }) {
                     <td className="liten c-dato">{b.dato}</td>
                     <td className="tall c-belop">{kr2(b.belop)}</td>
                     <td className="c-fra">
-                      {b.navn}
+                      {b.navn ||
+                        (/pending/i.test(b.bokforing) &&
+                          "Reservert i banken. Navnet kommer når banken bokfører den.")}
                       <div className="liten">{b.tekst}</div>
                     </td>
                     <td className="c-status">

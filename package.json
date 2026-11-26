@@ -10,7 +10,7 @@
     "lint": "eslint .",
     "postbuild": "cp dist/index.html dist/404.html 2>/dev/null || :; touch dist/.nojekyll",
     "deploy": "npm run build && npx gh-pages -d dist -b gh-pages",
-    "test": "node tests/kobling.test.cjs"
+    "test": "node tests/kobling.test.cjs && node tests/bankgrense.test.cjs && node tests/reservasjon.test.cjs"
   },
   "dependencies": {
     "qrcode-generator": "^1.4.4",
