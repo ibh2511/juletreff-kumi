@@ -249,7 +249,10 @@ export default function AdminBetaling({ data, okt, onLogout, last }) {
                 const v = valgt[b.bankId] ?? (ubetalte.some((r) => r.id === b.forslag) ? b.forslag : "")
                 return (
                   <tr key={b.bankId}>
-                    <td className="liten c-dato">{tid(b.sett) || b.dato}</td>
+                    <td className="liten c-dato">
+                      {/* Banken gir bare datoen, ikke klokkeslettet */}
+                      {`${b.dato.slice(8, 10)}.${b.dato.slice(5, 7)}.`}
+                    </td>
                     <td className="tall c-belop">{kr2(b.belop)}</td>
                     <td className="c-fra">
                       {b.navn ||
