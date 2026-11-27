@@ -72,7 +72,7 @@ export default function AdminStats({ okt, onLogout }) {
   const [fb, setFb] = useState(null) // null = ikke endret
   const [test, setTest] = useState({ fornavn: "Test", etternavn: "Testesen", epost: "" })
   const [testType, setTestType] = useState("pamelding")
-  const tomDeltaker = { fornavn: "", etternavn: "", epost: "", telefon: "", betalt: true }
+  const tomDeltaker = { fornavn: "", etternavn: "", epost: "", telefon: "", kommentar: "", betalt: true }
   const [leggTil, setLeggTil] = useState(tomDeltaker)
   const [lenkeKopiert, setLenkeKopiert] = useState(false)
   const [svar, setSvar] = useState(null)
@@ -991,6 +991,14 @@ export default function AdminStats({ okt, onLogout }) {
                 onChange={(e) => setLeggTil({ ...leggTil, telefon: e.target.value })}
               />
             </div>
+            <textarea
+              rows={2}
+              maxLength={500}
+              aria-label="Kommentar"
+              placeholder="Kommentar (valgfritt). Står også i e-posten til deltakeren, for eksempel «Betalt av Maria Bakland»."
+              value={leggTil.kommentar}
+              onChange={(e) => setLeggTil({ ...leggTil, kommentar: e.target.value })}
+            />
             <label className="sjekk">
               <input
                 type="checkbox"
