@@ -195,8 +195,8 @@ export default function AdminBetaling({ data, okt, onLogout, last }) {
           disabled={jobber}
           onChange={(e) => kall({ action: "innstillinger", ignorerEgne: e.target.checked }, "egne", last)}
         />
-        Ignorer innbetalinger fra {arr.egetNavn} som ikke er {formatPrice(arr.pris)}. Slå av når du tester
-        med testlenken på 1 kr.
+        Skjul innbetalinger fra {arr.egetNavn} som ikke er {formatPrice(arr.pris)} i denne listen. De kobles
+        som vanlig.
       </label>
       {vis("egne")}
       {rader.length === 0 ? (
