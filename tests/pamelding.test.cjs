@@ -242,6 +242,22 @@ ctx.sjekkBank_();
 raa.push(fra('Tone Nord', 'BOOKED', 'for Milan'));
 ctx.sjekkBank_();
 assert.deepStrictEqual(bankRad('Tone Nord'), ['BOKFORT', 'DUPLIKAT']);
+// Angre betalt: koblet til feil person, så tilbake til ubetalt, og innbetalingen tilbake i listen over ukoblede
+ark['Bank'].rader.push([new Date(naa), 'angre-1', dag(0), 600, '', 'Transaksjon', 'Straksbetaling', 'PENDING', 'UMATCHET', '', '']);
+const feil = pm('Feil', 'feil.person@x.no', { etternavn: 'Person' });
+assert.ok(kall({ action: 'koble', okt: okt2, id: feil.id, bankId: 'angre-1' }).ok);
+assert.strictEqual(rad('feil.person@x.no').status, 'BETALT');
+const eposterForAngre = eposter.length;
+assert.match(kall({ action: 'endre', okt: okt2, id: feil.id, handling: 'angre' }).melding, /tilbake i listen/);
+assert.deepStrictEqual(['status', 'betalt', 'bank_id'].map((k) => rad('feil.person@x.no')[k]), ['UBETALT', '', '']);
+const angret = ark['Bank'].rader.find((r) => r[1] === 'angre-1');
+assert.deepStrictEqual([angret[8], angret[9]], ['UMATCHET', '']);
+assert.ok(kall({ action: 'oversikt', okt: okt2 }).bankrader.some((b) => b.bankId === 'angre-1'));
+assert.strictEqual(eposter.length, eposterForAngre, 'ingen e-post');
+assert.match(kall({ action: 'endre', okt: okt2, id: feil.id, handling: 'angre' }).error, /Bare betalte/);
+// Markert betalt uten kobling: bare tilbake til ubetalt
+assert.ok(kall({ action: 'endre', okt: okt2, id: tone.id, handling: 'angre' }).ok);
+assert.strictEqual(rad('tone@x.no').status, 'UBETALT');
 
 // Skjul navnet: alle innbetalinger fra navnet skjules i listen over ukoblede, og kan vises igjen
 const jonIListen = () => kall({ action: 'oversikt', okt: okt2 }).bankrader.filter((b) => b.tekst.includes('Jon Lie')).length;

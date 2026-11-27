@@ -2086,6 +2086,7 @@ function bankRader_() {
  *  trekk      trekker påmeldingen (legeerklæring), og refunderer i Vipps hvis den ble betalt der.
  *             Under 48 timer før start (sent=true) beholdes no-show-gebyret, ellers refunderes alt.
  *  refundert  markerer at pengene er sendt tilbake manuelt
+ *  angre      betalt (manuell Vipps) tilbake til ubetalt, og den koblede innbetalingen tilbake i listen over ukoblede
  *  tilbud     gir en plass fra ventelisten: settes til UBETALT, eller får Vipps-lenke på e-post
  */
 function adminEndre_(p) {
@@ -2109,6 +2110,17 @@ function adminEndre_(p) {
       o.status = 'BETALT';
       var kvittert = sendBekreftelse_(o);
       return { ok: true, melding: 'Markert som betalt.' + (kvittert ? ' ' + o.fornavn + ' har fått bekreftelse på e-post.' : ' Bekreftelsen ble ikke sendt, prøv «Send bekreftelsen på nytt» senere.') };
+    }
+    if (p.handling === 'angre') {
+      if (o.status !== 'BETALT') return { ok: false, error: 'Bare betalte påmeldinger kan settes tilbake til ikke betalt' };
+      if (o.betaling === 'vipps') return { ok: false, error: 'Betalt med Vipps bedrift. Bruk «Trekk påmeldingen» for å betale tilbake.' };
+      oppdater_(o._rad, { status: 'UBETALT', betalt: '', bank_id: '', notat: nyttNotat('Betaling angret' + (notat ? ': ' + notat : '')) });
+      // Innbetalingen som ble koblet, tilbake i listen over ukoblede. Varslet nå, så det ikke kommer et varsel om den.
+      var bAngre = o.bank_id && o.bank_id !== 'manuell' && finnBankRad_(String(o.bank_id));
+      if (bAngre) oppdaterBankRad_(bAngre.row, { status: 'UMATCHET', pamelding: '', varslet: new Date() });
+      venterPaBank_();
+      return { ok: true, melding: o.fornavn + ' står som ikke betalt igjen og beholder plassen.' +
+        (bAngre ? ' Innbetalingen er tilbake i listen over ukoblede innbetalinger.' : '') + ' Ingen e-post er sendt.' };
     }
     if (p.handling === 'trekk') {
       if (['BETALT', 'UBETALT', 'VENTELISTE'].indexOf(o.status) < 0) return { ok: false, error: 'Påmeldingen kan ikke trekkes' };

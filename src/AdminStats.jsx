@@ -255,6 +255,7 @@ export default function AdminStats({ okt, onLogout }) {
     overdra: "Gi plassen til en annen",
     tilbud: "Gi plass fra ventelisten",
     refundert: "Marker som refundert",
+    angre: "Angre betalt",
     trekk: "Trekk påmeldingen",
     slett: "Slett testen",
   }
@@ -267,6 +268,7 @@ export default function AdminStats({ okt, onLogout }) {
     overdra: "🔵",
     tilbud: "🔵",
     refundert: "🟡",
+    angre: "🟡",
     trekk: "🔴",
     slett: "⚫",
   }
@@ -1147,6 +1149,7 @@ export default function AdminStats({ okt, onLogout }) {
                     valg.push(r.purringer >= maksPurringer ? "frigi" : "purring")
                   }
                   if (["BETALT", "UBETALT"].includes(r.status)) valg.push("bekreftelse", "overdra")
+                  if (r.status === "BETALT" && r.betaling !== "vipps") valg.push("angre")
                   if (r.status === "VENTELISTE") valg.push("tilbud")
                   if (["BETALT", "UBETALT", "VENTELISTE"].includes(r.status))
                     valg.push("trekk")
@@ -1262,6 +1265,15 @@ export default function AdminStats({ okt, onLogout }) {
                                   ))}
                                 </div>
                               </>
+                            )}
+                            {aapen.handling === "angre" && (
+                              <p>
+                                {r.navn} settes tilbake til ikke betalt og
+                                beholder plassen. En innbetaling som var koblet,
+                                kommer tilbake i listen over ukoblede
+                                innbetalinger, så du kan koble den til riktig
+                                person. Ingen e-post sendes.
+                              </p>
                             )}
                             {aapen.handling === "frigi" && (
                               <p>
