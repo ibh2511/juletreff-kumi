@@ -30,8 +30,6 @@ var BESOK_ARK = 'Besøk';
 // Det vises bare til den som har meldt seg på, i e-posten og på betalingssiden.
 var STANDARD_VIPPS_NUMMER = '';
 var STANDARD_VIPPS_NAVN = '';
-// Arrangøren (står også i vilkårene). Egne innbetalinger som ikke er prisen, skjules under ukoblede når bryteren i admin er på.
-var EGET_NAVN = 'Isabelle Haugan';
 /** «#12345» for Vipps-nummer, «12 34 56 78» for mobilnummer. */
 function vippsTil_(nr) {
   var d = String(nr || '').replace(/\D/g, '');
@@ -1007,19 +1005,13 @@ function navnOrd_(s) {
     .split(' ').filter(function (w) { return w.length > 1; });
 }
 
-/**
- * Bryteren i admin: er innbetalingen fra EGET_NAVN og ikke prisen? Leser innstillingene én gang.
- * SpareBank 1 har navnet i beskrivelsen (navn-feltet er tomt), så hele bankteksten sjekkes.
- */
-function egenOverforing_() {
-  var paa = cfg_('IGNORER_EGNE', 'ja') === 'ja', pris = ore_(arrangement_().pris);
-  return function (x) { return paa && ore_(x.belop) !== pris && navnTreff_(EGET_NAVN, [x.navn, x.tekst].join(' ')); };
-}
-
 /** Navn som er skjult i listen over ukoblede innbetalinger i admin («Skjul navnet»), uansett beløp. */
 function skjulteNavn_() {
   try { return JSON.parse(cfg_('SKJUL_NAVN', '[]')); } catch (err) { return []; }
 }
+
+/** Bank-ID fra før ID-en ble laget av innholdet (SpareBank 1 ga samme transaksjon ny ID ved hver sjekk). */
+function gammelBankId_(id) { return !/^i[0-9a-f]{24}(-\d+)?$/.test(String(id)); }
 
 /** Fornavn og etternavn må begge finnes i bankteksten. Mellomnavn i Vipps gjør ingenting. */
 function navnTreff_(navn, tekst) {
@@ -1198,7 +1190,7 @@ function sjekkBank_() {
       if (r[B.status] === 'RESERVERT') reservasjoner[String(r[B.bank_id])] = { rad: i + 2, pamelding: String(r[B.pamelding]), belop: r[B.belop] };
       if (r[B.status] === 'UMATCHET') {
         var naar = new Date(r[B.sett]).getTime();
-        umatchet[String(r[B.bank_id])] = { rad: i + 2, sett: naar, varslet: !!r[B.varslet] || naar < varselFra,
+        umatchet[String(r[B.bank_id])] = { rad: i + 2, sett: naar, innhold: k, varslet: !!r[B.varslet] || naar < varselFra,
           navn: String(r[B.navn]), tekst: String(r[B.tekst]), bokforing: String(r[B.bokforing]), pamelding: String(r[B.pamelding] || '') };
       }
     });
@@ -1334,9 +1326,9 @@ function sjekkBank_() {
         var samme = betalte.filter(function (r) {
           return ore_(r.belop) === ore_(t.belop) && String(r.bank_id) !== t.id && navnPasser_(r, t.tekst);
         });
-        // Koblet mens den var reservert, nå bokført under en ny ID: samme betaling. Én bokført per reservasjon.
+        // Koblet mens den var reservert, eller markert betalt i admin, og nå bokført: samme betaling. Én bokført per påmelding.
         var bokf = !/pending/i.test(t.bokforing) && samme.filter(function (r) {
-          return /pending/i.test(kobletBok[String(r.bank_id)] || '') && !bokfortFor[r.id];
+          return (/pending/i.test(kobletBok[String(r.bank_id)] || '') || r.bank_id === 'manuell') && !bokfortFor[r.id];
         })[0];
         if (bokf) { status = 'BOKFORT'; id = bokf.id; bokfortFor[bokf.id] = 1; }
         else if (samme.length) status = 'DUPLIKAT';
@@ -1346,8 +1338,10 @@ function sjekkBank_() {
     });
     // Ukoblet betaling som ikke lenger finnes i banken: den var «under behandling» og er bokført på nytt
     // under en annen ID, som er koblet over. Den skjules i adminsiden.
+    // En gammel rad (bankens ID) finnes så lenge innholdet finnes i banken.
     if (trans.length) Object.keys(umatchet).forEach(function (bid) {
       var u = umatchet[bid];
+      if (gammelBankId_(bid) && nr[u.innhold]) return;
       if (!settNa[bid] && Date.now() - u.sett < 2 * 864e5) oppdaterBankRad_(u.rad, { status: 'BORTE' });
     });
     if (nullstilt.reservert && forNullstill.length !== nullstilt.reservert.length) {
@@ -2002,7 +1996,7 @@ function adminOversikt_(okt) {
     testlenke: testlenkeInfo_(),
     arrangement: { dato: a.dato, pris: a.pris, kapasitet: a.kapasitet, fristTekst: a.fristTekst, vippsAktiv: a.vippsAktiv,
       vippsModus: a.vippsModus, harVippsNokler: harVippsNokler_(), vippsMiljo: cfg_('VIPPS_ENV', 'test'),
-      vippsNummer: a.vippsNummer, vippsNavn: a.vippsNavn, egetNavn: EGET_NAVN, ignorerEgne: cfg_('IGNORER_EGNE', 'ja') === 'ja', skjulteNavn: skjulteNavn_(), start: a.start.toISOString(), noshow: a.noshow, rapportTil: rapportMottaker_(),
+      vippsNummer: a.vippsNummer, vippsNavn: a.vippsNavn, skjulteNavn: skjulteNavn_(), start: a.start.toISOString(), noshow: a.noshow, rapportTil: rapportMottaker_(),
       facebookUrl: facebookUrl_(), epostKvote: epostKvote_(), svarEpost: cfg_('SVAR_EPOST', ''), program: program_(), takk: takk_(), telefon: cfg_('KONTAKT_TELEFON', ''),
       maksPurringer: MAKS_PURRINGER, betaling: a.vippsAktiv ? 'bedrift' : 'privat',
       gebyrProsent: GEBYR_PROSENT, gebyrKr: GEBYR_KR, varselEpost: varselEpost_(),
@@ -2068,15 +2062,16 @@ function bankRader_() {
   var sh = ss.getSheetByName(BANK_ARK);
   if (!sh) return [];
   var B = {}; BANK_KOLONNER.forEach(function (k, i) { B[k] = i; });
-  var egen = egenOverforing_(), skjult = skjulteNavn_(), forst = {};
+  var skjult = skjulteNavn_(), forst = {};
   return sh.getDataRange().getValues().slice(1).filter(function (r) {
-    // Før ID-en ble laget av innholdet, ble samme transaksjon lagret på nytt ved hver sjekk. Bare den første vises.
+    // Før ID-en ble laget av innholdet, ble samme transaksjon lagret på nytt ved hver sjekk. Gjentakelsene vises ikke.
+    // Ukoblede ble lagret på nytt og de forrige merket BORTE, så de siste ukoblede er ekte, selv når flere er like
+    // (to reservasjoner uten navn samme dag). Bare en gammel koblet eller avgjort rad gjør senere like rader til gjentakelser.
     // shortcut: gjelder bare de gamle radene (ID uten «i»-format). Kan fjernes når de er nullstilt.
-    var k = [r[B.dato], r[B.belop], r[B.bokforing], r[B.type], r[B.tekst]].join('|');
-    var gjentatt = !/^i[0-9a-f]{24}(-\d+)?$/.test(String(r[B.bank_id])) && forst[k];
-    forst[k] = 1;
+    var k = [r[B.dato], r[B.belop], r[B.bokforing], r[B.type], r[B.tekst]].join('|'), gammel = gammelBankId_(r[B.bank_id]);
+    var gjentatt = gammel && forst[k];
+    if (gammel && ['UMATCHET', 'BORTE'].indexOf(r[B.status]) < 0) forst[k] = 1;
     return !gjentatt && ['UMATCHET', 'FEIL_BELOP', 'DUPLIKAT', 'SJEKK', 'NULLSTILT'].indexOf(r[B.status]) >= 0 &&
-      !egen({ belop: r[B.belop], navn: r[B.navn], tekst: r[B.tekst] }) &&
       !skjult.some(function (n) { return navnTreff_(n, r[B.navn] + ' ' + r[B.tekst]); });
   }).map(function (r) {
     var d = r[B.dato] instanceof Date ? Utilities.formatDate(r[B.dato], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(r[B.dato]);
@@ -2249,7 +2244,6 @@ function adminEndre_(p) {
  *  kapasitet   antall plasser (1–500)
  *  betaling    'privat' (deltakerne vippser til nummeret) eller 'bedrift' (Vipps-avtalen).
  *              Lagres som VIPPS_MODUS ('nummer' / 'api'). Det gamle feltet vippsModus virker fortsatt.
- *  ignorerEgne true: innbetalinger fra EGET_NAVN som ikke er prisen, skjules under ukoblede (IGNORER_EGNE, på som standard)
  *  skjulNavn   skjuler alle innbetalinger fra navnet under ukoblede (SKJUL_NAVN). visNavn viser dem igjen.
  */
 function adminInnstillinger_(p) {
@@ -2278,12 +2272,6 @@ function adminInnstillinger_(p) {
       props.setProperty('VIPPS_NUMMER', vn);
       props.setProperty('VIPPS_NAVN', tekst_(p.vippsNavn, 60));
       meldinger.push('Nye e-poster og betalingssiden viser nå Vipps til ' + vippsTil_(vn) + '. De som allerede har fått betalingsinfo, har det gamle nummeret i e-posten sin.');
-    }
-    if (p.ignorerEgne !== undefined) {
-      var ie = p.ignorerEgne === true || p.ignorerEgne === 'true';
-      props.setProperty('IGNORER_EGNE', ie ? 'ja' : 'nei');
-      meldinger.push(ie ? 'Innbetalinger fra ' + EGET_NAVN + ' som ikke er ' + arrangement_().pris + ' kr, vises ikke i listen.'
-        : 'Alle innbetalinger fra ' + EGET_NAVN + ' vises i listen igjen.');
     }
     if (p.skjulNavn !== undefined || p.visNavn !== undefined) {
       var liste = skjulteNavn_(), sn = tekst_(p.skjulNavn !== undefined ? p.skjulNavn : p.visNavn, 80);

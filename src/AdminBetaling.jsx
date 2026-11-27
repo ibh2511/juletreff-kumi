@@ -34,6 +34,7 @@ export default function AdminBetaling({ data, okt, onLogout, last }) {
   const [kontoer, setKontoer] = useState(null)
   const [raa, setRaa] = useState("")
   const [kopiert, setKopiert] = useState(false)
+  const [nyttNavn, setNyttNavn] = useState("")
 
   const arr = data.arrangement
   const bank = data.bank || {}
@@ -188,22 +189,22 @@ export default function AdminBetaling({ data, okt, onLogout, last }) {
         trykker du «Ignorer». Ser du en betaling i nettbanken som mangler her,
         bruker du «Marker som betalt» i påmeldingslisten.
       </div>
-      <label className="sjekk">
-        <input
-          type="checkbox"
-          checked={!!arr.ignorerEgne}
-          disabled={jobber}
-          onChange={(e) => kall({ action: "innstillinger", ignorerEgne: e.target.checked }, "egne", last)}
-        />
-        Skjul innbetalinger fra {arr.egetNavn} som ikke er {formatPrice(arr.pris)} i denne listen. De kobles
-        som vanlig.
-      </label>
-      {arr.skjulteNavn?.length > 0 && (
-        <div className="skjulte-navn">
-          <span className="liten">Skjult i listen, uansett beløp:</span>
-          {arr.skjulteNavn.map((n) => (
+      <form
+        className="skjulte-navn"
+        onSubmit={(e) => {
+          e.preventDefault()
+          kall({ action: "innstillinger", skjulNavn: nyttNavn }, "egne", () => {
+            setNyttNavn("")
+            return last()
+          })
+        }}
+      >
+        <span className="liten">Navn som er skjult i listen, uansett beløp. De kobles som vanlig:</span>
+        {arr.skjulteNavn?.length ? (
+          arr.skjulteNavn.map((n) => (
             <button
               key={n}
+              type="button"
               className="mini"
               disabled={jobber}
               title="Vis i listen igjen"
@@ -211,9 +212,21 @@ export default function AdminBetaling({ data, okt, onLogout, last }) {
             >
               {n} ✕
             </button>
-          ))}
-        </div>
-      )}
+          ))
+        ) : (
+          <span className="liten">ingen ennå.</span>
+        )}
+        <input
+          type="text"
+          aria-label="Navn som skal skjules"
+          placeholder="Fornavn Etternavn"
+          value={nyttNavn}
+          onChange={(e) => setNyttNavn(e.target.value)}
+        />
+        <button type="submit" className="mini" disabled={jobber || !nyttNavn.trim()}>
+          Skjul
+        </button>
+      </form>
       {vis("egne")}
       {rader.length === 0 ? (
         <div className="tom">Ingen innbetalinger venter på kobling.</div>
