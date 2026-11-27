@@ -263,6 +263,7 @@ function route_(e, body) {
       case 'endre':     return json_(adminEndre_(p));
       case 'innstillinger': return json_(adminInnstillinger_(p));
       case 'testpamelding': return json_(adminTestpamelding_(p));
+      case 'leggtil': return json_(adminLeggTil_(p));
       case 'testlenke': return json_(adminTestlenke_(p));
       case 'varsleventeliste': return json_(adminVarsleVenteliste_(p));
       case 'nullstill': return json_(adminNullstill_(p));
@@ -329,7 +330,8 @@ function opptatte_(rader) {
 /* Påmelding                                                           */
 /* ------------------------------------------------------------------ */
 
-function pamelding_(p, test) {
+/** admin: lagt til fra adminsiden. Fristen og antall plasser gjelder ikke, telefon kan mangle, og p.betalt gir BETALT. */
+function pamelding_(p, test, admin) {
   // Skjult felt som mennesker ikke ser. Roboter fyller det ut, og får et «ok» uten at noe lagres.
   if (!test && tekst_(p.nettside, 50)) return { ok: true, waitlist: true };
   var a = arrangement_();
@@ -340,12 +342,12 @@ function pamelding_(p, test) {
   };
   if (!d.fornavn || !d.etternavn) return { ok: false, error: 'Skriv inn fornavn og etternavn' };
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(d.epost)) return { ok: false, error: 'Skriv inn en gyldig e-postadresse' };
-  if (String(d.telefon).replace(/\D/g, '').length < 8) return { ok: false, error: 'Skriv inn et gyldig telefonnummer' };
-  if (!test && !(p.bindende === true || p.bindende === 'true' || p.bindende === '1')) {
+  if (!(admin && !d.telefon) && String(d.telefon).replace(/\D/g, '').length < 8) return { ok: false, error: 'Skriv inn et gyldig telefonnummer' };
+  if (!test && !admin && !(p.bindende === true || p.bindende === 'true' || p.bindende === '1')) {
     return { ok: false, error: 'Du må bekrefte at påmeldingen er bindende' };
   }
   var testlenke = !test && testprisGyldig_(p.testpris);
-  if (!test && !testlenke && Date.now() > a.frist.getTime()) return { ok: false, stengt: true, error: 'Påmeldingen er stengt' };
+  if (!test && !admin && !testlenke && Date.now() > a.frist.getTime()) return { ok: false, stengt: true, error: 'Påmeldingen er stengt' };
   if (testlenke) test = true; // videre gjelder alt som for en testpåmelding fra admin
 
   var lock = LockService.getScriptLock();
@@ -370,7 +372,7 @@ function pamelding_(p, test) {
         }
       });
 
-      var fullt = !test && opptatte_(rader) >= a.kapasitet;
+      var fullt = !test && !admin && opptatte_(rader) >= a.kapasitet;
       if (fullt && tidligere.some(function (r) { return r.status === 'VENTELISTE'; })) {
         return { ok: true, waitlist: true };
       }
@@ -381,13 +383,18 @@ function pamelding_(p, test) {
       rad.opprettet = new Date();
       rad.belop = testlenke ? TESTPRIS_KR : a.pris;
       rad.nokkel = nyNokkel_();
-      rad.bindende_godtatt = test ? '' : new Date();
-      rad.kilde = testlenke ? 'testlenke' : test ? 'admin-test' : tekst_(p.kilde, 60);
+      rad.bindende_godtatt = test || admin ? '' : new Date();
+      rad.kilde = testlenke ? 'testlenke' : test ? 'admin-test' : admin ? 'admin' : tekst_(p.kilde, 60);
       rad.test = test ? 'ja' : '';
       if (test) rad.notat = testlenke ? 'Test med ' + TESTPRIS_KR + ' kr fra testlenken' : 'Testpåmelding fra admin';
       rad.status = fullt ? 'VENTELISTE' : a.vippsAktiv ? 'VENTER' : 'UBETALT';
       rad.betaling = fullt ? '' : a.vippsAktiv ? 'vipps' : 'manuell';
       if (rad.status === 'VENTER') rad.vipps_ref = rad.id;
+      if (admin) {
+        Object.assign(rad, { status: p.betalt ? 'BETALT' : 'UBETALT', betaling: 'manuell', vipps_ref: '',
+          notat: 'Lagt til i admin' + (p.betalt ? ', markert betalt' : '') });
+        if (p.betalt) Object.assign(rad, { betalt: new Date(), bank_id: 'manuell', gebyr: 0 });
+      }
       sheet_(PAMELDING_ARK).appendRow(KOLONNER.map(function (k) { return celle_(rad[k]); }));
       // Mer enn 10 på 10 minutter kan være falske påmeldinger som tar plassene
       mange = !test && rader.filter(function (r) { return !erTest_(r) && new Date(r.opprettet).getTime() > Date.now() - 10 * 60000; }).length >= 10;
@@ -405,6 +412,8 @@ function pamelding_(p, test) {
   // Den som melder seg på igjen uten å ha betalt, får betalingslenken på e-post på nytt, og siden sier fra om det.
   // Siden viser ikke selve betalingen, for den viser navnet til hvem som helst som skriver inn e-postadressen.
   if (ubetalt) return { ok: true, duplicate: true, ubetalt: true, sendt: sendBetalingIgjen_(ubetalt) };
+
+  if (rad.status === 'BETALT') return { ok: true, status: 'BETALT', id: rad.id, sendt: sendBekreftelse_(rad) };
 
   if (rad.status === 'VENTELISTE') {
     sendVentelisteEpost_(rad);
@@ -1004,6 +1013,11 @@ function navnOrd_(s) {
 function egenOverforing_() {
   var paa = cfg_('IGNORER_EGNE', 'ja') === 'ja', pris = ore_(arrangement_().pris);
   return function (x) { return paa && ore_(x.belop) !== pris && navnTreff_(EGET_NAVN, [x.navn, x.tekst].join(' ')); };
+}
+
+/** Navn som er skjult i listen over ukoblede innbetalinger i admin («Skjul navnet»), uansett beløp. */
+function skjulteNavn_() {
+  try { return JSON.parse(cfg_('SKJUL_NAVN', '[]')); } catch (err) { return []; }
 }
 
 /** Fornavn og etternavn må begge finnes i bankteksten. Mellomnavn i Vipps gjør ingenting. */
@@ -1987,7 +2001,7 @@ function adminOversikt_(okt) {
     testlenke: testlenkeInfo_(),
     arrangement: { dato: a.dato, pris: a.pris, kapasitet: a.kapasitet, fristTekst: a.fristTekst, vippsAktiv: a.vippsAktiv,
       vippsModus: a.vippsModus, harVippsNokler: harVippsNokler_(), vippsMiljo: cfg_('VIPPS_ENV', 'test'),
-      vippsNummer: a.vippsNummer, vippsNavn: a.vippsNavn, egetNavn: EGET_NAVN, ignorerEgne: cfg_('IGNORER_EGNE', 'ja') === 'ja', start: a.start.toISOString(), noshow: a.noshow, rapportTil: rapportMottaker_(),
+      vippsNummer: a.vippsNummer, vippsNavn: a.vippsNavn, egetNavn: EGET_NAVN, ignorerEgne: cfg_('IGNORER_EGNE', 'ja') === 'ja', skjulteNavn: skjulteNavn_(), start: a.start.toISOString(), noshow: a.noshow, rapportTil: rapportMottaker_(),
       facebookUrl: facebookUrl_(), epostKvote: epostKvote_(), svarEpost: cfg_('SVAR_EPOST', ''), program: program_(), takk: takk_(), telefon: cfg_('KONTAKT_TELEFON', ''),
       maksPurringer: MAKS_PURRINGER, betaling: a.vippsAktiv ? 'bedrift' : 'privat',
       gebyrProsent: GEBYR_PROSENT, gebyrKr: GEBYR_KR, varselEpost: varselEpost_(),
@@ -2053,7 +2067,7 @@ function bankRader_() {
   var sh = ss.getSheetByName(BANK_ARK);
   if (!sh) return [];
   var B = {}; BANK_KOLONNER.forEach(function (k, i) { B[k] = i; });
-  var egen = egenOverforing_(), forst = {};
+  var egen = egenOverforing_(), skjult = skjulteNavn_(), forst = {};
   return sh.getDataRange().getValues().slice(1).filter(function (r) {
     // Før ID-en ble laget av innholdet, ble samme transaksjon lagret på nytt ved hver sjekk. Bare den første vises.
     // shortcut: gjelder bare de gamle radene (ID uten «i»-format). Kan fjernes når de er nullstilt.
@@ -2061,7 +2075,8 @@ function bankRader_() {
     var gjentatt = !/^i[0-9a-f]{24}(-\d+)?$/.test(String(r[B.bank_id])) && forst[k];
     forst[k] = 1;
     return !gjentatt && ['UMATCHET', 'FEIL_BELOP', 'DUPLIKAT', 'SJEKK', 'NULLSTILT'].indexOf(r[B.status]) >= 0 &&
-      !egen({ belop: r[B.belop], navn: r[B.navn], tekst: r[B.tekst] });
+      !egen({ belop: r[B.belop], navn: r[B.navn], tekst: r[B.tekst] }) &&
+      !skjult.some(function (n) { return navnTreff_(n, r[B.navn] + ' ' + r[B.tekst]); });
   }).map(function (r) {
     var d = r[B.dato] instanceof Date ? Utilities.formatDate(r[B.dato], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(r[B.dato]);
     return { bankId: String(r[B.bank_id]), sett: r[B.sett], dato: d, belop: Number(r[B.belop]), navn: String(r[B.navn]),
@@ -2234,6 +2249,7 @@ function adminEndre_(p) {
  *  betaling    'privat' (deltakerne vippser til nummeret) eller 'bedrift' (Vipps-avtalen).
  *              Lagres som VIPPS_MODUS ('nummer' / 'api'). Det gamle feltet vippsModus virker fortsatt.
  *  ignorerEgne true: innbetalinger fra EGET_NAVN som ikke er prisen, skjules under ukoblede (IGNORER_EGNE, på som standard)
+ *  skjulNavn   skjuler alle innbetalinger fra navnet under ukoblede (SKJUL_NAVN). visNavn viser dem igjen.
  */
 function adminInnstillinger_(p) {
   if (!sjekkOkt_(p.okt)) return { ok: false, utlogget: true, error: 'Logg inn på nytt' };
@@ -2267,6 +2283,18 @@ function adminInnstillinger_(p) {
       props.setProperty('IGNORER_EGNE', ie ? 'ja' : 'nei');
       meldinger.push(ie ? 'Innbetalinger fra ' + EGET_NAVN + ' som ikke er ' + arrangement_().pris + ' kr, vises ikke i listen.'
         : 'Alle innbetalinger fra ' + EGET_NAVN + ' vises i listen igjen.');
+    }
+    if (p.skjulNavn !== undefined || p.visNavn !== undefined) {
+      var liste = skjulteNavn_(), sn = tekst_(p.skjulNavn !== undefined ? p.skjulNavn : p.visNavn, 80);
+      if (p.skjulNavn !== undefined) {
+        if (navnOrd_(sn).length < 2) return { ok: false, error: 'Navnet må ha både fornavn og etternavn' };
+        if (liste.indexOf(sn) < 0) liste.push(sn);
+        meldinger.push('Innbetalinger fra ' + sn + ' vises ikke lenger i listen. De kobles som vanlig.');
+      } else {
+        liste = liste.filter(function (n) { return n !== sn; });
+        meldinger.push('Innbetalinger fra ' + sn + ' vises i listen igjen.');
+      }
+      props.setProperty('SKJUL_NAVN', JSON.stringify(liste.slice(-50)));
     }
     if (p.svarEpost !== undefined) {
       var se = tekst_(p.svarEpost, 120).toLowerCase();
@@ -2648,6 +2676,27 @@ function adminSlettData_(p) {
     PropertiesService.getScriptProperties().setProperty('DATA_SLETTET', String(Date.now()));
     return { ok: true, melding: 'Slettet ' + slettet + ' påmeldinger, besøksstatistikken og ' + arkiv + ' arkivfaner. Ingen persondata ligger igjen i regnearket.' };
   } finally { lock.releaseLock(); }
+}
+
+/** «Legg til deltaker» i admin: en ekte påmelding, for eksempel for noen som har betalt for en annen. */
+function adminLeggTil_(p) {
+  if (!sjekkOkt_(p.okt)) return { ok: false, utlogget: true, error: 'Logg inn på nytt' };
+  begrens_('endre', 60);
+  var epost = tekst_(p.epost, 120).toLowerCase();
+  var fra = alle_().filter(function (r) { return r.epost === epost && !erTest_(r) && HOLDER_PLASS.indexOf(r.status) >= 0; })[0];
+  if (fra) {
+    return { ok: false, error: fra.fornavn + ' ' + fra.etternavn + ' (' + fra.id + ') er allerede påmeldt med denne e-posten.' +
+      (fra.status === 'UBETALT' ? ' Bruk «Marker som betalt» på påmeldingen.' : '') };
+  }
+  var betalt = p.betalt === true || p.betalt === 'true';
+  var res = pamelding_({ fornavn: p.fornavn, etternavn: p.etternavn, epost: p.epost, telefon: p.telefon, kommentar: p.kommentar,
+    betalt: betalt }, false, true);
+  if (!res.ok) return res;
+  if (res.duplicate) return { ok: false, error: 'Noen er allerede påmeldt med denne e-posten.' };
+  res.melding = res.id + ' er lagt til' + (betalt
+    ? ' som betalt.' + (res.sendt ? ' Bekreftelsen er sendt på e-post.' : ' Bekreftelsen ble ikke sendt, prøv «Send bekreftelsen på nytt».')
+    : ' og får betalingsinfo på e-post.');
+  return res;
 }
 
 /** Testpåmelding fra adminsiden: går gjennom samme løp som en ekte påmelding, men teller ikke. */

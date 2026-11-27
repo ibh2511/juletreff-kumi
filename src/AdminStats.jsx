@@ -72,6 +72,8 @@ export default function AdminStats({ okt, onLogout }) {
   const [fb, setFb] = useState(null) // null = ikke endret
   const [test, setTest] = useState({ fornavn: "Test", etternavn: "Testesen", epost: "" })
   const [testType, setTestType] = useState("pamelding")
+  const tomDeltaker = { fornavn: "", etternavn: "", epost: "", telefon: "", betalt: true }
+  const [leggTil, setLeggTil] = useState(tomDeltaker)
   const [lenkeKopiert, setLenkeKopiert] = useState(false)
   const [svar, setSvar] = useState(null)
   const [vipps, setVipps] = useState(null) // { nummer, navn } når noe er endret
@@ -955,6 +957,61 @@ export default function AdminStats({ okt, onLogout }) {
             </button>
           </div>
         </div>
+        <details className="bank-oppsett legg-til">
+          <summary>＋ Legg til deltaker</summary>
+          <div className="innstilling">
+            <div className="liten">
+              For eksempel når noen har betalt for en annen. Fristen og antall plasser gjelder ikke her.
+            </div>
+            <div className="innstilling-rad">
+              <input
+                type="text"
+                placeholder="Fornavn"
+                value={leggTil.fornavn}
+                onChange={(e) => setLeggTil({ ...leggTil, fornavn: e.target.value })}
+              />
+              <input
+                type="text"
+                placeholder="Etternavn"
+                value={leggTil.etternavn}
+                onChange={(e) => setLeggTil({ ...leggTil, etternavn: e.target.value })}
+              />
+            </div>
+            <div className="innstilling-rad">
+              <input
+                type="email"
+                placeholder="E-post"
+                value={leggTil.epost}
+                onChange={(e) => setLeggTil({ ...leggTil, epost: e.target.value })}
+              />
+              <input
+                type="tel"
+                placeholder="Telefon (valgfritt)"
+                value={leggTil.telefon}
+                onChange={(e) => setLeggTil({ ...leggTil, telefon: e.target.value })}
+              />
+            </div>
+            <label className="sjekk">
+              <input
+                type="checkbox"
+                checked={leggTil.betalt}
+                onChange={(e) => setLeggTil({ ...leggTil, betalt: e.target.checked })}
+              />
+              Har betalt. Markeres som betalt og får bekreftelsen på e-post.
+            </label>
+            <div className="innstilling-rad">
+              <button
+                className="mini ok"
+                disabled={jobber || !leggTil.fornavn.trim() || !leggTil.etternavn.trim() || !leggTil.epost.includes("@")}
+                onClick={() => send({ action: "leggtil", ...leggTil }, "leggtil", () => setLeggTil(tomDeltaker))}
+              >
+                Legg til
+              </button>
+            </div>
+            {vis("leggtil")}
+          </div>
+        </details>
+
         <div className="filters">
           {FILTRE.map((f) => {
             const n = f.test

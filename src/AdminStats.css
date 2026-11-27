@@ -396,7 +396,8 @@
 .innstilling input[type="number"],
 .innstilling input[type="text"],
 .innstilling input[type="url"],
-.innstilling input[type="email"] {
+.innstilling input[type="email"],
+.innstilling input[type="tel"] {
   font: inherit;
   font-size: 14px;
   padding: 7px 10px;
@@ -784,6 +785,10 @@
 .innstilling .sjekk, .panel > .sjekk { display: flex; gap: 8px; align-items: center; font-size: 13px; cursor: pointer; }
 .innstilling .sjekk input, .panel > .sjekk input { accent-color: #1e6b33; }
 .panel > .sjekk { margin: 8px 0; }
+.skjulte-navn { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 0 0 8px; }
+.skjulte-navn .mini { margin: 0; }
+.legg-til { margin: 0 0 12px; }
+.legg-til .innstilling { border: 0; margin: 0; }
 
 /* Vipps og bank */
 .under-tittel { font-size: 15px; margin: 20px 0 6px; color: #5b4a3a; }
