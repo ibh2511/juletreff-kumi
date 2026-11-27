@@ -42,6 +42,7 @@ const ctx = {
 vm.createContext(ctx);
 vm.runInContext(fs.readFileSync(path.join(__dirname, '../backend/Code.gs'), 'utf8'), ctx);
 Object.assign(props, { KAPASITET: '2', VIPPS_NUMMER: '12345678', SVAR_EPOST: 'svar@x.no', ADMIN_PASSORD: 'et-langt-passord-123' });
+const ekteBankTransaksjoner = ctx.bankTransaksjoner_;
 const kall = (o) => JSON.parse(ctx.doPost({ postData: { contents: JSON.stringify(o) }, parameter: {} }));
 const pm = (fornavn, epost, x = {}) => kall({ action: 'pamelding', fornavn, etternavn: 'Test', epost, telefon: '41234567', bindende: true, ...x });
 const rad = (epost) => ctx.finn_('epost', epost);
@@ -169,5 +170,57 @@ assert.deepStrictEqual(ukoblede(), [], 'på: men ikke vist');
 trans.push(fraMeg('meg-600', 600));
 ctx.sjekkBank_();
 assert.deepStrictEqual([rad('isabelle@x.no').status, rad('isabelle@x.no').bank_id], ['BETALT', 'meg-600']);
+
+// SpareBank 1 gir samme transaksjon en ny ID hver gang vi spør. Den skal likevel bare lagres én gang, og en gammel
+// reservasjon skal ikke hindre at en ny kobles automatisk.
+ctx.bankTransaksjoner_ = ekteBankTransaksjoner;
+let raa = [];
+ctx.bankRaa_ = () => raa.map((x) => ({ ...x, id: crypto.randomUUID() }));
+const fra = (navn, bokforing, tekst = navn) => ({ amount: 600, date: dag(0), remoteAccountName: navn, description: tekst,
+  bookingStatus: bokforing, typeText: 'Straksbetaling' });
+const bankRad = (navn) => ark['Bank'].rader.filter((r) => String(r[5]).includes(navn)).map((r) => r[8]);
+const radeneFor = () => ark['Bank'].rader.length;
+const sara = pm('Sara', 'sara@x.no', { etternavn: 'Berg' });
+kall({ action: 'vipps', id: sara.id, k: sara.k });
+raa = [fra('', 'PENDING', 'Transaksjon')];
+ctx.sjekkBank_();
+assert.strictEqual(rad('sara@x.no').status, 'BETALT', 'én reservasjon, én som trykket Vipps');
+const etterSara = radeneFor();
+ctx.sjekkBank_(); ctx.sjekkBank_();
+assert.strictEqual(radeneFor(), etterSara, 'samme reservasjon lagres ikke på nytt');
+// Mona trykker Vipps, og en ny reservasjon uten navn dukker opp mens Saras fortsatt står der
+naa += 5 * MIN;
+const mona = pm('Mona', 'mona@x.no', { etternavn: 'Dahl' });
+kall({ action: 'vipps', id: mona.id, k: mona.k });
+raa.push(fra('', 'PENDING', 'Transaksjon'));
+ctx.sjekkBank_();
+assert.strictEqual(rad('mona@x.no').status, 'BETALT', 'den gamle reservasjonen telles ikke som ny');
+// Saras bokføres med navn, mens reservasjonen fortsatt står der: samme betaling, ikke «mulig dobbel betaling»
+raa.push(fra('Sara Berg', 'BOOKED'));
+ctx.sjekkBank_(); ctx.sjekkBank_();
+assert.deepStrictEqual(bankRad('Sara Berg'), ['KOBLET', 'BOKFORT'], 'reservasjonen får navnet, den bokførte lagres som bokført');
+// Jon betaler, og reservasjonen har navnet hans: koblet. Den bokførte er samme betaling. Betaler han igjen, er det dobbelt.
+const jon = pm('Jon', 'jon@x.no', { etternavn: 'Lie' });
+raa.push(fra('', 'PENDING', 'Vipps*Vipps*Jon Lie'));
+ctx.sjekkBank_();
+assert.strictEqual(rad('jon@x.no').status, 'BETALT');
+raa.push(fra('Jon Lie', 'BOOKED'));
+ctx.sjekkBank_();
+raa.push(fra('Jon Lie', 'BOOKED', 'for Ola'));
+ctx.sjekkBank_(); ctx.sjekkBank_();
+assert.deepStrictEqual(bankRad('Jon Lie'), ['KOBLET', 'BOKFORT', 'DUPLIKAT']);
+assert.strictEqual(jon.status, 'UBETALT');
+// En rad lagret før rettelsen (med bankens ID) kjennes igjen på innholdet, så den lagres ikke på nytt
+ark['Bank'].rader.push(['2026-11-26', 'gammel-x', dag(0), 600, 'Per Gammel', 'Per Gammel · Per Gammel', 'Straksbetaling', 'BOOKED', 'KOBLET', 'JT-1', '']);
+const forGammel = radeneFor();
+raa.push(fra('Per Gammel', 'BOOKED'));
+ctx.sjekkBank_();
+assert.strictEqual(radeneFor(), forGammel);
+// Rader lagret om og om igjen før rettelsen: bare den første vises i admin
+const gammel = (id) => ['2026-11-26', id, dag(0), 600, 'Siri Gammel', 'Siri Gammel', 'Straksbetaling', 'BOOKED', 'DUPLIKAT', '', ''];
+['gammel-a', 'gammel-b', 'gammel-c'].forEach((id) => ark['Bank'].rader.push(gammel(id)));
+const iAdmin = kall({ action: 'oversikt', okt: okt2 }).bankrader;
+assert.deepStrictEqual(iAdmin.filter((b) => b.navn === 'Siri Gammel').map((b) => b.bankId), ['gammel-a']);
+assert.deepStrictEqual(iAdmin.filter((b) => b.tekst.includes('Jon Lie')).map((b) => b.status), ['DUPLIKAT']);
 
 console.log('pamelding ok');
