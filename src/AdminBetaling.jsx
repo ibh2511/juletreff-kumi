@@ -198,6 +198,22 @@ export default function AdminBetaling({ data, okt, onLogout, last }) {
         Skjul innbetalinger fra {arr.egetNavn} som ikke er {formatPrice(arr.pris)} i denne listen. De kobles
         som vanlig.
       </label>
+      {arr.skjulteNavn?.length > 0 && (
+        <div className="skjulte-navn">
+          <span className="liten">Skjult i listen, uansett beløp:</span>
+          {arr.skjulteNavn.map((n) => (
+            <button
+              key={n}
+              className="mini"
+              disabled={jobber}
+              title="Vis i listen igjen"
+              onClick={() => kall({ action: "innstillinger", visNavn: n }, "egne", last)}
+            >
+              {n} ✕
+            </button>
+          ))}
+        </div>
+      )}
       {vis("egne")}
       {rader.length === 0 ? (
         <div className="tom">Ingen innbetalinger venter på kobling.</div>
@@ -269,6 +285,16 @@ export default function AdminBetaling({ data, okt, onLogout, last }) {
                       >
                         Ignorer
                       </button>
+                      {b.navn.trim().split(/\s+/).length > 1 && (
+                        <button
+                          className="mini"
+                          disabled={jobber}
+                          title="Skjul alle innbetalinger fra dette navnet i listen. De kobles som vanlig."
+                          onClick={() => kall({ action: "innstillinger", skjulNavn: b.navn }, "egne", last)}
+                        >
+                          Skjul navnet
+                        </button>
+                      )}
                     </td>
                   </tr>
                 )
