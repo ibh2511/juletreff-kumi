@@ -148,25 +148,23 @@ ctx.sjekkBank_();
 assert.strictEqual(rad('forste@x.no').status, 'BETALT');
 assert.strictEqual(rad('forste@x.no').bank_id, 'ny-i-dag');
 
-// Bryteren for egne innbetalinger: fra Isabelle Haugan og ikke prisen skjules under ukoblede, men behandles som vanlig
+// Skjult navn: innbetalingene vises ikke under ukoblede, men behandles som vanlig. Navnet står bare i beskrivelsen.
 const okt2 = kall({ action: 'admin', passord: 'et-langt-passord-123' }).okt;
-const egne = (b) => kall({ action: 'innstillinger', okt: okt2, ignorerEgne: b });
 const ukoblede = () => kall({ action: 'oversikt', okt: okt2 }).bankrader.map((b) => b.bankId).filter((id) => id.startsWith('meg-'));
 pm('Isabelle', 'isabelle@x.no', { etternavn: 'Haugan' });
 // Som i banken: navn-feltet er tomt, navnet står i beskrivelsen
 const fraMeg = (id, belop) => ({ ...tx(id, 0, ''), belop, beskrivelse: 'Isabelle Haugan',
   tekst: 'Isabelle Haugan Overførsel mellom egne kontoer i MobilBank BOOKED' });
-assert.ok(egne(false).ok);
 trans.push(fraMeg('meg-450', 450));
 ctx.sjekkBank_();
-assert.deepStrictEqual(ukoblede(), ['meg-450'], 'av: vises som feil beløp');
-assert.strictEqual(kall({ action: 'oversikt', okt: okt2 }).arrangement.ignorerEgne, false);
-assert.ok(egne(true).ok);
-assert.deepStrictEqual(ukoblede(), [], 'på: skjult');
+assert.deepStrictEqual(ukoblede(), ['meg-450'], 'vises som feil beløp');
+assert.ok(kall({ action: 'innstillinger', okt: okt2, skjulNavn: 'Isabelle Haugan' }).ok);
+assert.deepStrictEqual(ukoblede(), [], 'skjult');
 trans.push(fraMeg('meg-1kr', 1));
 ctx.sjekkBank_();
-assert.ok(ark['Bank'].rader.some((r) => r[1] === 'meg-1kr'), 'på: lagret som vanlig');
-assert.deepStrictEqual(ukoblede(), [], 'på: men ikke vist');
+assert.ok(ark['Bank'].rader.some((r) => r[1] === 'meg-1kr'), 'lagret som vanlig');
+assert.deepStrictEqual(ukoblede(), [], 'men ikke vist');
+assert.ok(kall({ action: 'innstillinger', okt: okt2, visNavn: 'Isabelle Haugan' }).ok);
 trans.push(fraMeg('meg-600', 600));
 ctx.sjekkBank_();
 assert.deepStrictEqual([rad('isabelle@x.no').status, rad('isabelle@x.no').bank_id], ['BETALT', 'meg-600']);
@@ -222,6 +220,28 @@ const gammel = (id) => ['2026-11-26', id, dag(0), 600, 'Siri Gammel', 'Siri Gamm
 const iAdmin = kall({ action: 'oversikt', okt: okt2 }).bankrader;
 assert.deepStrictEqual(iAdmin.filter((b) => b.navn === 'Siri Gammel').map((b) => b.bankId), ['gammel-a']);
 assert.deepStrictEqual(iAdmin.filter((b) => b.tekst.includes('Jon Lie')).map((b) => b.status), ['DUPLIKAT']);
+// Tre reservasjoner uten navn fra siste sjekk før rettelsen, etter eldre gjentakelser som ble merket BORTE: alle tre
+// vises, og de blir stående så lenge banken har dem. En ukoblet gjentakelse av en koblet betaling vises ikke.
+const gammelRes = (id, status) => [new Date(naa), id, dag(0), 600, '', 'Transaksjon', 'Straksbetaling', 'PENDING', status, '', ''];
+ark['Bank'].rader.push(gammelRes('gml-borte', 'BORTE'), gammelRes('gml-1', 'UMATCHET'), gammelRes('gml-2', 'UMATCHET'), gammelRes('gml-3', 'UMATCHET'));
+ark['Bank'].rader.push(['2026-11-26', 'gammel-y', dag(0), 600, 'Per Gammel', 'Per Gammel · Per Gammel', 'Straksbetaling', 'BOOKED', 'UMATCHET', '', '']);
+const gamleIAdmin = () => kall({ action: 'oversikt', okt: okt2 }).bankrader.map((b) => b.bankId).filter((id) => /^gml|^gammel-y/.test(id));
+assert.deepStrictEqual(gamleIAdmin(), ['gml-3', 'gml-2', 'gml-1']);
+raa = raa.filter((x) => x.description !== 'Transaksjon').concat([1, 2, 3].map(() => fra('', 'PENDING', 'Transaksjon')));
+ctx.sjekkBank_();
+assert.deepStrictEqual(gamleIAdmin(), ['gml-3', 'gml-2', 'gml-1'], 'ikke merket borte mens banken har dem');
+raa = raa.filter((x) => x.description !== 'Transaksjon');
+ctx.sjekkBank_();
+assert.deepStrictEqual(gamleIAdmin(), [], 'borte når banken ikke har dem lenger');
+// Markert betalt i admin, så bokfører banken betalingen med navnet: samme betaling. En betaling til er mulig dobbel.
+const tone = pm('Tone', 'tone@x.no', { etternavn: 'Nord' });
+assert.ok(kall({ action: 'endre', okt: okt2, id: tone.id, handling: 'betalt' }).ok);
+assert.strictEqual(rad('tone@x.no').bank_id, 'manuell');
+raa.push(fra('Tone Nord', 'BOOKED'));
+ctx.sjekkBank_();
+raa.push(fra('Tone Nord', 'BOOKED', 'for Milan'));
+ctx.sjekkBank_();
+assert.deepStrictEqual(bankRad('Tone Nord'), ['BOKFORT', 'DUPLIKAT']);
 
 // Skjul navnet: alle innbetalinger fra navnet skjules i listen over ukoblede, og kan vises igjen
 const jonIListen = () => kall({ action: 'oversikt', okt: okt2 }).bankrader.filter((b) => b.tekst.includes('Jon Lie')).length;
