@@ -961,7 +961,7 @@ export default function AdminStats({ okt, onLogout }) {
           <summary>＋ Legg til deltaker</summary>
           <div className="innstilling">
             <div className="liten">
-              For eksempel når noen har betalt for en annen. Fristen og antall plasser gjelder ikke her.
+              For eksempel når noen har betalt for en annen. Deltakeren tar en plass, men fristen gjelder ikke her.
             </div>
             <div className="innstilling-rad">
               <input

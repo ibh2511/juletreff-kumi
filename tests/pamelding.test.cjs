@@ -231,9 +231,11 @@ assert.match(kall({ action: 'innstillinger', okt: okt2, skjulNavn: 'Jon' }).erro
 assert.ok(kall({ action: 'innstillinger', okt: okt2, visNavn: 'Jon Lie' }).ok);
 assert.strictEqual(jonIListen(), 1);
 
-// Legg til deltaker i admin: betalt med en gang og bekreftelse på e-post, også etter fristen og når det er fullt
-props.KAPASITET = '1'; props.PAMELDINGSFRIST = '2026-11-01T00:00:00+01:00';
+// Legg til deltaker i admin: betalt med en gang og bekreftelse på e-post, også etter fristen. Tar en plass.
+props.PAMELDINGSFRIST = '2026-11-01T00:00:00+01:00';
 assert.ok(pm('Sen', 'sen@x.no').stengt);
+const opptattFor = ctx.opptatte_(ctx.alle_());
+props.KAPASITET = String(opptattFor + 2);
 const forEirik = eposter.length;
 const lagt = kall({ action: 'leggtil', okt: okt2, fornavn: 'Eirik', etternavn: 'Frøili', epost: 'eirik@x.no', telefon: '', betalt: true });
 assert.ok(lagt.ok, lagt.error);
@@ -242,6 +244,9 @@ assert.deepStrictEqual(eposter.slice(forEirik).map((e) => e.til), ['eirik@x.no']
 assert.match(kall({ action: 'leggtil', okt: okt2, fornavn: 'Eirik', etternavn: 'F', epost: ' EIRIK@x.no', betalt: true }).error, /allerede påmeldt/);
 assert.ok(kall({ action: 'leggtil', okt: okt2, fornavn: 'Uten', etternavn: 'Betaling', epost: 'uten@x.no', betalt: false }).ok);
 assert.strictEqual(rad('uten@x.no').status, 'UBETALT');
+assert.strictEqual(ctx.opptatte_(ctx.alle_()), opptattFor + 2);
+assert.match(kall({ action: 'leggtil', okt: okt2, fornavn: 'Full', etternavn: 'Plass', epost: 'full@x.no', betalt: true }).error, /ingen ledige plasser/);
+assert.strictEqual(rad('full@x.no'), null);
 assert.match(kall({ action: 'leggtil', okt: okt2, fornavn: 'Feil', etternavn: 'Tlf', epost: 'feil@x.no', telefon: '123' }).error, /telefonnummer/);
 delete props.PAMELDINGSFRIST;
 

@@ -330,7 +330,7 @@ function opptatte_(rader) {
 /* Påmelding                                                           */
 /* ------------------------------------------------------------------ */
 
-/** admin: lagt til fra adminsiden. Fristen og antall plasser gjelder ikke, telefon kan mangle, og p.betalt gir BETALT. */
+/** admin: lagt til fra adminsiden. Tar en plass, men fristen gjelder ikke, telefon kan mangle, og p.betalt gir BETALT. */
 function pamelding_(p, test, admin) {
   // Skjult felt som mennesker ikke ser. Roboter fyller det ut, og får et «ok» uten at noe lagres.
   if (!test && tekst_(p.nettside, 50)) return { ok: true, waitlist: true };
@@ -372,7 +372,8 @@ function pamelding_(p, test, admin) {
         }
       });
 
-      var fullt = !test && !admin && opptatte_(rader) >= a.kapasitet;
+      var fullt = !test && opptatte_(rader) >= a.kapasitet;
+      if (fullt && admin) return { ok: false, error: 'Det er ingen ledige plasser. Øk antall plasser under Innstillinger først, hvis du vil legge til likevel.' };
       if (fullt && tidligere.some(function (r) { return r.status === 'VENTELISTE'; })) {
         return { ok: true, waitlist: true };
       }
