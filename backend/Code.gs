@@ -960,7 +960,25 @@ function bankRaa_(dager) {
   return finnListe_(d, ['transactions', 'list', 'items']);
 }
 
-function bankTransaksjoner_(dager) { return bankRaa_(dager).map(normTrans_); }
+/**
+ * SpareBank 1 gir samme transaksjon en ny ID hver gang vi spør, så ID-en lages av innholdet i stedet.
+ * Like transaksjoner (samme dag, beløp og tekst) nummereres i rekkefølge: -2, -3 osv.
+ */
+function bankTransaksjoner_(dager) {
+  var antall = {};
+  return bankRaa_(dager).map(normTrans_).map(function (t) {
+    var k = bankInnhold_(t.dato, t.belop, t.bokforing, t.type, bankTekst_(t)), n = antall[k] = (antall[k] || 0) + 1;
+    var dig = Utilities.computeDigest(Utilities.DigestAlgorithm.MD5, k, Utilities.Charset.UTF_8);
+    t.id = 'i' + dig.map(function (b) { return ('0' + (b & 255).toString(16)).slice(-2); }).join('').slice(0, 24) + (n > 1 ? '-' + n : '');
+    return t;
+  });
+}
+
+/** Teksten som lagres i «Bank»: navnet og beskrivelsen fra banken. */
+function bankTekst_(t) { return [t.navn, t.beskrivelse].filter(String).join(' · ').slice(0, 300); }
+
+/** Det som gjør en transaksjon gjenkjennelig, likt for transaksjoner fra banken og rader i «Bank». */
+function bankInnhold_(dato, belop, bokforing, type, tekst) { return [dato, ore_(belop), bokforing, type, tekst].join('|'); }
 
 /** Spør banken høyst én gang per «sek» sekunder, uansett hvor mange som venter samtidig. */
 function sjekkBankHvisLenge_(sek) {
@@ -1145,13 +1163,22 @@ function sjekkBank_() {
   var nye = 0, koblet = 0;
   try {
     var bsh = sheet_(BANK_ARK), B = {}; BANK_KOLONNER.forEach(function (k, i) { B[k] = i; });
-    var sett = {}, feilSett = {}, umatchet = {}, reservasjoner = {};
+    var sett = {}, feilSett = {}, umatchet = {}, reservasjoner = {}, lagret = {}, kobletBok = {}, bokfortFor = {}, datoer = {};
+    var tz = Session.getScriptTimeZone();
+    var datoTekst = function (v) {
+      if (!(v instanceof Date)) return String(v);
+      return datoer[v.getTime()] || (datoer[v.getTime()] = Utilities.formatDate(v, tz, 'yyyy-MM-dd'));
+    };
     // Ukoblede betalinger fra før varselet ble forsinket, har allerede gitt varsel
     var props = PropertiesService.getScriptProperties();
     var varselFra = Number(props.getProperty('UMATCHET_VARSEL_FRA')) || 0;
     if (!varselFra) { varselFra = Date.now(); props.setProperty('UMATCHET_VARSEL_FRA', String(varselFra)); }
     bsh.getDataRange().getValues().slice(1).forEach(function (r, i) {
       sett[String(r[B.bank_id])] = 1;
+      var k = bankInnhold_(datoTekst(r[B.dato]), r[B.belop], r[B.bokforing], r[B.type], r[B.tekst]);
+      lagret[k] = (lagret[k] || 0) + 1;
+      if (r[B.status] === 'KOBLET') kobletBok[String(r[B.bank_id])] = String(r[B.bokforing]);
+      if (r[B.status] === 'BOKFORT') bokfortFor[String(r[B.pamelding])] = 1;
       if (r[B.status] === 'FEIL_BELOP') feilSett[r[B.pamelding] + '|' + ore_(r[B.belop])] = 1;
       if (r[B.status] === 'RESERVERT') reservasjoner[String(r[B.bank_id])] = { rad: i + 2, pamelding: String(r[B.pamelding]), belop: r[B.belop] };
       if (r[B.status] === 'UMATCHET') {
@@ -1161,6 +1188,14 @@ function sjekkBank_() {
       }
     });
     (nullstilt.ider || []).forEach(function (id) { sett[id] = 1; });
+    // Lagret med samme innhold minst like mange ganger: sett før. Gjelder også rader fra før ID-en ble laget av
+    // innholdet, da samme transaksjon ble lagret på nytt ved hver sjekk.
+    var nr = {};
+    trans.forEach(function (t) {
+      var k = bankInnhold_(t.dato, t.belop, t.bokforing, t.type, bankTekst_(t));
+      nr[k] = (nr[k] || 0) + 1;
+      if ((lagret[k] || 0) >= nr[k]) sett[t.id] = 1;
+    });
     var settNa = {};
 
     var nylig = Date.now() - 4 * 864e5;
@@ -1170,7 +1205,7 @@ function sjekkBank_() {
     var priser = {}; priser[ore_(arrangement_().pris)] = 1;
     ventende.forEach(function (r) { priser[ore_(r.belop)] = 1; });
 
-    var bankTekst = function (t) { return [t.navn, t.beskrivelse].filter(String).join(' · ').slice(0, 300); };
+    var bankTekst = bankTekst_;
     var lagre = function (t, status, id) {
       bsh.appendRow([new Date(), t.id, t.dato, t.belop, t.navn, bankTekst(t), t.type, t.bokforing, status, id, ''].map(celle_));
       sett[t.id] = 1; nye++;
@@ -1279,12 +1314,17 @@ function sjekkBank_() {
       if (treff && treff !== 'FLERE') {
         kobl(treff, t, res && 'Reservert betaling uten navn koblet automatisk');
         status = res ? 'RESERVERT' : 'KOBLET'; id = treff.id;
-      } else if (!treff && betalte.some(function (r) {
-        // Samme navn og beløp som en som nettopp betalte: trolig samme betaling igjen
-        // (reservert først, bokført etterpå), eller at noen betalte to ganger.
-        return ore_(r.belop) === ore_(t.belop) && String(r.bank_id) !== t.id && navnPasser_(r, t.tekst);
-      })) {
-        status = 'DUPLIKAT';
+      } else if (!treff) {
+        // Samme navn og beløp som en som nettopp betalte: samme betaling igjen, eller at noen betalte to ganger
+        var samme = betalte.filter(function (r) {
+          return ore_(r.belop) === ore_(t.belop) && String(r.bank_id) !== t.id && navnPasser_(r, t.tekst);
+        });
+        // Koblet mens den var reservert, nå bokført under en ny ID: samme betaling. Én bokført per reservasjon.
+        var bokf = !/pending/i.test(t.bokforing) && samme.filter(function (r) {
+          return /pending/i.test(kobletBok[String(r.bank_id)] || '') && !bokfortFor[r.id];
+        })[0];
+        if (bokf) { status = 'BOKFORT'; id = bokf.id; bokfortFor[bokf.id] = 1; }
+        else if (samme.length) status = 'DUPLIKAT';
       }
       // Ikke koblet: varsel kommer først etter UMATCHET_VARSEL_TIMER, hvis navnet ikke dukker opp før det
       lagre(t, status, status === 'UMATCHET' ? forslag(t) : id);
@@ -2013,9 +2053,14 @@ function bankRader_() {
   var sh = ss.getSheetByName(BANK_ARK);
   if (!sh) return [];
   var B = {}; BANK_KOLONNER.forEach(function (k, i) { B[k] = i; });
-  var egen = egenOverforing_();
+  var egen = egenOverforing_(), forst = {};
   return sh.getDataRange().getValues().slice(1).filter(function (r) {
-    return ['UMATCHET', 'FEIL_BELOP', 'DUPLIKAT', 'SJEKK', 'NULLSTILT'].indexOf(r[B.status]) >= 0 &&
+    // Før ID-en ble laget av innholdet, ble samme transaksjon lagret på nytt ved hver sjekk. Bare den første vises.
+    // shortcut: gjelder bare de gamle radene (ID uten «i»-format). Kan fjernes når de er nullstilt.
+    var k = [r[B.dato], r[B.belop], r[B.bokforing], r[B.type], r[B.tekst]].join('|');
+    var gjentatt = !/^i[0-9a-f]{24}(-\d+)?$/.test(String(r[B.bank_id])) && forst[k];
+    forst[k] = 1;
+    return !gjentatt && ['UMATCHET', 'FEIL_BELOP', 'DUPLIKAT', 'SJEKK', 'NULLSTILT'].indexOf(r[B.status]) >= 0 &&
       !egen({ belop: r[B.belop], navn: r[B.navn], tekst: r[B.tekst] });
   }).map(function (r) {
     var d = r[B.dato] instanceof Date ? Utilities.formatDate(r[B.dato], Session.getScriptTimeZone(), 'yyyy-MM-dd') : String(r[B.dato]);
