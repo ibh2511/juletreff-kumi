@@ -2000,6 +2000,7 @@ function adminOversikt_(okt) {
     x.pameldinger++;
   });
 
+  var iBanken = pameldingerIBanken_();
   return {
     ok: true,
     testlenke: testlenkeInfo_(),
@@ -2028,6 +2029,7 @@ function adminOversikt_(okt) {
         trukket: r.trukket, refundert: r.refundert, refusjon: r.refusjon, notat: r.notat, test: erTest_(r), varslet: r.varslet, purret: r.purret,
         program: r.program, purringer: antallPurringer_(r), mott: r.mott, takket: r.takket,
         vippsNavn: r.vipps_navn, vippsApnet: r.vipps_apnet, gebyr: r.gebyr, bankId: r.bank_id, vippsNaa: !!aktivRef_(r),
+        iBanken: !!iBanken[r.id] || (!!r.bank_id && r.bank_id !== 'manuell'),
         utenEpost: HOLDER_PLASS.indexOf(r.status) >= 0 && !r.epost_sendt && !epostVenter_(r) };
     })
   };
@@ -2063,6 +2065,17 @@ function bankStatus_() {
     utloper: cfg_('BANK_REFRESH_UTLOPER', ''), feil: cfg_('BANK_FEIL', ''),
     pause: !!CacheService.getScriptCache().get('bank_pause')
   };
+}
+
+/** Påmeldinger som har en innbetaling i banken knyttet til seg (også de som først ble markert betalt for hånd). */
+function pameldingerIBanken_() {
+  var sh = SpreadsheetApp.openById(cfg_('SHEET_ID', STANDARD_SHEET_ID)).getSheetByName(BANK_ARK), ut = {};
+  if (!sh) return ut;
+  var s = BANK_KOLONNER.indexOf('status'), p = BANK_KOLONNER.indexOf('pamelding');
+  sh.getDataRange().getValues().slice(1).forEach(function (r) {
+    if (r[p] && ['KOBLET', 'BOKFORT', 'MANUELT', 'RESERVERT'].indexOf(r[s]) >= 0) ut[r[p]] = 1;
+  });
+  return ut;
 }
 
 /** Innbetalinger som venter på deg: ikke koblet, feil beløp eller mulig dobbel betaling. */

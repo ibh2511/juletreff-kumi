@@ -1178,7 +1178,10 @@ export default function AdminStats({ okt, onLogout }) {
                           {r.betaling === "vipps" ? " · Vipps bedrift" : ""}
                           {r.betaling === "manuell" ? " · Vipps privat" : ""}
                           {r.vippsNaa ? " · i Vipps nå" : ""}
-                          {r.bankId && r.bankId !== "manuell" ? " · funnet i banken" : ""}
+                          {r.iBanken ? " · 🏦 funnet i banken" : ""}
+                          {r.status === "BETALT" && r.betaling === "manuell" && !r.iBanken
+                            ? " · ✋ markert for hånd, ikke sett i banken ennå"
+                            : ""}
                           {r.refundert
                             ? ` · refundert ${formatPrice(r.refusjon === "" || r.refusjon == null ? r.belop : r.refusjon)}`
                             : r.status === "TRUKKET" && r.betalt
