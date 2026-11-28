@@ -2113,11 +2113,12 @@ function adminEndre_(p) {
 
     if (p.handling === 'betalt') {
       if (o.status !== 'UBETALT') return { ok: false, error: 'Bare ubetalte påmeldinger kan markeres som betalt' };
-      // «betalt av Maria Bakland» i notatet: banken skal se etter det navnet, så betalingen blir gjenkjent når den kommer
-      var av = /betalt av ([^,.;|]+)/i.exec(notat), avNavn = av && av[1].trim().replace(/\s+/g, ' ');
+      // Betalt av noen andre: banken skal se etter det navnet, så betalingen blir gjenkjent når den kommer
+      var betaler = tekst_(p.betaler, 80).replace(/\s+/g, ' ');
+      if (betaler && navnOrd_(betaler).length < 2) return { ok: false, error: 'Skriv fullt navn på den som betalte, slik det står i Vipps.' };
       oppdater_(o._rad, { status: 'BETALT', betalt: new Date(), betaling: 'manuell', bank_id: 'manuell', gebyr: 0,
-        notat: nyttNotat('Markert betalt' + (notat ? ': ' + notat : '')),
-        vipps_navn: avNavn && navnOrd_(avNavn).length >= 2 ? avNavn : o.vipps_navn });
+        notat: nyttNotat('Markert betalt' + (betaler ? ': betalt av ' + betaler : '') + (notat ? ': ' + notat : '')),
+        vipps_navn: betaler || o.vipps_navn });
       o.betaling = 'manuell';
       o.status = 'BETALT';
       var kvittert = sendBekreftelse_(o);
@@ -2451,11 +2452,18 @@ function adminKoble_(p) {
   try {
     o = finn_('id', p.id);
     if (!o) return { ok: false, error: 'Fant ikke påmeldingen' };
-    if (o.status === 'BETALT') return { ok: false, error: o.id + ' er allerede betalt' };
-    if (o.status !== 'UBETALT') return { ok: false, error: o.id + ' har ikke plass (status ' + o.status + ')' };
+    var allerede = o.status === 'BETALT' && o.betaling === 'manuell';
+    if (o.status === 'BETALT' && !allerede) return { ok: false, error: o.id + ' er allerede betalt med Vipps bedrift' };
+    if (o.status !== 'UBETALT' && !allerede) return { ok: false, error: o.id + ' har ikke plass (status ' + o.status + ')' };
     var bankId = String(p.bankId || '');
     var b = finnBankRad_(bankId);
     if (!b) return { ok: false, error: 'Fant ikke innbetalingen' };
+    // Allerede markert betalt (for eksempel betalt av en annen): bare innbetalingen kobles, ingen ny e-post
+    if (allerede) {
+      if (o.bank_id === 'manuell') oppdater_(o._rad, { bank_id: bankId });
+      oppdaterBankRad_(b.row, { status: 'MANUELT', pamelding: o.id });
+      return { ok: true, melding: 'Innbetalingen er koblet til ' + o.id + ' (' + o.fornavn + ' ' + o.etternavn + '), som allerede var betalt. Ingen e-post er sendt.' };
+    }
     var stempel = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd.MM HH:mm');
     var felt = { status: 'BETALT', betalt: new Date(), bank_id: bankId, gebyr: 0, betaling: 'manuell',
       notat: [o.notat, stempel + ' Innbetaling koblet i adminsiden'].filter(String).join(' | ').slice(-500) };
