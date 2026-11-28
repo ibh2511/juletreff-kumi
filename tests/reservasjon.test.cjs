@@ -141,4 +141,42 @@ assert.deepStrictEqual(rader.map(r => r.status), ['UBETALT', 'UBETALT', 'UBETALT
 trans = [res('r1'), res('r2'), res('r3')]; sjekk(5); sjekk(7);
 assert.deepStrictEqual(rader.map(r => r.status), ['BETALT', 'BETALT', 'BETALT']);
 
+// Etternavn bare som forbokstav («Joachim F»): et ord i banken som starter på F holder
+assert.ok(ctx.navnTreff_('Joachim F', 'Vipps*Vipps*Joachim Fasti'));
+assert.ok(!ctx.navnTreff_('Joachim F', 'Joachim Olsen'));
+assert.ok(!ctx.navnTreff_('Joachim F', 'Fredrik Hansen'));
+
+// Reservasjon uten navnefelt, men med «Vipps*Vipps*Navn» i teksten: en annens betaling, kobles ikke til den som trykket
+ny(); rader.push(pers('JT-1', 'Kari', 'Nordmann', -1));
+trans = [{ ...res('r1'), beskrivelse: 'Overføring · Vipps*Vipps*Joachim Fasti', tekst: 'Overføring Vipps*Vipps*Joachim Fasti PENDING' }]; sjekk();
+assert.strictEqual(rader[0].status, 'UBETALT');
+assert.strictEqual(status('r1'), 'UMATCHET');
+
+// Bokført betaling fra en som alt er markert betalt (manuelt): ikke falsk alarm på Karis reservasjon
+const betalt = (id, fornavn, etternavn, vippsNavn = '') => ({ ...pers(id, fornavn, etternavn, null), status: 'BETALT', bank_id: 'manuell',
+  betalt: new Date(start - 60 * MIN), vipps_navn: vippsNavn });
+ny(); rader.push(pers('JT-1', 'Kari', 'Nordmann', -3)); rader.push(betalt('JT-2', 'Maria', 'Bakland')); trans = [res('r1')]; sjekk();
+trans = [res('b2', 'Maria Bakland', 'BOOKED')]; sjekk(60);
+assert.strictEqual(status('r1'), 'RESERVERT');
+assert.strictEqual(status('b2'), 'BOKFORT');
+assert.deepStrictEqual(varsler, []);
+trans = [res('b1', 'Kari Nordmann', 'BOOKED')]; sjekk(90);
+assert.strictEqual(status('r1'), 'KOBLET');
+assert.strictEqual(status('b1'), 'BOKFORT');
+
+// Alarm («sjekk»), men så kommer betalingen bokført med riktig navn: raden kobles, og det kommer ikke ny varsel
+ny(); rader.push(pers('JT-1', 'Kari', 'Nordmann', -3)); trans = [res('r1')]; sjekk();
+trans = [res('b9', 'Per Olsen', 'BOOKED')]; sjekk(60);
+assert.strictEqual(status('r1'), 'SJEKK');
+trans = [res('b9', 'Per Olsen', 'BOOKED'), res('b1', 'Kari Nordmann', 'BOOKED')]; sjekk(120);
+assert.strictEqual(status('r1'), 'KOBLET');
+assert.strictEqual(status('b1'), 'BOKFORT');
+assert.strictEqual(varsler.length, 1);
+
+// Markert betalt «betalt av Maria Bakland» (vipps_navn satt): Marias to betalinger blir begge gjenkjent
+ny(); rader.push(betalt('JT-1', 'Maria', 'Bakland'), betalt('JT-2', 'Milan', 'Simon', 'Maria Bakland'));
+trans = [res('b1', 'Maria Soanalina Bakland', 'BOOKED'), res('b2', 'Maria Soanalina Bakland', 'BOOKED')]; sjekk();
+assert.deepStrictEqual([status('b1'), status('b2')], ['BOKFORT', 'BOKFORT']);
+assert.deepStrictEqual(bank.map(b => kol(b, 'pamelding')), ['JT-1', 'JT-2']);
+
 console.log('reservasjon ok');

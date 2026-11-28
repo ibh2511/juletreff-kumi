@@ -49,6 +49,8 @@ export default function AdminBetaling({ data, okt, onLogout, last }) {
   // Nyeste først, etter når betalingen dukket opp i banken
   const rader = [...(data.bankrader || [])].sort((a, b) => new Date(b.sett) - new Date(a.sett))
   const ubetalte = data.deltakere.filter((r) => r.status === "UBETALT")
+  // Markert betalt for hånd: innbetalingen kan kobles til dem uten ny e-post
+  const markertBetalt = data.deltakere.filter((r) => r.status === "BETALT" && r.betaling === "manuell")
   const redirect = `${API_URL}?action=bank`
 
   const kall = async (body, sted, etter) => {
@@ -185,7 +187,9 @@ export default function AdminBetaling({ data, okt, onLogout, last }) {
       <h3 className="under-tittel">Innbetalinger som ikke ble koblet</h3>
       <div className="liten">
         Betalinger backend ikke kunne koble sikkert. Velg påmeldingen og trykk
-        «Koble», så får deltakeren bekreftelsen. Gjelder den ikke juletreffet,
+        «Koble», så får deltakeren bekreftelsen. Har du alt markert påmeldingen som
+        betalt (for eksempel betalt av en annen), velger du den under «Allerede betalt».
+        Gjelder den ikke juletreffet,
         trykker du «Ignorer». Ser du en betaling i nettbanken som mangler her,
         bruker du «Marker som betalt» i påmeldingslisten.
       </div>
@@ -280,6 +284,16 @@ export default function AdminBetaling({ data, okt, onLogout, last }) {
                             {r.test ? " · test" : ""}
                           </option>
                         ))}
+                        {markertBetalt.length > 0 && (
+                          <optgroup label="Allerede betalt (ingen ny e-post)">
+                            {markertBetalt.map((r) => (
+                              <option key={r.id} value={r.id}>
+                                {r.id} · {r.navn}
+                                {r.vippsNavn ? ` (betalt av ${r.vippsNavn})` : ""}
+                              </option>
+                            ))}
+                          </optgroup>
+                        )}
                       </select>
                     </td>
                     <td className="handlinger">

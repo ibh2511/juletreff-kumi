@@ -1015,9 +1015,14 @@ function gammelBankId_(id) { return !/^i[0-9a-f]{24}(-\d+)?$/.test(String(id)); 
 
 /** Fornavn og etternavn må begge finnes i bankteksten. Mellomnavn i Vipps gjør ingenting. */
 function navnTreff_(navn, tekst) {
-  var o = navnOrd_(navn);
+  var o = navnOrd_(navn), ord = navnOrd_(tekst), t = ' ' + ord.join(' ') + ' ';
+  if (o.length === 1) {
+    // Etternavnet er bare en forbokstav («Joachim F»): et annet ord i bankteksten må starte på den
+    var f = /\s(\S)\.?\s*$/.exec(String(navn || ''));
+    var b = f && navnOrd_(f[1] + f[1])[0]; // doblet, så navnOrd_ ikke kaster den (og ø blir o)
+    return !!b && t.indexOf(' ' + o[0] + ' ') >= 0 && ord.some(function (w) { return w !== o[0] && w.charAt(0) === b.charAt(0); });
+  }
   if (o.length < 2) return false;
-  var t = ' ' + navnOrd_(tekst).join(' ') + ' ';
   return t.indexOf(' ' + o[0] + ' ') >= 0 && t.indexOf(' ' + o[o.length - 1] + ' ') >= 0;
 }
 
@@ -1187,7 +1192,8 @@ function sjekkBank_() {
       if (r[B.status] === 'KOBLET') kobletBok[String(r[B.bank_id])] = String(r[B.bokforing]);
       if (r[B.status] === 'BOKFORT') bokfortFor[String(r[B.pamelding])] = 1;
       if (r[B.status] === 'FEIL_BELOP') feilSett[r[B.pamelding] + '|' + ore_(r[B.belop])] = 1;
-      if (r[B.status] === 'RESERVERT') reservasjoner[String(r[B.bank_id])] = { rad: i + 2, pamelding: String(r[B.pamelding]), belop: r[B.belop] };
+      // SJEKK også: kommer betalingen bokført med riktig navn senere, er alarmen falsk og raden kobles
+      if (r[B.status] === 'RESERVERT' || r[B.status] === 'SJEKK') reservasjoner[String(r[B.bank_id])] = { rad: i + 2, pamelding: String(r[B.pamelding]), belop: r[B.belop], sjekk: r[B.status] === 'SJEKK' };
       if (r[B.status] === 'UMATCHET') {
         var naar = new Date(r[B.sett]).getTime();
         umatchet[String(r[B.bank_id])] = { rad: i + 2, sett: naar, innhold: k, varslet: !!r[B.varslet] || naar < varselFra,
@@ -1235,7 +1241,8 @@ function sjekkBank_() {
     };
     // Reservert betaling uten navn og melding: banken sier ikke hvem den er fra før den er bokført.
     var utenNavn = function (x) {
-      return x.belop > 0 && !x.navn && /pending/i.test(x.bokforing) && !idITekst_(x.tekst) && !annetArrangement_(x.tekst);
+      // «Vipps*Vipps*Navn» i teksten: navnet finnes, bare ikke i navnefeltet (ofte en eldre betaling i ny form)
+      return x.belop > 0 && !x.navn && /pending/i.test(x.bokforing) && !idITekst_(x.tekst) && !annetArrangement_(x.tekst) && !/vipps\*/i.test(x.tekst);
     };
     // Slike reservasjoner per beløp som ikke er koblet og dukket opp de siste 40 minuttene, telt før noe lagres under
     var aktuelle = {};
@@ -1261,20 +1268,22 @@ function sjekkBank_() {
     // med varselet, og godtar bare nye bokførte betalinger med riktig navn.
     var iBanken = {}; trans.forEach(function (x) { iBanken[x.id] = x; });
     var venter = {};
-    Object.keys(reservasjoner).forEach(function (id) { if (iBanken[id] && !iBanken[id].navn) venter[ore_(reservasjoner[id].belop)] = 1; });
+    Object.keys(reservasjoner).forEach(function (id) { if (iBanken[id] && !iBanken[id].navn && !reservasjoner[id].sjekk) venter[ore_(reservasjoner[id].belop)] = 1; });
     if (trans.length) Object.keys(reservasjoner).forEach(function (bid) {
       var rv = reservasjoner[bid], A = ore_(rv.belop);
       var p = rader.filter(function (r) { return r.id === rv.pamelding; })[0];
       if (!p) return;
       // Bokførte betalinger på beløpet: reservasjonene, og nye som ikke kobles til andre som venter
+      // eller kommer fra andre som nettopp har betalt (bokført utgave av en betaling som alt er koblet eller markert)
       var nye = trans.filter(function (x) {
-        return ore_(x.belop) === A && x.navn && (reservasjoner[x.id] || (!sett[x.id] && !finnPameldingForBetaling_(x, ventende)));
+        return ore_(x.belop) === A && x.navn && (reservasjoner[x.id] || (!sett[x.id] && !finnPameldingForBetaling_(x, ventende) &&
+          !betalte.some(function (r) { return r !== p && navnPasser_(r, x.tekst); })));
       });
       var bok = nye.filter(function (x) { return navnPasser_(p, x.tekst) && !(venter[A] && reservasjoner[x.id]); })[0];
       if (bok) {
         oppdaterBankRad_(rv.rad, { status: 'KOBLET', navn: bok.navn, tekst: bankTekst(bok), bokforing: bok.bokforing });
         if (!sett[bok.id]) lagre(bok, 'BOKFORT', p.id); // samme betaling, bokført under en ny ID
-      } else if (nye.length && !venter[A]) {
+      } else if (nye.length && !venter[A] && !rv.sjekk) {
         oppdaterBankRad_(rv.rad, { status: 'SJEKK' });
         varsler.push(varselReservasjon_(p, nye[0]));
       } // ellers er den borte fra listen, men ikke bokført ennå: vent
@@ -2104,8 +2113,12 @@ function adminEndre_(p) {
 
     if (p.handling === 'betalt') {
       if (o.status !== 'UBETALT') return { ok: false, error: 'Bare ubetalte påmeldinger kan markeres som betalt' };
+      // Betalt av noen andre: banken skal se etter det navnet, så betalingen blir gjenkjent når den kommer
+      var betaler = tekst_(p.betaler, 80).replace(/\s+/g, ' ');
+      if (betaler && navnOrd_(betaler).length < 2) return { ok: false, error: 'Skriv fullt navn på den som betalte, slik det står i Vipps.' };
       oppdater_(o._rad, { status: 'BETALT', betalt: new Date(), betaling: 'manuell', bank_id: 'manuell', gebyr: 0,
-        notat: nyttNotat('Markert betalt' + (notat ? ': ' + notat : '')) });
+        notat: nyttNotat('Markert betalt' + (betaler ? ': betalt av ' + betaler : '') + (notat ? ': ' + notat : '')),
+        vipps_navn: betaler || o.vipps_navn });
       o.betaling = 'manuell';
       o.status = 'BETALT';
       var kvittert = sendBekreftelse_(o);
@@ -2439,11 +2452,18 @@ function adminKoble_(p) {
   try {
     o = finn_('id', p.id);
     if (!o) return { ok: false, error: 'Fant ikke påmeldingen' };
-    if (o.status === 'BETALT') return { ok: false, error: o.id + ' er allerede betalt' };
-    if (o.status !== 'UBETALT') return { ok: false, error: o.id + ' har ikke plass (status ' + o.status + ')' };
+    var allerede = o.status === 'BETALT' && o.betaling === 'manuell';
+    if (o.status === 'BETALT' && !allerede) return { ok: false, error: o.id + ' er allerede betalt med Vipps bedrift' };
+    if (o.status !== 'UBETALT' && !allerede) return { ok: false, error: o.id + ' har ikke plass (status ' + o.status + ')' };
     var bankId = String(p.bankId || '');
     var b = finnBankRad_(bankId);
     if (!b) return { ok: false, error: 'Fant ikke innbetalingen' };
+    // Allerede markert betalt (for eksempel betalt av en annen): bare innbetalingen kobles, ingen ny e-post
+    if (allerede) {
+      if (o.bank_id === 'manuell') oppdater_(o._rad, { bank_id: bankId });
+      oppdaterBankRad_(b.row, { status: 'MANUELT', pamelding: o.id });
+      return { ok: true, melding: 'Innbetalingen er koblet til ' + o.id + ' (' + o.fornavn + ' ' + o.etternavn + '), som allerede var betalt. Ingen e-post er sendt.' };
+    }
     var stempel = Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd.MM HH:mm');
     var felt = { status: 'BETALT', betalt: new Date(), bank_id: bankId, gebyr: 0, betaling: 'manuell',
       notat: [o.notat, stempel + ' Innbetaling koblet i adminsiden'].filter(String).join(' | ').slice(-500) };

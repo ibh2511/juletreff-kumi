@@ -63,6 +63,7 @@ export default function AdminStats({ okt, onLogout }) {
   const [sok, setSok] = useState("")
   const [aapen, setAapen] = useState(null) // { id, handling }
   const [notat, setNotat] = useState("")
+  const [betaler, setBetaler] = useState("")
   const [ny, setNy] = useState({ fornavn: "", etternavn: "", epost: "", telefon: "" })
   const [refunder, setRefunder] = useState(true)
   const [sent, setSent] = useState(false) // trukket under 48 timer før start
@@ -129,6 +130,7 @@ export default function AdminStats({ okt, onLogout }) {
   const apne = (id, handling) => {
     setAapen({ id, handling })
     setNotat("")
+    setBetaler("")
     setNy({ fornavn: "", etternavn: "", epost: "", telefon: "" })
     setRefunder(true)
     setVarsle(true)
@@ -147,6 +149,7 @@ export default function AdminStats({ okt, onLogout }) {
         id: r.id,
         handling: aapen.handling,
         notat,
+        betaler,
         refunder,
         sent,
         varsle,
@@ -1359,6 +1362,15 @@ export default function AdminStats({ okt, onLogout }) {
                                   marker som refundert etterpå.
                                 </p>
                               )}
+                            {aapen.handling === "betalt" && (
+                              <input
+                                type="text"
+                                aria-label="Betalt av"
+                                placeholder="Betalt av noen andre? Navnet i Vipps, f.eks. Maria Bakland"
+                                value={betaler}
+                                onChange={(e) => setBetaler(e.target.value)}
+                              />
+                            )}
                             <input
                               type="text"
                               placeholder={
